@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=62.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "streamlit-passwordless"
+authors = [
+  { name="Anton Lydell", email="antoningenjoren@gmail.com" },
+]
+description = "A user model for Streamlit applications based on passwordless technology."
+readme = "README.rst"
+license = { file="LICENSE" }
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: JavaScript",
+    "Topic :: Internet :: WWW/HTTP :: Browsers",
+    "Topic :: Internet :: WWW/HTTP :: Site Management",
+    "Topic :: Security"
+]
+keywords = ["Bitwarden", "FIDO2", "Passkey", "Passwordless", "Streamlit", "Web", "WebAuthn"]
+
+dynamic = ["version"]
+
+dependencies = [
+    "streamlit >= 1.24",
+]
+
+
+[project.urls]
+"Bug Tracker" = "https://github.com/antonlydell/streamlit-passwordless/issues"
+"Documentation" = "https://github.com/antonlydell/streamlit-passwordless"
+"Source Code" = "https://github.com/antonlydell/streamlit-passwordless"
+
+
+[tool.setuptools.dynamic]
+version = {attr = "streamlit_passwordless.__version__"}
+
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+skip-string-normalization = true
+
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-rsxX --showlocals --tb=short --strict-markers"
+xfail_strict = true
+testpaths = "tests"
+markers = [
+    "raises: Tests that are expected to raise an exception.",
+]
+
+
+[tool.mypy]
+warn_return_any = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["streamlit_passwordless.*"]
+ignore_missing_imports = true
