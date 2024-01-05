@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# JavaScript
+src/streamlit_passwordless/bitwarden_passwordless/frontend/node_modules/
+src/streamlit_passwordless/bitwarden_passwordless/frontend/build/
+
 # C extensions
 *.so
 
