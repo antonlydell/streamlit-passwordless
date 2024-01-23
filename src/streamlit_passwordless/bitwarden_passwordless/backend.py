@@ -1,6 +1,7 @@
 r"""The functions and models for interacting with the Bitwarden Passwordless backend API."""
 
 # Standard library
+import logging
 from datetime import datetime, timedelta
 from typing import Literal, TypeAlias
 
@@ -8,15 +9,18 @@ from typing import Literal, TypeAlias
 from passwordless import (
     PasswordlessClient,
     PasswordlessClientBuilder,
+    PasswordlessError,
     PasswordlessOptions,
+    RegisterToken,
 )
 from pydantic import Field
 
 # Local
 from streamlit_passwordless import common, exceptions, models
 
-
 BackendClient: TypeAlias = PasswordlessClient
+
+logger = logging.getLogger(__name__)
 
 
 class BitwardenRegisterConfig(models.BaseModel):
@@ -87,3 +91,60 @@ def _build_backend_client(private_key: str, url: str) -> BackendClient:
     except Exception as e:
         error_msg = f'Could not build Bitwarden backend client! {type(e).__name__} : {str(e)}'
         raise exceptions.StreamlitPasswordlessError(error_msg) from None
+
+
+def _create_register_token(
+    client: BackendClient, user: models.User, register_config: BitwardenRegisterConfig
+) -> str:
+    r"""Create a register token to use for registering a device for a user.
+
+    Parameters
+    ----------
+    client : BackendClient
+        The Bitwarden Passwordless backend client to use for creating the register token.
+
+    user : streamlit_passwordless.models.User
+        The user to register.
+
+    register_config : BitwardenRegisterConfig
+        The configuration for creating the register token.
+
+    Returns
+    -------
+    str
+        The token to use for registering a device for a user.
+
+    Raises
+    ------
+    streamlit_passwordless.exceptions.RegisterUserError
+        If an error occurs while trying to create the register token using the
+        Bitwarden Passwordless backend API.
+    """
+
+    input_register_config = RegisterToken(
+        user_id=user.user_id,
+        username=user.username,
+        display_name=user.displayname,
+        attestation=register_config.attestation,
+        authenticator_type=register_config.authenticator_type,
+        discoverable=register_config.discoverable,
+        user_verification=register_config.user_verification,
+        aliases=user.aliases,
+        alias_hashing=register_config.alias_hasing,
+        expires_at=register_config.expires_at,
+    )
+
+    try:
+        registered_token = client.register_token(register_token=input_register_config)
+    except PasswordlessError as e:
+        error_msg = f'Error creating register token! {str(e)}\nproblem_details: {e.problem_details}'
+        data = {
+            'input_register_config': input_register_config,
+            'problem_details': e.problem_details,
+        }
+        logger.error(error_msg)
+        raise exceptions.RegisterUserError(error_msg, data=data) from None
+    else:
+        logger.info(f'Successfully created register token for user_id={user.user_id}')
+
+    return registered_token.token  # type: ignore
