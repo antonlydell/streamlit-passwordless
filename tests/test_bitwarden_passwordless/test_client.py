@@ -2,14 +2,16 @@ r"""Unit tests for the client module of the bitwarden_passwordless library."""
 
 # Standard library
 from datetime import datetime, timedelta
+from unittest.mock import Mock
 
 # Third party
 import pytest
+from passwordless import PasswordlessError
 
 # Local
-from streamlit_passwordless import exceptions
+import streamlit_passwordless.bitwarden_passwordless.client
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
-
 
 # =============================================================================================
 # Tests
@@ -168,6 +170,94 @@ class TestBitwardenPasswordlessClient:
         print(error_msg)
 
         assert 'authenticator_type' in error_msg, 'authenticator_type not in error message!'
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestRegisterMethod:
+    r"""Tests for the method `BitwardenPasswordlessClient.register_user`."""
+
+    @pytest.mark.raises
+    def test_backend_raises_register_user_error(
+        self, user: models.User, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        r"""Test that `exceptions.RegisterUserError` can be properly raised.
+
+        The Bitwarden Passwordless backend client should raise `passwordless.PasswordlessError`
+        which should be re-raised as `exceptions.RegisterUserError` by the function
+        `bitwarden_passwordless.backend._create_register_token`.
+        """
+
+        # Setup
+        # ===========================================================
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='public key', public_key='private key'
+        )
+        problem_details = {'error': True}
+
+        monkeypatch.setattr(
+            client._backend_client,
+            'register_token',
+            Mock(side_effect=PasswordlessError(problem_details=problem_details)),
+        )
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(exceptions.RegisterUserError) as exc_info:
+            client.register_user(user=user)
+
+        # Verify
+        # ===========================================================
+        error_msg = exc_info.exconly()
+        print(error_msg)
+
+        assert exc_info.value.data['problem_details'] == problem_details
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.raises
+    def test_frontend_raises_register_user_error(
+        self, user: models.User, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        r"""Test that `exceptions.RegisterUserError` can be properly raised.
+
+        The Bitwarden Passwordless frontend client is mocked to return an empty token,
+        which indicates that an error has occurred. `exceptions.RegisterUserError`
+        is expected to be raised.
+        """
+
+        # Setup
+        # ===========================================================
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='public key', public_key='private key'
+        )
+        error = {'error': True}
+
+        monkeypatch.setattr(
+            client,
+            '_backend_client',
+            Mock(return_value='register_token'),
+        )
+        monkeypatch.setattr(
+            streamlit_passwordless.bitwarden_passwordless.client.frontend,
+            '_register',
+            Mock(return_value=('', error)),
+        )
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(exceptions.RegisterUserError) as exc_info:
+            client.register_user(user=user)
+
+        # Verify
+        # ===========================================================
+        error_msg = exc_info.exconly()
+        print(error_msg)
+
+        assert str(user) in error_msg, 'Error message is incorrect!'
+        assert exc_info.value.data == error, 'data attribute is incorrect!'
 
         # Clean up - None
         # ===========================================================

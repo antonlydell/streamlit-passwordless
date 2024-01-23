@@ -1,13 +1,17 @@
 r"""The client to use to interact with Bitwarden Passwordless."""
 
 # Standard library
+import logging
 
 # Third party
 from pydantic import AnyHttpUrl, validator
 
 # Local
-from streamlit_passwordless import models
-from . import backend
+from streamlit_passwordless import exceptions, models
+
+from . import backend, frontend
+
+logger = logging.getLogger(__name__)
 
 
 class BitwardenPasswordlessClient(models.BaseModel):
@@ -59,3 +63,47 @@ class BitwardenPasswordlessClient(models.BaseModel):
             return backend.BitwardenRegisterConfig()
         else:
             return register_config
+
+    def register_user(self, user: models.User, key: str | None = None) -> str:
+        r"""Register a new user by creating and registring a passkey with the user's device.
+
+        Parameters
+        ----------
+        user : streamlit_passwordless.User
+            The user to register.
+
+        key : str or None, default None
+            An optional key that uniquely identifies this component. If this is
+            None, and the component's arguments are changed, the component will
+            be re-mounted in the Streamlit frontend and lose its current state.
+
+        Returns
+        -------
+        token : str
+            The public key of the created passkey, which the user will use for future sign-in
+            operations. This key is saved to the Bitwarden Passwordless database.
+
+        Raises
+        ------
+        streamlit_passwordless.RegisterUserError
+            If an error occurs while trying to register the user.
+        """
+
+        register_token = backend._create_register_token(
+            client=self._backend_client,
+            user=user,
+            register_config=self.register_config,  # type: ignore
+        )
+        token, error = frontend._register(
+            register_token=register_token,
+            public_key=self.public_key,
+            credential_nickname=user.username,
+            key=key,
+        )
+
+        if token:
+            return token
+        else:
+            error_msg = f'Error creating passkey for user ({user})! {error}'
+            logger.error(error_msg)
+            raise exceptions.RegisterUserError(error_msg, data=error)
