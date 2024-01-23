@@ -10,28 +10,56 @@ import pytest
 
 # Local
 import streamlit_passwordless.bitwarden_passwordless.backend
-from streamlit_passwordless import models, common
-
+from streamlit_passwordless import common, models
 
 # =============================================================================================
 # Models
 # =============================================================================================
 
 
+@pytest.fixture(scope='session')
+def user_id() -> str:
+    r"""The user ID to use for the test user of the test suite."""
+
+    return 'mocked-user_id'
+
+
 @pytest.fixture()
-def mocked_user_id(monkeypatch: pytest.MonkeyPatch) -> str:
+def mocked_user_id(user_id: str, monkeypatch: pytest.MonkeyPatch) -> str:
     r"""Mock the user ID that is generated if a user ID is not supplied to the `User` model.
 
     Returns
     -------
-    mocked_user_id : str
+    user_id : str
         The user_id that is returned from the mock.
     """
 
-    mocked_user_id = 'mocked-user_id'
-    monkeypatch.setattr(models.uuid, 'uuid4', Mock(return_value=mocked_user_id))
+    monkeypatch.setattr(models.uuid, 'uuid4', Mock(return_value=user_id))
 
-    return mocked_user_id
+    return user_id
+
+
+@pytest.fixture(scope='session')
+def user(user_id: str) -> models.User:
+    r"""A test user to use for the test suite.
+
+    Returns
+    -------
+    streamlit_passwordless.models.User
+    """
+
+    return models.User(
+        username='m.shadows',
+        user_id=user_id,
+        email='m.shadows@ax7.com',
+        displayname='M Shadows',
+        aliases=('Matt', 'Shadows'),
+    )
+
+
+# =============================================================================================
+# Common
+# =============================================================================================
 
 
 @pytest.fixture()
