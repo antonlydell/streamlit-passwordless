@@ -20,8 +20,11 @@ else:
 
 def _register(
     register_token: str, public_key: str, credential_nickname: str, key: str | None = None
-) -> tuple[str, dict]:
+) -> None:
     r"""Register a new user by creating and registring a passkey with the user's device.
+
+    The return value from the javascript function is saved to the session state with a key
+    defined by the `key` parameter. The type of the result is listed in the section `Returns`.
 
     Parameters
     ----------
@@ -35,10 +38,10 @@ def _register(
         A nickname for the passkey credential being registered to use for easier identification
         of the device being registered.
 
-    key : str or None
-        An optional key that uniquely identifies this component. If this is
-        None, and the component's arguments are changed, the component will
-        be re-mounted in the Streamlit frontend and lose its current state.
+    key : str or None, default None
+        An optional key that uniquely identifies this component. If this is None, and the
+        component's arguments are changed, the component will be re-mounted in the Streamlit
+        frontend and lose its current state.
 
     Returns
     -------
@@ -51,15 +54,10 @@ def _register(
         successful or not.
     """
 
-    value = _bitwarden_passwordless_func(
+    _bitwarden_passwordless_func(
         action='register',
         register_token=register_token,
         public_key=public_key,
         credential_nickname=credential_nickname,
         key=key,
     )
-
-    if value is None:
-        return ('', {})
-    else:
-        return value

@@ -7,7 +7,7 @@ import logging
 from pydantic import AnyHttpUrl, validator
 
 # Local
-from streamlit_passwordless import exceptions, models
+from streamlit_passwordless import models
 
 from . import backend, frontend
 
@@ -64,18 +64,19 @@ class BitwardenPasswordlessClient(models.BaseModel):
         else:
             return register_config
 
-    def register_user(self, user: models.User, key: str | None = None) -> str:
+    def register_user(self, user: models.User, key: str = 'register_user') -> None:
         r"""Register a new user by creating and registring a passkey with the user's device.
+
+        The result from the method is saved to the session state with a key defined by
+        the `key` parameter. The type of the result is listed in the section `Returns`.
 
         Parameters
         ----------
         user : streamlit_passwordless.User
             The user to register.
 
-        key : str or None, default None
-            An optional key that uniquely identifies this component. If this is
-            None, and the component's arguments are changed, the component will
-            be re-mounted in the Streamlit frontend and lose its current state.
+        key : str, default 'register_user'
+            The name of the session state key where the result from the method is saved.
 
         Returns
         -------
@@ -83,10 +84,9 @@ class BitwardenPasswordlessClient(models.BaseModel):
             The public key of the created passkey, which the user will use for future sign-in
             operations. This key is saved to the Bitwarden Passwordless database.
 
-        Raises
-        ------
-        streamlit_passwordless.RegisterUserError
-            If an error occurs while trying to register the user.
+        error : dict
+            An error object containing information about if the registration process was
+            successful or not.
         """
 
         register_token = backend._create_register_token(
@@ -94,16 +94,9 @@ class BitwardenPasswordlessClient(models.BaseModel):
             user=user,
             register_config=self.register_config,  # type: ignore
         )
-        token, error = frontend._register(
+        frontend._register(
             register_token=register_token,
             public_key=self.public_key,
             credential_nickname=user.username,
             key=key,
         )
-
-        if token:
-            return token
-        else:
-            error_msg = f'Error creating passkey for user ({user})! {error}'
-            logger.error(error_msg)
-            raise exceptions.RegisterUserError(error_msg, data=error)
