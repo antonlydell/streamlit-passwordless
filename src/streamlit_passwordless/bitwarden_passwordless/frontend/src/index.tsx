@@ -1,9 +1,7 @@
 import { Streamlit, RenderData } from "streamlit-component-lib";
 import { Client } from '@passwordlessdev/passwordless-client';
 
-let passwordlessClient: Client;
-let clientInitialized: boolean = false;
-let previousToken: string = '';
+let passwordlessClient: Client | undefined;
 
 /**
  * Initialize an instance of the Bitwarden Passwordless frontend client.
@@ -14,15 +12,28 @@ let previousToken: string = '';
  */
 function createPasswordlessClient(apiKey: string): Client {
 
-  if (clientInitialized === false) {
+  if (passwordlessClient === undefined) {
     passwordlessClient = new Client({apiKey: apiKey});
-    clientInitialized = true
-
-    return passwordlessClient
-  } else {
+    console.log('Initialized client', passwordlessClient)
     return passwordlessClient
   }
 
+  return passwordlessClient
+}
+
+/**
+ * Register a new user by creating and registring a passkey with the user's device.
+ *
+ * @param {Client} client - The Bitwarden Passwordless frontend client.
+ * @param {string} registerToken - The register token retrieved from the Bitwarden Passwordless backend.
+ * @param {string} credentialNickname - A nickname for the passkey credential being created.
+ *
+ * @returns {[string, object]} - [The public key of the created passkey, An object with error info.]
+ */
+async function register(client: Client, registerToken: string, credentialNickname: string) {
+
+  const {token, error} = await client.register(registerToken, credentialNickname);
+  return [token, error]
 }
 
 /**
@@ -37,13 +48,19 @@ function onRender(event: Event): void {
   const registerToken: string = data.args['register_token'];
   const credentialNickname: string = data.args['credential_nickname'];
 
-  const client = createPasswordlessClient(apiKey)
-  const {token, error} = client.register(registerToken, credentialNickname)
+  const client = createPasswordlessClient(apiKey);
+  console.log('isSecureContext', window.isSecureContext);
 
-  if (previousToken !== registerToken) {
-    previousToken = registerToken;
-    Streamlit.setComponentValue([token, error]);
-  }
+  register(client, registerToken, credentialNickname).then(
+    ([token, error])=>{
+      Streamlit.setComponentValue([token, error]);
+    }
+  ).catch(
+    (error)=>{
+      console.log('Error registring passkey credential', error)
+      Streamlit.setComponentValue([undefined, error]);
+    }
+  )
 
 }
 
