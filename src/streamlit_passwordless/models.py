@@ -19,6 +19,10 @@ class BaseModel(PydanticBaseModel):
         except ValidationError as e:
             raise exceptions.StreamlitPasswordlessError(str(e)) from None
 
+    class Config:
+        r"""Additional configuration for the model."""
+        underscore_attrs_are_private = True
+
 
 class User(BaseModel):
     r"""A user within the streamlit-passwordless data model.

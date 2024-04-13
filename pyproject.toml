@@ -32,6 +32,7 @@ dynamic = ["version"]
 
 dependencies = [
     "streamlit >= 1.24",
+    "passwordless >= 0.1",
 ]
 
 
@@ -51,6 +52,11 @@ target-version = ["py311"]
 skip-string-normalization = true
 
 
+[tool.isort]
+profile = "black"
+line_length = 100
+
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-rsxX --showlocals --tb=short --strict-markers"
@@ -67,5 +73,5 @@ warn_return_any = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["streamlit_passwordless.*"]
+module = ["streamlit_passwordless.*", "passwordless.*"]
 ignore_missing_imports = true

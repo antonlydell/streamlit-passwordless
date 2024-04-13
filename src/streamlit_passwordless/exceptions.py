@@ -19,3 +19,7 @@ class StreamlitPasswordlessError(Exception):
     def __init__(self, message: str, data: Any = None) -> None:
         self.data = data
         super().__init__(message)
+
+
+class RegisterUserError(StreamlitPasswordlessError):
+    r"""Raised for errors when registering a new user."""
