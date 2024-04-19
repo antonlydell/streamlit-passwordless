@@ -33,6 +33,7 @@ dynamic = ["version"]
 dependencies = [
     "streamlit >= 1.24",
     "passwordless >= 0.1",
+    "pydantic <2",
 ]
 
 
