@@ -37,7 +37,7 @@ class TestBitwardenPasswordlessClient:
                 'authenticator_type': 'any',
                 'discoverable': True,
                 'user_verification': 'preferred',
-                'expires_at': mocked_get_current_datetime + timedelta(seconds=120),
+                'validity': timedelta(seconds=120),
                 'alias_hasing': True,
             },
         }
@@ -70,7 +70,7 @@ class TestBitwardenPasswordlessClient:
                 'authenticator_type': 'cross-platform',
                 'discoverable': False,
                 'user_verification': 'required',
-                'expires_at': datetime(2024, 1, 6, 12, 35, 34),
+                'validity': timedelta(hours=1),
                 'alias_hasing': False,
             },
         }

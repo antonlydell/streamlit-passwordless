@@ -13,7 +13,6 @@ from passwordless import (
     PasswordlessOptions,
     RegisterToken,
 )
-from pydantic import Field
 
 # Local
 from streamlit_passwordless import common, exceptions, models
@@ -49,8 +48,9 @@ class BitwardenRegisterConfig(models.BaseModel):
         Set the preference for how user verification (e.g. PIN code or biometrics) works when
         authenticating.
 
-    expires_at : datetime, default 'current datetime in UTC + 120 seconds'
-        The timestamp in UTC when the registration token expires and becomes invalid.
+    validity : timedelta, default timedelta(seconds=120)
+        When the registration token expires and becomes invalid defined as an offset
+        from the start of the registration process.
 
     alias_hasing : bool, default True
         True means that aliases for a user are hashed before they are stored in the
@@ -61,10 +61,14 @@ class BitwardenRegisterConfig(models.BaseModel):
     authenticator_type: Literal['any', 'platform', 'cross-platform'] = 'any'
     discoverable: bool = True
     user_verification: Literal['preferred', 'required', 'discouraged'] = 'preferred'
-    expires_at: datetime = Field(
-        default_factory=lambda: common.get_current_datetime() + timedelta(seconds=120)
-    )
+    validity: timedelta = timedelta(seconds=120)
     alias_hasing: bool = True
+
+    @property
+    def expires_at(self) -> datetime:
+        r"""The expiry time of the registration token in timezone UTC."""
+
+        return common.get_current_datetime() + self.validity
 
 
 def _build_backend_client(private_key: str, url: str) -> BackendClient:
