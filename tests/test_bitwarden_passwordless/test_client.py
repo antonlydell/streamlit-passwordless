@@ -38,7 +38,7 @@ class TestBitwardenPasswordlessClient:
                 'discoverable': True,
                 'user_verification': 'preferred',
                 'validity': timedelta(seconds=120),
-                'alias_hasing': True,
+                'alias_hashing': True,
             },
         }
 
@@ -71,7 +71,7 @@ class TestBitwardenPasswordlessClient:
                 'discoverable': False,
                 'user_verification': 'required',
                 'validity': timedelta(hours=1),
-                'alias_hasing': False,
+                'alias_hashing': False,
             },
         }
 

@@ -52,7 +52,7 @@ class BitwardenRegisterConfig(models.BaseModel):
         When the registration token expires and becomes invalid defined as an offset
         from the start of the registration process.
 
-    alias_hasing : bool, default True
+    alias_hashing : bool, default True
         True means that aliases for a user are hashed before they are stored in the
         Bitwarden Passwordless database.
     """
@@ -62,7 +62,7 @@ class BitwardenRegisterConfig(models.BaseModel):
     discoverable: bool = True
     user_verification: Literal['preferred', 'required', 'discouraged'] = 'preferred'
     validity: timedelta = timedelta(seconds=120)
-    alias_hasing: bool = True
+    alias_hashing: bool = True
 
     @property
     def expires_at(self) -> datetime:
@@ -134,7 +134,7 @@ def _create_register_token(
         discoverable=register_config.discoverable,
         user_verification=register_config.user_verification,
         aliases=user.aliases,
-        alias_hashing=register_config.alias_hasing,
+        alias_hashing=register_config.alias_hashing,
         expires_at=register_config.expires_at,
     )
 
