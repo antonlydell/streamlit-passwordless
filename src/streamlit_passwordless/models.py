@@ -4,7 +4,8 @@ r"""The data models of streamlit-passwordless."""
 import uuid
 
 # Third party
-from pydantic import BaseModel as PydanticBaseModel, validator, ValidationError
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ValidationError, field_validator
 
 # Local
 from . import exceptions
@@ -18,10 +19,6 @@ class BaseModel(PydanticBaseModel):
             super().__init__(**kwargs)
         except ValidationError as e:
             raise exceptions.StreamlitPasswordlessError(str(e)) from None
-
-    class Config:
-        r"""Additional configuration for the model."""
-        underscore_attrs_are_private = True
 
 
 class User(BaseModel):
@@ -54,13 +51,13 @@ class User(BaseModel):
     displayname: str | None = None
     aliases: tuple[str, ...] | str | None = None
 
-    @validator('user_id', always=True)
+    @field_validator('user_id')
     def generate_user_id(cls, v: str | None, values) -> str:
         r"""Generate a user ID if not supplied."""
 
         return str(uuid.uuid4()) if v is None else v
 
-    @validator('aliases', always=True)
+    @field_validator('aliases')
     def process_aliases(cls, aliases: tuple[str, ...] | str | None) -> tuple[str, ...] | None:
         r"""Convert multiple aliases in a string to a tuple by splitting on the semicolon ";"."""
 
