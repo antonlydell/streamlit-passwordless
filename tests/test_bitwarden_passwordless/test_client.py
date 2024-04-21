@@ -7,9 +7,9 @@ from unittest.mock import Mock
 # Third party
 import pytest
 from passwordless import PasswordlessError
+from pydantic import AnyHttpUrl
 
 # Local
-import streamlit_passwordless.bitwarden_passwordless.client
 from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 
@@ -27,7 +27,6 @@ class TestBitwardenPasswordlessClient:
         # Setup
         # ===========================================================
         data = {
-            'url': 'https://ax7.com',
             'public_key': 'public key',
             'private_key': 'private key',
         }
@@ -44,14 +43,15 @@ class TestBitwardenPasswordlessClient:
         }
 
         data_exp = data | register_config_defaults
+        data_exp['url'] = AnyHttpUrl('https://v4.passwordless.dev')  # type: ignore
 
         # Exercise
         # ===========================================================
-        client = BitwardenPasswordlessClient.parse_obj(data)
+        client = BitwardenPasswordlessClient.model_validate(data)
 
         # Verify
         # ===========================================================
-        assert client.dict() == data_exp
+        assert client.model_dump() == data_exp
 
         # Clean up - None
         # ===========================================================
@@ -75,13 +75,16 @@ class TestBitwardenPasswordlessClient:
             },
         }
 
+        data_exp = data.copy()
+        data_exp['url'] = AnyHttpUrl(data['url'])  # type: ignore
+
         # Exercise
         # ===========================================================
-        client = BitwardenPasswordlessClient.parse_obj(data)
+        client = BitwardenPasswordlessClient.model_validate(data)
 
         # Verify
         # ===========================================================
-        assert client.dict() == data
+        assert client.model_dump() == data_exp
 
         # Clean up - None
         # ===========================================================
@@ -92,6 +95,7 @@ class TestBitwardenPasswordlessClient:
         # Setup
         # ===========================================================
         url = 'https://ax7.com'
+        url_exp = 'https://ax7.com/'
         private_key = 'private key'
         data = {
             'url': url,
@@ -101,11 +105,11 @@ class TestBitwardenPasswordlessClient:
 
         # Exercise
         # ===========================================================
-        client = BitwardenPasswordlessClient.parse_obj(data)
+        client = BitwardenPasswordlessClient.model_validate(data)
 
         # Verify
         # ===========================================================
-        assert client._backend_client.options.api_url == url, 'api_url is incorrect!'
+        assert client._backend_client.options.api_url == url_exp, 'api_url is incorrect!'
         assert client._backend_client.options.api_secret == private_key, 'api_secret is incorrect!'
 
         # Clean up - None
@@ -130,7 +134,7 @@ class TestBitwardenPasswordlessClient:
         # Exercise
         # ===========================================================
         with pytest.raises(exceptions.StreamlitPasswordlessError) as exc_info:
-            BitwardenPasswordlessClient.parse_obj(data)
+            BitwardenPasswordlessClient.model_validate(data)
 
         # Verify
         # ===========================================================
@@ -162,7 +166,7 @@ class TestBitwardenPasswordlessClient:
         # Exercise
         # ===========================================================
         with pytest.raises(exceptions.StreamlitPasswordlessError) as exc_info:
-            BitwardenPasswordlessClient.parse_obj(data)
+            BitwardenPasswordlessClient.model_validate(data)
 
         # Verify
         # ===========================================================
