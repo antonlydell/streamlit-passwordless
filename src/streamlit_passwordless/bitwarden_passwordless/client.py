@@ -2,9 +2,10 @@ r"""The client to use to interact with Bitwarden Passwordless."""
 
 # Standard library
 import logging
+from typing import Any
 
 # Third party
-from pydantic import AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, Field, PrivateAttr
 
 # Local
 from streamlit_passwordless import models
@@ -19,8 +20,6 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
     Parameters
     ----------
-    url : pydantic.AnyHttpUrl
-        The base url of the Bitwarden Passwordless application.
 
     public_key : str
         The public key of the Bitwarden Passwordless application.
@@ -28,41 +27,28 @@ class BitwardenPasswordlessClient(models.BaseModel):
     private_key : str
         The private key of the Bitwarden Passwordless application.
 
-    register_config : streamlit_passwordless.BitwardenRegisterConfig or None, default None
+    url : pydantic.AnyHttpUrl or str, default 'https://v4.passwordless.dev'
+        The base url of the Bitwarden Passwordless application.
+
+    register_config : streamlit_passwordless.BitwardenRegisterConfig
         The passkey configuration when registering a new user.
-        If None the default configuration is used.
+        If not specified the default configuration is used.
     """
 
-    url: AnyHttpUrl
     public_key: str
     private_key: str
-    register_config: backend.BitwardenRegisterConfig | None = None
-    _backend_client: backend.BackendClient
+    url: AnyHttpUrl = AnyHttpUrl('https://v4.passwordless.dev')
+    register_config: backend.BitwardenRegisterConfig = Field(
+        default_factory=backend.BitwardenRegisterConfig
+    )
+    _backend_client: backend.BackendClient = PrivateAttr()
 
-    def __init__(
-        self,
-        url: str,
-        public_key: str,
-        private_key: str,
-        register_config: backend.BitwardenRegisterConfig | None = None,
-    ) -> None:
+    def model_post_init(self, __context: Any) -> None:
         r"""Setup the Bitwarden Passwordless backend client."""
 
-        self._backend_client = backend._build_backend_client(private_key=private_key, url=url)
-        super().__init__(
-            url=url, public_key=public_key, private_key=private_key, register_config=register_config
+        self._backend_client = backend._build_backend_client(
+            private_key=self.private_key, url=str(self.url)
         )
-
-    @validator('register_config')
-    def set_register_config_defaults(
-        cls, register_config: backend.BitwardenRegisterConfig | None
-    ) -> backend.BitwardenRegisterConfig:
-        r"""Set the default value of the `register_config` attribute."""
-
-        if register_config is None:
-            return backend.BitwardenRegisterConfig()
-        else:
-            return register_config
 
     def register_user(self, user: models.User, key: str = 'register_user') -> None:
         r"""Register a new user by creating and registring a passkey with the user's device.
