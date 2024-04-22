@@ -9,7 +9,6 @@ import pytest
 # Local
 from streamlit_passwordless import exceptions, models
 
-
 # =============================================================================================
 # Tests
 # =============================================================================================
@@ -25,19 +24,20 @@ class TestUser:
         # ===========================================================
         data = {
             'username': 'm.shadows',
-            'user_id': mocked_user_id,
             'email': None,
             'displayname': None,
             'aliases': None,
         }
+        data_exp = data.copy()
+        data_exp['user_id'] = mocked_user_id
 
         # Exercise
         # ===========================================================
-        user = models.User(**data)
+        user = models.User.model_validate(data)
 
         # Verify
         # ===========================================================
-        assert user.dict() == data
+        assert user.model_dump() == data_exp
 
         # Clean up - None
         # ===========================================================
@@ -57,11 +57,11 @@ class TestUser:
 
         # Exercise
         # ===========================================================
-        user = models.User(**data)
+        user = models.User.model_validate(data)
 
         # Verify
         # ===========================================================
-        assert user.dict() == data
+        assert user.model_dump() == data
 
         # Clean up - None
         # ===========================================================

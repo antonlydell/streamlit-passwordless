@@ -5,7 +5,7 @@ import uuid
 
 # Third party
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import ValidationError, field_validator
+from pydantic import Field, ValidationError, field_validator
 
 # Local
 from . import exceptions
@@ -46,13 +46,13 @@ class User(BaseModel):
     """
 
     username: str
-    user_id: str | None = None
+    user_id: str | None = Field(default=None, validate_default=True)
     email: str | None = None
     displayname: str | None = None
-    aliases: tuple[str, ...] | str | None = None
+    aliases: tuple[str, ...] | str | None = Field(default=None, validate_default=True)
 
     @field_validator('user_id')
-    def generate_user_id(cls, v: str | None, values) -> str:
+    def generate_user_id(cls, v: str | None) -> str:
         r"""Generate a user ID if not supplied."""
 
         return str(uuid.uuid4()) if v is None else v
