@@ -23,3 +23,7 @@ class StreamlitPasswordlessError(Exception):
 
 class RegisterUserError(StreamlitPasswordlessError):
     r"""Raised for errors when registering a new user."""
+
+
+class SignInTokenVerificationError(StreamlitPasswordlessError):
+    r"""Raised for errors when the backend is verifying the sign in token."""
