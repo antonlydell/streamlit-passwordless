@@ -4,15 +4,19 @@ r"""Unit tests for the backend module of the bitwarden_passwordless library."""
 from collections import namedtuple
 from datetime import datetime, timedelta
 from unittest.mock import Mock
+from zoneinfo import ZoneInfo
 
 # Third party
 import pytest
+from passwordless import VerifiedUser
+from pydantic import AnyHttpUrl
 
 # Local
 from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless import backend
 from streamlit_passwordless.bitwarden_passwordless.backend import (
     BackendClient,
+    BitwardenPasswordlessVerifiedUser,
     BitwardenRegisterConfig,
     PasswordlessError,
     RegisterToken,
@@ -206,6 +210,131 @@ class TestCreateRegisterToken:
         assert isinstance(
             exc_info.value.data['input_register_config'], RegisterToken
         ), 'input_register_config is incorrect!'
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestBitwardenPasswordlessVerifiedUser:
+    r"""Tests for the `BitwardenPasswordlessVerifiedUser` model."""
+
+    def test__init__(self) -> None:
+        r"""Test to initialize the model without errors."""
+
+        # Setup
+        # ===========================================================
+        data = {
+            'success': True,
+            'user_id': 'user_id',
+            'sign_in_timestamp': '2024-04-27 18:23:52+02:00',
+            'origin': 'https://ax7.com',
+            'device': 'My device',
+            'country': 'SE',
+            'credential_nickname': 'credential_nickname',
+            'credential_id': 'credential_id',
+            'expires_at': '2024-04-27 19:23:52',
+            'token_id': 'token_id',
+            'type': 'type',
+            'rp_id': 'rp_id',
+        }
+
+        data_exp = data.copy()
+        data_exp['origin'] = AnyHttpUrl(data['origin'])  # type: ignore
+        data_exp['sign_in_timestamp'] = datetime(2024, 4, 27, 18, 23, 52, tzinfo=ZoneInfo('CET'))
+        data_exp['expires_at'] = datetime(2024, 4, 27, 19, 23, 52)
+
+        # Exercise
+        # ===========================================================
+        verified_user = BitwardenPasswordlessVerifiedUser.model_validate(data)
+
+        # Verify
+        # ===========================================================
+        assert verified_user.model_dump() == data_exp
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.raises
+    def test_invalid_user_id(self) -> None:
+        r"""Test the to initialize the model with an invalid `user_id`.
+
+        `exceptions.StreamlitPasswordlessError` is expected to be raised.
+        """
+
+        # Setup
+        # ===========================================================
+        data = {
+            'success': True,
+            'user_id': [],
+            'sign_in_timestamp': '2024-04-27 18:23:52+02:00',
+            'origin': 'https://ax7.com',
+            'device': 'My device',
+            'country': 'SE',
+            'credential_nickname': 'credential_nickname',
+            'credential_id': 'credential_id',
+            'expires_at': '2024-04-27 19:23:52',
+            'token_id': 'token_id',
+            'type': 'type',
+            'rp_id': 'rp_id',
+        }
+
+        data_exp = data.copy()
+        data_exp['origin'] = AnyHttpUrl(data['origin'])  # type: ignore
+        data_exp['sign_in_timestamp'] = datetime(2024, 4, 27, 18, 23, 52, tzinfo=ZoneInfo('CET'))
+        data_exp['expires_at'] = datetime(2024, 4, 27, 19, 23, 52)
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(exceptions.StreamlitPasswordlessError) as exc_info:
+            BitwardenPasswordlessVerifiedUser.model_validate(data)
+
+        # Verify
+        # ===========================================================
+        error_msg = exc_info.exconly()
+        print(error_msg)
+
+        assert 'user_id' in error_msg, 'user_id not in error message!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_from_passwordless_verified_user(self) -> None:
+        r"""Test the alternative constructor method `_from_passwordless_verified_user`."""
+
+        # Setup
+        # ===========================================================
+        data = {
+            'success': True,
+            'user_id': 'user_id',
+            'timestamp': datetime(2024, 4, 27, 18, 23, 52, tzinfo=ZoneInfo('CET')),
+            'origin': 'https://ax7.com',
+            'device': 'My device',
+            'country': 'SE',
+            'nickname': 'nickname',
+            'credential_id': 'credential_id',
+            'expires_at': datetime(2024, 4, 27, 19, 23, 52),
+            'token_id': 'token_id',
+            'type': 'type',
+            'rp_id': 'rp_id',
+        }
+        input_verified_user = VerifiedUser(**data)
+
+        data_exp = data.copy()
+        data_exp['origin'] = AnyHttpUrl(data['origin'])  # type: ignore
+        data_exp['sign_in_timestamp'] = data['timestamp']
+        del data_exp['timestamp']
+        data_exp['credential_nickname'] = data['nickname']
+        del data_exp['nickname']
+
+        # Exercise
+        # ===========================================================
+        verified_user = BitwardenPasswordlessVerifiedUser._from_passwordless_verified_user(
+            input_verified_user
+        )
+
+        # Verify
+        # ===========================================================
+        assert verified_user.model_dump() == data_exp
 
         # Clean up - None
         # ===========================================================
