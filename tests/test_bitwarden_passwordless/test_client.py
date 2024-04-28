@@ -10,6 +10,7 @@ from passwordless import PasswordlessError
 from pydantic import AnyHttpUrl
 
 # Local
+import streamlit_passwordless.bitwarden_passwordless.client
 from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 
@@ -217,6 +218,53 @@ class TestRegisterMethod:
         print(error_msg)
 
         assert exc_info.value.data['problem_details'] == problem_details
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestSignInMethod:
+    r"""Tests for the method `BitwardenPasswordlessClient.sign_in`."""
+
+    def test_called_correctly(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        r"""Test that the `sign_in` method can be called correctly."""
+
+        # Setup
+        # ===========================================================
+        alias = 'syn.gates'
+        with_discoverable = True
+        with_autofill = False
+        key = 'key'
+        public_key = 'public_key'
+
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='private key', public_key=public_key
+        )
+
+        m = Mock(
+            spec_set=streamlit_passwordless.bitwarden_passwordless.client.frontend._sign_in,
+            name='mocked__sign_in_function',
+        )
+
+        monkeypatch.setattr(
+            streamlit_passwordless.bitwarden_passwordless.client.frontend, '_sign_in', m
+        )
+
+        # Exercise
+        # ===========================================================
+        client.sign_in(
+            alias=alias, with_discoverable=with_discoverable, with_autofill=with_autofill, key=key
+        )
+
+        # Verify
+        # ===========================================================
+        m.assert_called_once_with(
+            public_key=public_key,
+            alias=alias,
+            with_discoverable=with_discoverable,
+            with_autofill=with_autofill,
+            key=key,
+        )
 
         # Clean up - None
         # ===========================================================

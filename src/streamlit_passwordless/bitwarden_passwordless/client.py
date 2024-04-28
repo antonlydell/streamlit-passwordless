@@ -86,3 +86,53 @@ class BitwardenPasswordlessClient(models.BaseModel):
             credential_nickname=user.username,
             key=key,
         )
+
+    def sign_in(
+        self,
+        alias: str | None = None,
+        with_discoverable: bool = True,
+        with_autofill: bool = False,
+        key: str = 'sign_in',
+    ) -> None:
+        r"""Start the sign in process the web browser.
+
+        The result from the method is saved to the session state with a key defined by
+        the `key` parameter. The type of the result is listed in the section `Returns`.
+
+        Parameters
+        ----------
+        alias : str or None, default None
+            The alias of the user to sign in. If specified it will override the other sign in
+            methods `with_discoverable`, and `with_autofill`.
+
+        with_discoverable : bool, default True
+            If True the browser's native UI prompt will be used to select the passkey to use for
+            signing in. If False the sign in method is disabled. If True it will override the
+            value of the `with_autofill` parameter. If `alias` is specified it will override this
+            sign in method.
+
+        with_autofill : bool, default False
+            If True the browser's native autofill UI will be used to select the passkey to use for
+            signing in. If False the sign in method is disabled. This method of signing in is
+            overridden if `alias` is specified or `with_discoverable` is True.
+
+        key : str, default 'sign_in'
+            The name of the session state key where the result from the method is saved.
+
+        Returns
+        -------
+        token : str
+            The verification token to be used by the Bitwarden Passwordless backend to authenticate
+            the sign in process.
+
+        error : dict | None
+            An error object containing information if there was an error with the sign in process.
+        """
+
+        frontend._sign_in(
+            public_key=self.public_key,
+            alias=alias,
+            with_discoverable=with_discoverable,
+            with_autofill=with_autofill,
+            key=key,
+        )
