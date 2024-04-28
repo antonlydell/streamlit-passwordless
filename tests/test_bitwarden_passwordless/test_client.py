@@ -12,7 +12,10 @@ from pydantic import AnyHttpUrl
 # Local
 import streamlit_passwordless.bitwarden_passwordless.client
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless.client import (
+    BitwardenPasswordlessClient,
+    backend,
+)
 
 # =============================================================================================
 # Tests
@@ -265,6 +268,41 @@ class TestSignInMethod:
             with_autofill=with_autofill,
             key=key,
         )
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestVerifySignInMethod:
+    r"""Tests for the method `BitwardenPasswordlessClient.verify_sign_in`."""
+
+    def test_called_correctly(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        r"""Test that the `verify_sign_in` method can be called correctly."""
+
+        # Setup
+        # ===========================================================
+        token = 'token'
+
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='private key', public_key='public_key'
+        )
+
+        m = Mock(
+            spec_set=backend._verify_sign_in_token,
+            name='mocked__verify_sign_in_function',
+        )
+
+        monkeypatch.setattr(
+            streamlit_passwordless.bitwarden_passwordless.client.backend, '_verify_sign_in_token', m
+        )
+
+        # Exercise
+        # ===========================================================
+        client.verify_sign_in(token=token)
+
+        # Verify
+        # ===========================================================
+        m.assert_called_once_with(client=client._backend_client, token=token)
 
         # Clean up - None
         # ===========================================================

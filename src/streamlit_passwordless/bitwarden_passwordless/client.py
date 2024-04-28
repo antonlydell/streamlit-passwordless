@@ -136,3 +136,28 @@ class BitwardenPasswordlessClient(models.BaseModel):
             with_autofill=with_autofill,
             key=key,
         )
+
+    def verify_sign_in(self, token: str) -> backend.BitwardenPasswordlessVerifiedUser:
+        r"""Verify the sign in token with the backend to complete the sign in process.
+
+        Parameters
+        ----------
+        token : str
+            The token to verify.
+
+        Returns
+        -------
+        streamlit_passwordless.BitwardenPasswordlessVerifiedUser
+            Details from Bitwarden Passwordless about the user that was signed in.
+
+        Raises
+        ------
+        streamlit_passwordless.SignInTokenVerificationError
+            If the `token` token cannot be verified successfully.
+
+        streamlit_passwordless.StreamlitPasswordlessError
+            If an instance of `backend.BitwardenPasswordlessVerifiedUser` cannot be
+            successfully created.
+        """
+
+        return backend._verify_sign_in_token(client=self._backend_client, token=token)
