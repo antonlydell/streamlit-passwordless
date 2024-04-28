@@ -13,6 +13,7 @@ from passwordless import (
     PasswordlessOptions,
     RegisterToken,
     VerifiedUser,
+    VerifySignIn,
 )
 from pydantic import AnyHttpUrl
 
@@ -239,3 +240,46 @@ def _create_register_token(
         logger.info(f'Successfully created register token for user_id={user.user_id}')
 
     return registered_token.token  # type: ignore
+
+
+def _verify_sign_in_token(client: BackendClient, token: str) -> BitwardenPasswordlessVerifiedUser:
+    r"""Verify the sign in token to complete the sign in process.
+
+    The sign in token is generated from the `frontend._sign_in` function.
+
+    Parameters
+    ----------
+    client : BackendClient
+        The Bitwarden Passwordless backend client to communicate
+        with the Bitwarden Passwordless backend.
+
+    token : str
+        The token to verify.
+
+    Returns
+    -------
+    BitwardenPasswordlessVerifiedUser
+        Details from Bitwarden Passwordless about the user that was signed in.
+
+    Raises
+    ------
+    streamlit_passwordless.SignInTokenVerificationError
+        If the `token` cannot be verified successfully.
+
+    streamlit_passwordless.StreamlitPasswordlessError
+        If an instance of `BitwardenPasswordlessVerifiedUser` cannot be successfully created.
+    """
+
+    try:
+        _verified_user = client.sign_in(verify_sign_in=VerifySignIn(token=token))
+    except PasswordlessError as e:
+        error_msg = f'Error verifying the sign in token!\nproblem_details: {e.problem_details}'
+        data = {
+            'token': token,
+            'problem_details': e.problem_details,
+        }
+        raise exceptions.SignInTokenVerificationError(error_msg, data=data) from None
+
+    return BitwardenPasswordlessVerifiedUser._from_passwordless_verified_user(
+        verified_user=_verified_user
+    )

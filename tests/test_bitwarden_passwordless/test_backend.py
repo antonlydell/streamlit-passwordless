@@ -3,6 +3,7 @@ r"""Unit tests for the backend module of the bitwarden_passwordless library."""
 # Standard library
 from collections import namedtuple
 from datetime import datetime, timedelta
+from typing import Any
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
 
@@ -22,7 +23,77 @@ from streamlit_passwordless.bitwarden_passwordless.backend import (
     RegisterToken,
     _build_backend_client,
     _create_register_token,
+    _verify_sign_in_token,
 )
+
+# =============================================================================================
+# Fixtures
+# =============================================================================================
+
+
+@pytest.fixture()
+def passwordless_verified_user() -> tuple[VerifiedUser, dict[str, Any]]:
+    r"""An instance of `passwordless.VerifiedUser`.
+
+    Returns
+    -------
+    verified_user : passwordless.VerifiedUser
+        The verified user instance.
+
+    data : dict[str, Any]
+        The data used to create `verified_user`.
+    """
+
+    data = {
+        'success': True,
+        'user_id': 'user_id',
+        'timestamp': datetime(2024, 4, 27, 18, 23, 52, tzinfo=ZoneInfo('CET')),
+        'origin': 'https://ax7.com',
+        'device': 'My device',
+        'country': 'SE',
+        'nickname': 'nickname',
+        'credential_id': 'credential_id',
+        'expires_at': datetime(2024, 4, 27, 19, 23, 52),
+        'token_id': 'token_id',
+        'type': 'type',
+        'rp_id': 'rp_id',
+    }
+    verified_user = VerifiedUser(**data)
+
+    return verified_user, data
+
+
+@pytest.fixture()
+def bp_verified_user(
+    passwordless_verified_user: tuple[VerifiedUser, dict[str, Any]]
+) -> tuple[BitwardenPasswordlessVerifiedUser, dict[str, Any]]:
+    r"""An instance of `BitwardenPasswordlessVerifiedUser`.
+
+    `BitwardenPasswordlessVerifiedUser` is the `streamlit_passwordless`
+    implementation of `passwordless.VerifiedUser`.
+
+    Returns
+    -------
+    bp_verified_user : bitwarden_passwordless.backend.BitwardenPasswordlessVerifiedUser
+        The verified user instance.
+
+    data : dict[str, Any]
+        The data used to create `bp_verified_user`.
+    """
+
+    _, input_data = passwordless_verified_user
+
+    data = input_data.copy()
+    data['origin'] = AnyHttpUrl(input_data['origin'])  # type: ignore
+    data['sign_in_timestamp'] = input_data['timestamp']
+    del data['timestamp']
+    data['credential_nickname'] = input_data['nickname']
+    del data['nickname']
+
+    bp_verified_user = BitwardenPasswordlessVerifiedUser.model_validate(data)
+
+    return bp_verified_user, data
+
 
 # =============================================================================================
 # Tests
@@ -335,6 +406,71 @@ class TestBitwardenPasswordlessVerifiedUser:
         # Verify
         # ===========================================================
         assert verified_user.model_dump() == data_exp
+
+
+class TestVerifySignInToken:
+    r"""Tests for the function `_verify_sign_in_token`."""
+
+    def test_called_correctly(
+        self,
+        passwordless_verified_user: tuple[VerifiedUser, dict[str, Any]],
+        bp_verified_user: tuple[BitwardenPasswordlessVerifiedUser, dict[str, Any]],
+    ) -> None:
+        r"""Test that the `_verify_sign_in_token` function can be called correctly."""
+
+        # Setup
+        # ===========================================================
+        verified_user, _ = passwordless_verified_user
+        bp_verified_user_exp, _ = bp_verified_user
+        token = 'my_token'
+
+        client = Mock(spec_set=BackendClient, name='MockedBackendClient')
+        client.sign_in.return_value = verified_user
+
+        # Exercise
+        # ===========================================================
+        bp_verified_user_result = _verify_sign_in_token(client=client, token=token)
+
+        # Verify
+        # ===========================================================
+        assert bp_verified_user_result.model_dump() == bp_verified_user_exp.model_dump()
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.raises
+    def test_raises_sign_in_token_verification_error(self) -> None:
+        r"""Test raising `SignInTokenVerificationError`.
+
+        A raised `PasswordlessError` should be re-raised as a `SignInTokenVerificationError`.
+        """
+
+        # Setup
+        # ===========================================================
+        problem_details = {'error': True}
+        token = 'my_token'
+
+        client = Mock(spec_set=BackendClient, name='MockedBackendClient')
+        client.sign_in.side_effect = PasswordlessError(problem_details=problem_details)
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(exceptions.SignInTokenVerificationError) as exc_info:
+            _verify_sign_in_token(client=client, token=token)
+
+        # Verify
+        # ===========================================================
+        error_msg = exc_info.exconly()
+        print(error_msg)
+
+        assert 'Error verifying the sign in token!' in error_msg, 'Error message is incorrect!'
+        assert f'{problem_details}' in error_msg, 'Error message problem_details are incorrect!'
+
+        assert (
+            problem_details == exc_info.value.data['problem_details']
+        ), 'problem_details are incorrect!'
+
+        assert token == exc_info.value.data['token'], 'token is incorrect!'
 
         # Clean up - None
         # ===========================================================
