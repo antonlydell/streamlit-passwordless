@@ -369,43 +369,30 @@ class TestBitwardenPasswordlessVerifiedUser:
         # Clean up - None
         # ===========================================================
 
-    def test_from_passwordless_verified_user(self) -> None:
+    def test_from_passwordless_verified_user(
+        self,
+        passwordless_verified_user: tuple[VerifiedUser, dict[str, Any]],
+        bp_verified_user: tuple[BitwardenPasswordlessVerifiedUser, dict[str, Any]],
+    ) -> None:
         r"""Test the alternative constructor method `_from_passwordless_verified_user`."""
 
         # Setup
         # ===========================================================
-        data = {
-            'success': True,
-            'user_id': 'user_id',
-            'timestamp': datetime(2024, 4, 27, 18, 23, 52, tzinfo=ZoneInfo('CET')),
-            'origin': 'https://ax7.com',
-            'device': 'My device',
-            'country': 'SE',
-            'nickname': 'nickname',
-            'credential_id': 'credential_id',
-            'expires_at': datetime(2024, 4, 27, 19, 23, 52),
-            'token_id': 'token_id',
-            'type': 'type',
-            'rp_id': 'rp_id',
-        }
-        input_verified_user = VerifiedUser(**data)
-
-        data_exp = data.copy()
-        data_exp['origin'] = AnyHttpUrl(data['origin'])  # type: ignore
-        data_exp['sign_in_timestamp'] = data['timestamp']
-        del data_exp['timestamp']
-        data_exp['credential_nickname'] = data['nickname']
-        del data_exp['nickname']
+        input_verified_user, _ = passwordless_verified_user
+        bp_verified_user_exp, _ = bp_verified_user
 
         # Exercise
         # ===========================================================
-        verified_user = BitwardenPasswordlessVerifiedUser._from_passwordless_verified_user(
-            input_verified_user
+        bp_verified_user_result = (
+            BitwardenPasswordlessVerifiedUser._from_passwordless_verified_user(input_verified_user)
         )
 
         # Verify
         # ===========================================================
-        assert verified_user.model_dump() == data_exp
+        assert bp_verified_user_result.model_dump() == bp_verified_user_exp.model_dump()
+
+        # Clean up - None
+        # ===========================================================
 
 
 class TestVerifySignInToken:
