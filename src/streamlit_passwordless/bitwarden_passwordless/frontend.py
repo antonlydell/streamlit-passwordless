@@ -61,3 +61,62 @@ def _register(
         credential_nickname=credential_nickname,
         key=key,
     )
+
+
+def _sign_in(
+    public_key: str,
+    alias: str | None = None,
+    with_discoverable: bool = True,
+    with_autofill: bool = False,
+    key: str | None = None,
+) -> None:
+    r"""Start the sign in process the web browser.
+
+    Uses the Bitwarden Passwordless javascript frontend client.
+
+    The return value from the javascript function is saved to the session state with a key
+    defined by the `key` parameter. The type of the result is listed in the section `Returns`.
+
+    Parameters
+    ----------
+    public_key : str
+        The public key of the Bitwarden Passwordless application.
+
+    alias : str or None, default None
+        The alias of the user to sign in. If specified it will override the other sign in
+        methods `with_discoverable`, and `with_autofill`.
+
+    with_discoverable : bool, default True
+        If True the browser's native UI prompt will be used to select the passkey to use for
+        signing in. If False the sign in method is disabled. If True it will override the
+        value of the `with_autofill` parameter. If `alias` is specified it will override this
+        sign in method.
+
+    with_autofill : bool, default False
+        If True the browser's native autofill UI will be used to select the passkey to use for
+        signing in. If False the sign in method is disabled. This method of signing in is
+        overridden if `alias` is specified or `with_discoverable` is True.
+
+    key : str or None, default None
+        An optional key that uniquely identifies this component. If this is None, and the
+        component's arguments are changed, the component will be re-mounted in the Streamlit
+        frontend and lose its current state.
+
+    Returns
+    -------
+    token : str
+        The verification token to be used by the Bitwarden Passwordless backend to authenticate
+        the sign in process.
+
+    error : dict | None
+        An error object containing information if there was an error with the sign in process.
+    """
+
+    _bitwarden_passwordless_func(
+        action='sign_in',
+        public_key=public_key,
+        alias=alias,
+        with_discoverable=with_discoverable,
+        with_autofill=with_autofill,
+        key=key,
+    )
