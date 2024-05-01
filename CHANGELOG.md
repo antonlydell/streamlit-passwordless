@@ -8,6 +8,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- The user data model and database functionality.
+
+- Session state management of authenticated users.
+
+- The admin console to manage users and credentials.
+
+
+## [0.3.0] - 2024-05-01
+
+Sign in to your app with the sign in form!
+
+The sign in process is only verified with Bitwarden Passwordless.dev, but the session state
+management to identify the user as signed in is not implemented yet.
+
+
+### Added
+
+- `streamlit_passwordless.bitwarden_sign_in_form` : Render the sign in form to let the user
+  sign in to the app.
+
+- `streamlit_passwordless.SignInTokenVerificationError` : Raised for errors when the
+  backend is verifying the sign in token.
+
+- New methods for `streamlit_passwordless.BitwardenPasswordlessClient` :
+
+  - `sign_in` : Start the sign in process in the web browser.
+
+  - `verify_sign_in` : Verify the sign in token with the backend to complete the sign in process.
+
+- `streamlit_passwordless.BitwardenPasswordlessVerifiedUser` : A verified user from Bitwarden
+  Passwordless. The model is generated after a successful sign in process with
+  Bitwarden Passwordless.
+
+
+### Changed
+
+- Renamed parameter `expires_at` to `validity` of `BitwardenRegisterConfig.` The parameter is now
+  a `timedelta` instead of a `datetime` object and defines the number of seconds from the start of
+  the registration process that the register token will be valid for. This is necessary because we
+  do not know when the user will trigger the registration process from the `bitwarden_register_form`.
+
+- The package now requires Pydantic v2 and is no longer compatible with v1.
+
 
 ## [0.2.0] - 2024-04-19
 
@@ -50,6 +93,7 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.3.0
 [0.2.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.2.0
 [0.1.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.1.0
