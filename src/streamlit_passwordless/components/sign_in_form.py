@@ -147,4 +147,4 @@ def bitwarden_sign_in_form(
 
         st.session_state[config.SK_BP_VERIFIED_USER] = verified_user
         with banner_container:
-            st.success(f'Successfully sign in as user {verified_user}')
+            st.success(f'Successfully sign in as user {verified_user}', icon=config.ICON_SUCCESS)
