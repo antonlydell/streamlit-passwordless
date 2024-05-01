@@ -16,9 +16,26 @@ First draft of the register form and interaction with the Bitwarden Passwordless
 
 ### Added
 
-- `components.register_form` : Renders the Bitwarden Passwordless register form, which allows
-  the user to register an account with the application by creating and registrering a passkey
-  with the user's device.
+- `streamlit_passwordless.bitwarden_register_form` : Renders the Bitwarden Passwordless register
+  form, which allows the user to register an account with the application by creating and
+  registrering a passkey with the user's device.
+
+- `streamlit_passwordless.BitwardenPasswordlessClient` : The client for
+  interacting with Bitwarden Passwordless.
+
+  - `register_user` : Register a new user by creating and registring a passkey with the user's device.
+
+- `streamlit_passwordless.BitwardenRegisterConfig` : The available passkey
+  configuration when registering a new user.
+
+- `streamlit_passwordless.RegisterUserError` : Raised for errors when registering a new user.
+
+- Icons that can be used for *errors*, *successful operations* and *warnings* within your
+  Streamlit application:
+
+  - `streamlit_passwordless.ICON_ERROR`
+  - `streamlit_passwordless.ICON_SUCCESS`
+  - `streamlit_passwordless.ICON_WARNING`
 
 
 ## [0.1.0] - 2024-01-05
