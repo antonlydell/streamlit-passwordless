@@ -1,7 +1,25 @@
 import { Streamlit, RenderData } from "streamlit-component-lib";
 import { Client } from '@passwordlessdev/passwordless-client';
 
-let passwordlessClient: Client | undefined;
+// The register/sign_in button
+const button = document.body.appendChild(document.createElement("button"));
+
+// Global variables
+
+// common
+let action: string; // 'register' or 'sign_in'
+let disabled: boolean;
+let passwordlessClient: Client;
+
+// register
+let registerToken: string;
+let credentialNickname: string;
+
+// sign_in
+let alias: string;
+let withDiscoverable: boolean;
+let withAutofill: boolean;
+
 
 /**
  * Initialize an instance of the Bitwarden Passwordless frontend client.
@@ -32,6 +50,7 @@ function createPasswordlessClient(apiKey: string): Client {
  */
 async function register(client: Client, registerToken: string, credentialNickname: string) {
 
+  console.log('register device', credentialNickname);
   const {token, error} = await client.register(registerToken, credentialNickname);
   return [token, error]
 }
@@ -51,17 +70,17 @@ async function register(client: Client, registerToken: string, credentialNicknam
 async function sign_in(client: Client, alias: string, withDiscoverable: boolean, withAutofill: boolean) {
 
   if (alias){
-    console.log('signinWithAlias')
+    console.log('signinWithAlias');
     const {token, error} = await client.signinWithAlias(alias);
     return [token, error]
   }
   else if (withDiscoverable === true){
-    console.log('signinWithDiscoverable')
+    console.log('signinWithDiscoverable');
     const {token, error} = await client.signinWithDiscoverable();
     return [token, error]
   }
   else if (withAutofill === true){
-    console.log('signinWithAutofill')
+    console.log('signinWithAutofill');
     const {token, error} = await client.signinWithAutofill();
     return [token, error]
   }
@@ -75,10 +94,44 @@ async function sign_in(client: Client, alias: string, withDiscoverable: boolean,
     'status': 400,
     'detail': `alias=${alias}, withDiscoverable=${withDiscoverable}, withAutofill=${withAutofill}`,
     'from': 'client',
-  }
+  };
     return [token, error]
   };
 
+}
+
+/**
+ * The callback function to be triggered when the register button is clicked.
+ */
+async function registerOnClick () {
+
+  register(passwordlessClient, registerToken, credentialNickname).then(
+    ([token, error])=>{
+      Streamlit.setComponentValue([token, error]);
+    }
+  ).catch(
+    (error)=>{
+      console.log('Error registring passkey credential', error);
+      Streamlit.setComponentValue([undefined, error]);
+    }
+  )
+}
+
+/**
+ * The callback function to be triggered when the sign_in button is clicked.
+ */
+async function signInOnClick() {
+
+  sign_in(passwordlessClient, alias, withDiscoverable, withAutofill).then(
+    ([token, error])=>{
+      Streamlit.setComponentValue([token, error]);
+    }
+  ).catch(
+    (error)=>{
+      console.log('Error signing in', error);
+      Streamlit.setComponentValue([undefined, error]);
+    }
+  )
 }
 
 /**
@@ -89,43 +142,38 @@ async function sign_in(client: Client, alias: string, withDiscoverable: boolean,
 function onRender(event: Event): void {
   // Get the RenderData from the event
   const data = (event as CustomEvent<RenderData>).detail;
-  const action: string = data.args['action'];
+
+  action = data.args['action'];
+  disabled = data.args['disabled'];
   const apiKey: string = data.args['public_key'];
 
-  const client = createPasswordlessClient(apiKey);
+  createPasswordlessClient(apiKey);
+  console.log('passwordlessClient', passwordlessClient);
   console.log('isSecureContext', window.isSecureContext);
+
+  button.disabled = disabled;
 
   switch (action) {
     case 'register':
-      const registerToken: string = data.args['register_token'];
-      const credentialNickname: string = data.args['credential_nickname'];
+      console.log('register');
+      registerToken = data.args['register_token'];
+      credentialNickname = data.args['credential_nickname'];
 
-      register(client, registerToken, credentialNickname).then(
-        ([token, error])=>{
-          Streamlit.setComponentValue([token, error]);
-        }
-      ).catch(
-        (error)=>{
-          console.log('Error registring passkey credential', error)
-          Streamlit.setComponentValue([undefined, error]);
-        }
-      )
+      button.textContent = 'Register';
+      button.onclick = registerOnClick;
+      console.log('button', button)
+
       break;
     case 'sign_in':
-      const alias: string = data.args['alias'];
-      const withDiscoverable: boolean = data.args['with_discoverable'];
-      const withAutofill: boolean = data.args['with_autofill'];
+      console.log('sign_in');
+      alias = data.args['alias'];
+      withDiscoverable = data.args['with_discoverable'];
+      withAutofill = data.args['with_autofill'];
 
-      sign_in(client, alias, withDiscoverable, withAutofill).then(
-        ([token, error])=>{
-          Streamlit.setComponentValue([token, error]);
-        }
-      ).catch(
-        (error)=>{
-          console.log('Error signing in', error)
-          Streamlit.setComponentValue([undefined, error]);
-        }
-      )
+      button.textContent = 'Sign In';
+      button.onclick = signInOnClick;
+      console.log('button', button);
+
       break;
       default:
         const error = {
@@ -135,11 +183,16 @@ function onRender(event: Event): void {
          'status': 400,
          'detail': `action=${action} is invalid. Valid options are : register, sign_in`,
          'from': 'client',
-       }
-        console.log('Error : Invalid action', error)
+       };
+        console.log('Error : Invalid action', error);
         Streamlit.setComponentValue([undefined, error]);
   }
 
+  // We tell Streamlit to update our frameHeight after each render event, in
+  // case it has changed. (This isn't strictly necessary for the example
+  // because our height stays fixed, but this is a low-cost function, so
+  // there's no harm in doing it redundantly.)
+  Streamlit.setFrameHeight();
 }
 
 // Attach our `onRender` handler to Streamlit's render event.
@@ -148,3 +201,7 @@ Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, onRender);
 // Tell Streamlit we're ready to start receiving data.
 // We won't get our first RENDER_EVENT until we call this function.
 Streamlit.setComponentReady();
+
+// Finally, tell Streamlit to update our initial height. We omit the
+// `height` parameter here to have it default to our scrollHeight.
+Streamlit.setFrameHeight();
