@@ -18,13 +18,19 @@ else:
     _bitwarden_passwordless_func = components.declare_component(name=_COMPONENT_NAME, url=_DEV_URL)
 
 
-def _register(
-    register_token: str, public_key: str, credential_nickname: str, key: str | None = None
-) -> None:
-    r"""Register a new user by creating and registring a passkey with the user's device.
+def register_button(
+    register_token: str,
+    public_key: str,
+    credential_nickname: str,
+    disabled: bool = False,
+    key: str | None = None,
+) -> tuple[str, dict | None]:
+    r"""Render the register button, which starts the register process when clicked.
 
-    The return value from the javascript function is saved to the session state with a key
-    defined by the `key` parameter. The type of the result is listed in the section `Returns`.
+    The register process creates and registers a passkey with the user's device.
+
+    The return value from the button is also saved to the session state with a key
+    defined by the `key` parameter if `key` is not None.
 
     Parameters
     ----------
@@ -38,6 +44,9 @@ def _register(
         A nickname for the passkey credential being registered to use for easier identification
         of the device being registered.
 
+    disabled : bool, default False
+        If True the button will be disabled and if False the button will be clickable.
+
     key : str or None, default None
         An optional key that uniquely identifies this component. If this is None, and the
         component's arguments are changed, the component will be re-mounted in the Streamlit
@@ -47,35 +56,45 @@ def _register(
     -------
     token : str
         The public key of the created passkey, which the user will use for future sign-in
-        operations. This key is saved to the Bitwarden Passwordless database.
+        operations. This key is saved to the Bitwarden Passwordless database. An empty string
+        is returned if the button has not been clicked.
 
     error : dict
-        An error object containing information about if the registration process was
-        successful or not.
+        An error object containing information about if the registration process was successful
+        or not. None is returned if no errors occurred during the register process or if the
+        button has not been clicked.
     """
 
-    _bitwarden_passwordless_func(
+    value = _bitwarden_passwordless_func(
         action='register',
         register_token=register_token,
         public_key=public_key,
         credential_nickname=credential_nickname,
+        disabled=disabled,
         key=key,
     )
 
+    if value is None:
+        return '', None
+    else:
+        token, error = value
+        return token, error
 
-def _sign_in(
+
+def sign_in_button(
     public_key: str,
     alias: str | None = None,
     with_discoverable: bool = True,
     with_autofill: bool = False,
+    disabled: bool = False,
     key: str | None = None,
-) -> None:
-    r"""Start the sign in process the web browser.
+) -> tuple[str, dict | None]:
+    r"""Render the sign in button, which starts the sign in process when clicked.
 
     Uses the Bitwarden Passwordless javascript frontend client.
 
-    The return value from the javascript function is saved to the session state with a key
-    defined by the `key` parameter. The type of the result is listed in the section `Returns`.
+    The return value from the button is also saved to the session state with a key
+    defined by the `key` parameter if key is not None.
 
     Parameters
     ----------
@@ -97,6 +116,9 @@ def _sign_in(
         signing in. If False the sign in method is disabled. This method of signing in is
         overridden if `alias` is specified or `with_discoverable` is True.
 
+    disabled : bool, default False
+        If True the button will be disabled and if False the button will be clickable.
+
     key : str or None, default None
         An optional key that uniquely identifies this component. If this is None, and the
         component's arguments are changed, the component will be re-mounted in the Streamlit
@@ -106,17 +128,26 @@ def _sign_in(
     -------
     token : str
         The verification token to be used by the Bitwarden Passwordless backend to authenticate
-        the sign in process.
+        the sign in process. An empty string is returned if the button has not been clicked.
 
     error : dict | None
         An error object containing information if there was an error with the sign in process.
+        None is returned if no errors occurred during the sign in process or if the button
+        has not been clicked.
     """
 
-    _bitwarden_passwordless_func(
+    value = _bitwarden_passwordless_func(
         action='sign_in',
         public_key=public_key,
         alias=alias,
         with_discoverable=with_discoverable,
         with_autofill=with_autofill,
+        disabled=disabled,
         key=key,
     )
+
+    if value is None:
+        return '', None
+    else:
+        token, error = value
+        return token, error

@@ -13,6 +13,8 @@ from streamlit_passwordless.bitwarden_passwordless import (
     BitwardenPasswordlessClient,
     BitwardenPasswordlessVerifiedUser,
     BitwardenRegisterConfig,
+    register_button,
+    sign_in_button,
 )
 from streamlit_passwordless.components import (
     ICON_ERROR,
@@ -48,6 +50,8 @@ __all__ = [
     'BitwardenPasswordlessClient',
     'BitwardenPasswordlessVerifiedUser',
     'BitwardenRegisterConfig',
+    'register_button',
+    'sign_in_button',
     # components
     'ICON_ERROR',
     'ICON_SUCCESS',
