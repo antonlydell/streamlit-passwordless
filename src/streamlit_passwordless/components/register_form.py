@@ -7,10 +7,11 @@ from typing import Literal
 # Third party
 import streamlit as st
 
-from streamlit_passwordless import exceptions, models, register_button
-from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
-
 # Local
+from streamlit_passwordless import exceptions, models
+from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless.frontend import register_button
+
 from . import config, ids
 
 logger = logging.getLogger(__name__)
@@ -151,9 +152,13 @@ def bitwarden_register_form(
                 username=username, displayname=displayname, aliases=aliases
             )
             if user is not None:
-                register_token = client.create_register_token(user=user)
+                try:
+                    register_token = client.create_register_token(user=user)
+                except exceptions.RegisterUserError as e:
+                    error_msg = str(e)
+                    logger.error(error_msg)
 
-        token, error = register_button(
+        token, error, clicked = register_button(
             register_token=register_token,
             public_key=client.public_key,
             credential_nickname=username,
@@ -161,7 +166,7 @@ def bitwarden_register_form(
             key=ids.BP_REGISTER_FORM_SUBMIT_BUTTON,
         )
 
-    if disabled:
+    if disabled or not clicked:
         return
 
     if error_msg:
@@ -176,7 +181,7 @@ def bitwarden_register_form(
             st.error(error_msg, icon=config.ICON_ERROR)
         return
 
-    if token and username:
+    if token:
         msg = f'Successfully registered user: {user.username}!'
         logger.info(msg)
         with banner_container:
