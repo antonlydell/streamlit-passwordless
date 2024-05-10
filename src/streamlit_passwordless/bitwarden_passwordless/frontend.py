@@ -4,6 +4,7 @@ r"""Components related to the frontend library of Bitwarden Passwordless."""
 from pathlib import Path
 
 # Third party
+import streamlit as st
 import streamlit.components.v1 as components
 
 _RELEASE = True
@@ -24,7 +25,7 @@ def register_button(
     credential_nickname: str,
     disabled: bool = False,
     key: str | None = None,
-) -> tuple[str, dict | None]:
+) -> tuple[str, dict | None, bool]:
     r"""Render the register button, which starts the register process when clicked.
 
     The register process creates and registers a passkey with the user's device.
@@ -63,6 +64,9 @@ def register_button(
         An error object containing information about if the registration process was successful
         or not. None is returned if no errors occurred during the register process or if the
         button has not been clicked.
+
+    clicked : bool
+        True if the button was clicked and False otherwise.
     """
 
     value = _bitwarden_passwordless_func(
@@ -75,10 +79,14 @@ def register_button(
     )
 
     if value is None:
-        return '', None
+        return '', None, False
     else:
-        token, error = value
-        return token, error
+        token, error, nr_clicks = value
+        session_state_key = f'_{key}-nr-clicks'
+        clicked = False if st.session_state.get(session_state_key, 0) == nr_clicks else True
+        st.session_state[session_state_key] = nr_clicks
+
+        return token, error, clicked
 
 
 def sign_in_button(
@@ -88,7 +96,7 @@ def sign_in_button(
     with_autofill: bool = False,
     disabled: bool = False,
     key: str | None = None,
-) -> tuple[str, dict | None]:
+) -> tuple[str, dict | None, bool]:
     r"""Render the sign in button, which starts the sign in process when clicked.
 
     Uses the Bitwarden Passwordless javascript frontend client.
@@ -134,6 +142,9 @@ def sign_in_button(
         An error object containing information if there was an error with the sign in process.
         None is returned if no errors occurred during the sign in process or if the button
         has not been clicked.
+
+    clicked : bool
+        True if the button was clicked and False otherwise.
     """
 
     value = _bitwarden_passwordless_func(
@@ -147,7 +158,11 @@ def sign_in_button(
     )
 
     if value is None:
-        return '', None
+        return '', None, False
     else:
-        token, error = value
-        return token, error
+        token, error, nr_clicks = value
+        session_state_key = f'_{key}-nr-clicks'
+        clicked = False if st.session_state.get(session_state_key, 0) == nr_clicks else True
+        st.session_state[session_state_key] = nr_clicks
+
+        return token, error, clicked
