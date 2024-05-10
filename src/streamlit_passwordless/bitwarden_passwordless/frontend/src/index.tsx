@@ -10,6 +10,7 @@ const button = document.body.appendChild(document.createElement("button"));
 let action: string; // 'register' or 'sign_in'
 let disabled: boolean;
 let passwordlessClient: Client;
+let buttonNrClicks: number = 0;
 
 // register
 let registerToken: string;
@@ -105,14 +106,15 @@ async function sign_in(client: Client, alias: string, withDiscoverable: boolean,
  */
 async function registerOnClick () {
 
+  buttonNrClicks += 1;
   register(passwordlessClient, registerToken, credentialNickname).then(
     ([token, error])=>{
-      Streamlit.setComponentValue([token, error]);
+      Streamlit.setComponentValue([token, error, buttonNrClicks]);
     }
   ).catch(
     (error)=>{
       console.log('Error registring passkey credential', error);
-      Streamlit.setComponentValue([undefined, error]);
+      Streamlit.setComponentValue([undefined, error, buttonNrClicks]);
     }
   )
 }
@@ -122,14 +124,15 @@ async function registerOnClick () {
  */
 async function signInOnClick() {
 
+  buttonNrClicks += 1;
   sign_in(passwordlessClient, alias, withDiscoverable, withAutofill).then(
     ([token, error])=>{
-      Streamlit.setComponentValue([token, error]);
+      Streamlit.setComponentValue([token, error, buttonNrClicks]);
     }
   ).catch(
     (error)=>{
       console.log('Error signing in', error);
-      Streamlit.setComponentValue([undefined, error]);
+      Streamlit.setComponentValue([undefined, error, buttonNrClicks]);
     }
   )
 }
@@ -185,7 +188,7 @@ function onRender(event: Event): void {
          'from': 'client',
        };
         console.log('Error : Invalid action', error);
-        Streamlit.setComponentValue([undefined, error]);
+        Streamlit.setComponentValue([undefined, error, -1]);
   }
 
   // We tell Streamlit to update our frameHeight after each render event, in
