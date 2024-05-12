@@ -62,6 +62,12 @@ class BitwardenPasswordlessClient(models.BaseModel):
         -------
         str
             The register token.
+
+        Raises
+        ------
+        streamlit_passwordless.RegisterUserError
+            If an error occurs while trying to create the register token
+            using the Bitwarden Passwordless backend API.
         """
 
         return backend._create_register_token(
