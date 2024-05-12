@@ -6,11 +6,12 @@ from unittest.mock import Mock
 
 # Third party
 import pytest
+from passwordless import PasswordlessError, RegisteredToken
 from pydantic import AnyHttpUrl
 
 # Local
 import streamlit_passwordless.bitwarden_passwordless.client
-from streamlit_passwordless import exceptions
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import (
     BitwardenPasswordlessClient,
     backend,
@@ -24,7 +25,7 @@ from streamlit_passwordless.bitwarden_passwordless.client import (
 class TestBitwardenPasswordlessClient:
     r"""Tests for the `BitwardenPasswordlessClient` model."""
 
-    def test_init_with_defaults(self, mocked_get_current_datetime: datetime) -> None:
+    def test_init_with_defaults(self) -> None:
         r"""Test to initialize an instance with all default values."""
 
         # Setup
@@ -177,6 +178,81 @@ class TestBitwardenPasswordlessClient:
         print(error_msg)
 
         assert 'authenticator_type' in error_msg, 'authenticator_type not in error message!'
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestCreateRegisterTokenMethod:
+    r"""Tests for the method `BitwardenPasswordlessClient.create_register_token`."""
+
+    def test_called_correctly(self, user: models.User, monkeypatch: pytest.MonkeyPatch) -> None:
+        r"""Test that the `create_register_token` method can be called correctly."""
+
+        # Setup
+        # ===========================================================
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='public key', public_key='private key'
+        )
+        register_token_exp = 'register_token'
+
+        monkeypatch.setattr(
+            client._backend_client,
+            'register_token',
+            Mock(
+                return_value=RegisteredToken(register_token_exp),
+                name='mocked_client._backend_client',
+            ),
+        )
+
+        # Exercise
+        # ===========================================================
+        register_token = client.create_register_token(user=user)
+
+        # Verify
+        # ===========================================================
+        print(f'{register_token=}')
+
+        assert register_token == register_token_exp
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.raises
+    def test_backend_raises_register_user_error(
+        self, user: models.User, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        r"""Test that `exceptions.RegisterUserError` can be properly raised.
+
+        The Bitwarden Passwordless backend client should raise `passwordless.PasswordlessError`
+        which should be re-raised as `exceptions.RegisterUserError` by the function
+        `bitwarden_passwordless.backend._create_register_token`.
+        """
+
+        # Setup
+        # ===========================================================
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='public key', public_key='private key'
+        )
+        problem_details = {'error': True}
+
+        monkeypatch.setattr(
+            client._backend_client,
+            'register_token',
+            Mock(side_effect=PasswordlessError(problem_details=problem_details)),
+        )
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(exceptions.RegisterUserError) as exc_info:
+            client.create_register_token(user=user)
+
+        # Verify
+        # ===========================================================
+        error_msg = exc_info.exconly()
+        print(error_msg)
+
+        assert exc_info.value.data['problem_details'] == problem_details
 
         # Clean up - None
         # ===========================================================
