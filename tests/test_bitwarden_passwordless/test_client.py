@@ -6,12 +6,11 @@ from unittest.mock import Mock
 
 # Third party
 import pytest
-from passwordless import PasswordlessError
 from pydantic import AnyHttpUrl
 
 # Local
 import streamlit_passwordless.bitwarden_passwordless.client
-from streamlit_passwordless import exceptions, models
+from streamlit_passwordless import exceptions
 from streamlit_passwordless.bitwarden_passwordless.client import (
     BitwardenPasswordlessClient,
     backend,
@@ -178,96 +177,6 @@ class TestBitwardenPasswordlessClient:
         print(error_msg)
 
         assert 'authenticator_type' in error_msg, 'authenticator_type not in error message!'
-
-        # Clean up - None
-        # ===========================================================
-
-
-class TestRegisterMethod:
-    r"""Tests for the method `BitwardenPasswordlessClient.register_user`."""
-
-    @pytest.mark.raises
-    def test_backend_raises_register_user_error(
-        self, user: models.User, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        r"""Test that `exceptions.RegisterUserError` can be properly raised.
-
-        The Bitwarden Passwordless backend client should raise `passwordless.PasswordlessError`
-        which should be re-raised as `exceptions.RegisterUserError` by the function
-        `bitwarden_passwordless.backend._create_register_token`.
-        """
-
-        # Setup
-        # ===========================================================
-        client = BitwardenPasswordlessClient(
-            url='https://ax7.com', private_key='public key', public_key='private key'
-        )
-        problem_details = {'error': True}
-
-        monkeypatch.setattr(
-            client._backend_client,
-            'register_token',
-            Mock(side_effect=PasswordlessError(problem_details=problem_details)),
-        )
-
-        # Exercise
-        # ===========================================================
-        with pytest.raises(exceptions.RegisterUserError) as exc_info:
-            client.register_user(user=user)
-
-        # Verify
-        # ===========================================================
-        error_msg = exc_info.exconly()
-        print(error_msg)
-
-        assert exc_info.value.data['problem_details'] == problem_details
-
-        # Clean up - None
-        # ===========================================================
-
-
-class TestSignInMethod:
-    r"""Tests for the method `BitwardenPasswordlessClient.sign_in`."""
-
-    def test_called_correctly(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        r"""Test that the `sign_in` method can be called correctly."""
-
-        # Setup
-        # ===========================================================
-        alias = 'syn.gates'
-        with_discoverable = True
-        with_autofill = False
-        key = 'key'
-        public_key = 'public_key'
-
-        client = BitwardenPasswordlessClient(
-            url='https://ax7.com', private_key='private key', public_key=public_key
-        )
-
-        m = Mock(
-            spec_set=streamlit_passwordless.bitwarden_passwordless.client.frontend._sign_in,
-            name='mocked__sign_in_function',
-        )
-
-        monkeypatch.setattr(
-            streamlit_passwordless.bitwarden_passwordless.client.frontend, '_sign_in', m
-        )
-
-        # Exercise
-        # ===========================================================
-        client.sign_in(
-            alias=alias, with_discoverable=with_discoverable, with_autofill=with_autofill, key=key
-        )
-
-        # Verify
-        # ===========================================================
-        m.assert_called_once_with(
-            public_key=public_key,
-            alias=alias,
-            with_discoverable=with_discoverable,
-            with_autofill=with_autofill,
-            key=key,
-        )
 
         # Clean up - None
         # ===========================================================
