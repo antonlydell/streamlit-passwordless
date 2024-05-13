@@ -9,6 +9,7 @@ import streamlit as st
 
 from streamlit_passwordless import exceptions
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless.frontend import sign_in_button
 
 # Local
 from . import config, ids
@@ -26,7 +27,6 @@ def bitwarden_sign_in_form(
     alias_placeholder: str = 'syn.gates@ax7.com',
     title: str = '#### Sign in',
     border: bool = True,
-    clear_on_submit: bool = False,
     submit_button_label: str = 'Sign in',
     button_type: Literal['primary', 'secondary'] = 'primary',
 ) -> None:
@@ -72,9 +72,6 @@ def bitwarden_sign_in_form(
         True if a border surrounding the form should be rendered and False
         to remove the border.
 
-    clear_on_submit : bool, default False
-        Clear the form when the submit button is pressed.
-
     submit_button_label : str, default 'Sign in'
         The label of the submit button.
 
@@ -82,6 +79,7 @@ def bitwarden_sign_in_form(
         The styling of the submit button.
     """
 
+    error_msg = ''
     banner_container = st.empty()
 
     if with_alias is False and with_discoverable is False and with_autofill is False:
@@ -94,7 +92,7 @@ def bitwarden_sign_in_form(
             st.error(error_msg, icon=config.ICON_ERROR)
             return
 
-    with st.form(key=ids.BP_SIGN_IN_FORM, clear_on_submit=clear_on_submit, border=border):
+    with st.container(border=border):
         st.markdown(title)
         if with_alias:
             st.text_input(
@@ -108,43 +106,41 @@ def bitwarden_sign_in_form(
                 key=ids.BP_SIGN_IN_FORM_ALIAS_TEXT_INPUT,
             )
 
-        form_submit_button = st.form_submit_button(
-            label=submit_button_label,
-            type=button_type,
-        )
-
-    if form_submit_button:
-        client.sign_in(
+        token, error, clicked = sign_in_button(
+            public_key=client.public_key,
             alias=st.session_state.get(ids.BP_SIGN_IN_FORM_ALIAS_TEXT_INPUT),
             with_discoverable=with_discoverable,
             with_autofill=with_autofill,
-            key=config.SK_BP_SIGN_IN_USER_RESULT,
+            key=ids.BP_SIGN_IN_FORM_SUBMIT_BUTTON,
         )
 
-    if (sign_in_result := st.session_state[config.SK_BP_SIGN_IN_USER_RESULT]) is not None:
-        token, error = sign_in_result
-        error_msg = ''
-        if error:
-            error_msg = f'Error signing in!\nerror : {error}'
-            logger.error(error_msg)
-            with banner_container:
-                st.error(error_msg, icon=config.ICON_ERROR)
-            return
+    if not clicked:
+        return
 
-        try:
-            verified_user = client.verify_sign_in(token=token)
-        except exceptions.SignInTokenVerificationError as e:
-            error_msg = str(e)
-            logger.error(error_msg)
-        except exceptions.StreamlitPasswordlessError as e:
-            error_msg = f'Error creating verified user!\n{str(e)}'
-            logger.error(error_msg)
-
-        if error_msg:
-            with banner_container:
-                st.error(error_msg, icon=config.ICON_ERROR)
-            return
-
-        st.session_state[config.SK_BP_VERIFIED_USER] = verified_user
+    if not token and error:
+        error_msg = f'Error signing in!\nerror : {error}'
+        logger.error(error_msg)
         with banner_container:
-            st.success(f'Successfully sign in as user {verified_user}', icon=config.ICON_SUCCESS)
+            st.error(error_msg, icon=config.ICON_ERROR)
+        return
+
+    try:
+        verified_user = client.verify_sign_in(token=token)
+    except exceptions.SignInTokenVerificationError as e:
+        error_msg = str(e)
+        logger.error(error_msg)
+    except exceptions.StreamlitPasswordlessError as e:
+        error_msg = f'Error creating verified user!\n{str(e)}'
+        logger.error(error_msg)
+
+    if error_msg:
+        with banner_container:
+            st.error(error_msg, icon=config.ICON_ERROR)
+        return
+
+    st.session_state[config.SK_BP_VERIFIED_USER] = verified_user
+    with banner_container:
+        st.success(
+            f'Successfully signed in user {verified_user.credential_nickname}',
+            icon=config.ICON_SUCCESS,
+        )
