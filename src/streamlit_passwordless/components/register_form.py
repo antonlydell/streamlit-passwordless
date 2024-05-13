@@ -32,9 +32,6 @@ def _create_user(
 ) -> tuple[models.User | None, str]:
     r"""Create a new user to register.
 
-    The created user is also saved to the session state
-    with the key `config.SK_BP_USER_TO_REGISTER`.
-
     Parameters
     ----------
     username : str
@@ -66,7 +63,6 @@ def _create_user(
     else:
         logger.debug(f'Successfully created user: {user}')
 
-    st.session_state[config.SK_BP_USER_TO_REGISTER] = user
     return user, error_msg
 
 
