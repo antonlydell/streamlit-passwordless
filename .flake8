@@ -1,2 +1,12 @@
 [flake8]
 max-line-length = 100
+exclude =
+    .git,
+    # Cached files.
+    __pycache__,
+    # Not part of the source code managed by the project.
+    src/streamlit_passwordless/bitwarden_passwordless/frontend/node_modules/,
+    # Temporary files not to be comitted.
+    temp,
+    # Built distributions of the package.
+    dist
