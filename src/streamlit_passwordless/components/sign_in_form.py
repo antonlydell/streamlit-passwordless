@@ -22,13 +22,14 @@ def bitwarden_sign_in_form(
     with_alias: bool = True,
     with_discoverable: bool = True,
     with_autofill: bool = False,
-    alias_field_label: str = 'Alias',
-    alias_max_length: int = 50,
-    alias_placeholder: str = 'syn.gates@ax7.com',
     title: str = '#### Sign in',
     border: bool = True,
     submit_button_label: str = 'Sign in',
     button_type: Literal['primary', 'secondary'] = 'primary',
+    alias_label: str = 'Alias',
+    alias_max_length: int | None = 50,
+    alias_placeholder: str | None = 'john.doe@example.com',
+    alias_help: str | None = '__default__',
 ) -> None:
     r"""Render the Bitwarden Passwordless sign in form.
 
@@ -59,15 +60,6 @@ def bitwarden_sign_in_form(
     title : str, default '#### Sign in.'
         The title of the sign in from. Markdown is supported.
 
-    alias_field_label: str, default 'Alias'
-        The label of the alias field of the form.
-
-    alias_max_length : int, default 50
-        The maximum number of character allowed to be entered in to the alias field of the form.
-
-    alias_placeholder : str, default 'syn.gates@ax7.com'
-        The placeholder to use for the alias field of the form.
-
     border : bool, default True
         True if a border surrounding the form should be rendered and False
         to remove the border.
@@ -77,9 +69,26 @@ def bitwarden_sign_in_form(
 
     button_type : Literal['primary', 'secondary'], default 'primary'
         The styling of the submit button.
+
+    Other Parameters
+    ----------------
+    alias_label : str, default 'Alias'
+        The label of the alias field.
+
+    alias_max_length : int or None, default 50
+        The maximum allowed number of characters of the alias field.
+        If None the upper limit is removed.
+
+    alias_placeholder : str or None, default 'john.doe@example.com'
+        The placeholder of the alias field. If None the placeholder is removed.
+
+    alias_help : str or None, default '__default__'
+        The help text to display for the alias field. If '__default__' a sensible default
+        help text will be used and if None the help text is removed.
     """
 
     error_msg = ''
+    help: str | None = None
     banner_container = st.empty()
 
     if with_alias is False and with_discoverable is False and with_autofill is False:
@@ -94,15 +103,21 @@ def bitwarden_sign_in_form(
 
     with st.container(border=border):
         st.markdown(title)
+
         if with_alias:
-            st.text_input(
-                label=alias_field_label,
-                placeholder=alias_placeholder,
-                max_chars=alias_max_length,
-                help=(
+            if alias_help == '__default__':
+                help = (
                     'An alias of the user. If not supplied auto discover '
                     'of available credentials will be attempted.'
-                ),
+                )
+            else:
+                help = alias_help
+
+            st.text_input(
+                label=alias_label,
+                placeholder=alias_placeholder,
+                max_chars=alias_max_length,
+                help=help,
                 key=ids.BP_SIGN_IN_FORM_ALIAS_TEXT_INPUT,
             )
 
