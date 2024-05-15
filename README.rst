@@ -1,6 +1,5 @@
-**********************
 streamlit-passwordless
-**********************
+======================
 
 |PyPI| |LICENSE|
 
@@ -15,7 +14,7 @@ letting the user sign in with the passkey. The user model is not fully implement
 
 
 Installation
-============
+------------
 
 streamlit-passwordless is available on `PyPI`_ and can be installed with  `pip`_.
 
@@ -29,7 +28,7 @@ streamlit-passwordless is available on `PyPI`_ and can be installed with  `pip`_
 
 
 License
-=======
+-------
 
 streamlit-passwordless is distributed under the `MIT-license`_.
 
@@ -37,7 +36,7 @@ streamlit-passwordless is distributed under the `MIT-license`_.
 
 
 Example
-=======
+-------
 
 Let's create an example Streamlit app using streamlit-passwordless. First create an account with
 `Bitwarden Passwordless.dev`_ and make your *public* and *private* key accessable to your
