@@ -15,6 +15,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The admin console to manage users and credentials.
 
 
+## [0.4.0] - 2024-05-15
+
+Register and sign in from an iPhone!
+
+The issue [#5 iPhone : Client error "The document is not focused"](https://github.com/antonlydell/streamlit-passwordless/issues/5)
+is hopefully resolved with the added register and sign in buttons.
+
+
+### Added
+
+- `streamlit_passwordless.register_button` : Renders the register button, which starts the register
+  process when clicked.
+
+- `streamlit_passwordless.sign_in_button` : Renders the sign in button, which starts the sign in
+  process when clicked.
+
+- `streamlit_passwordless.BitwardenPasswordlessClient.create_register_token` : Create a register
+  token to use for registering a passkey with the user's device.
+
+
+### Changed
+
+- `streamlit_passwordless.register_form` : The form now uses the new
+  `streamlit_passwordless.register_button` and has received parameters to customize the username,
+  displayname and alias fields.
+
+- `streamlit_passwordless.sign_in_form` : The form now uses the new
+  `streamlit_passwordless.sign_in_button` and has received the parameter `alias_help` to customize
+  the help text of the alias field.
+
+
+### Removed
+
+- `BitwardenPasswordlessClient.register_user` : This method is deprecated and removed since the register
+  process is triggered by the new `streamlit_passwordless.register_button`.
+
+- `BitwardenPasswordlessClient.sign_in`  : This method is deprecated and removed since the register
+  process is triggered by the new `streamlit_passwordless.sign_in_button`.
+
+
 ## [0.3.0] - 2024-05-01
 
 Sign in to your app with the sign in form!
@@ -93,7 +133,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.4.0
 [0.3.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.3.0
 [0.2.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.2.0
 [0.1.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.1.0
