@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "streamlit-passwordless"
 authors = [
-  { name="Anton Lydell", email="antoningenjoren@gmail.com" },
+  { name="Anton Lydell", email="anton.thedev@tuta.com" },
 ]
 description = "A user model for Streamlit applications based on passwordless technology."
 readme = "README.rst"
