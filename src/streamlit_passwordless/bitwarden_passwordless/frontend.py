@@ -2,6 +2,7 @@ r"""Components related to the frontend library of Bitwarden Passwordless."""
 
 # Standard library
 from pathlib import Path
+from typing import Literal
 
 # Third party
 import streamlit as st
@@ -24,6 +25,8 @@ def register_button(
     public_key: str,
     credential_nickname: str,
     disabled: bool = False,
+    label: str = 'Register',
+    button_type: Literal['primary', 'secondary'] = 'primary',
     key: str | None = None,
 ) -> tuple[str, dict | None, bool]:
     r"""Render the register button, which starts the register process when clicked.
@@ -47,6 +50,12 @@ def register_button(
 
     disabled : bool, default False
         If True the button will be disabled and if False the button will be clickable.
+
+    label : str, default 'Register'
+        The label of the button.
+
+    button_type : Literal['primary', 'secondary'], default 'primary'
+        The styling of the button. Emulates the `type` parameter of :func:`streamlit.button`.
 
     key : str or None, default None
         An optional key that uniquely identifies this component. If this is None, and the
@@ -75,6 +84,8 @@ def register_button(
         public_key=public_key,
         credential_nickname=credential_nickname,
         disabled=disabled,
+        label=label,
+        button_type=button_type,
         key=key,
     )
 
@@ -95,6 +106,8 @@ def sign_in_button(
     with_discoverable: bool = True,
     with_autofill: bool = False,
     disabled: bool = False,
+    label: str = 'Sign in',
+    button_type: Literal['primary', 'secondary'] = 'primary',
     key: str | None = None,
 ) -> tuple[str, dict | None, bool]:
     r"""Render the sign in button, which starts the sign in process when clicked.
@@ -127,6 +140,12 @@ def sign_in_button(
     disabled : bool, default False
         If True the button will be disabled and if False the button will be clickable.
 
+    label : str, default 'Register'
+        The label of the button.
+
+    button_type : Literal['primary', 'secondary'], default 'primary'
+        The styling of the button. Emulates the `type` parameter of :func:`streamlit.button`.
+
     key : str or None, default None
         An optional key that uniquely identifies this component. If this is None, and the
         component's arguments are changed, the component will be re-mounted in the Streamlit
@@ -154,6 +173,8 @@ def sign_in_button(
         with_discoverable=with_discoverable,
         with_autofill=with_autofill,
         disabled=disabled,
+        label=label,
+        button_type=button_type,
         key=key,
     )
 
