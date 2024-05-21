@@ -1,0 +1,68 @@
+button {
+        display: inline-flex;
+        -moz-box-align: center;
+        align-items: center;
+        -moz-box-pack: center;
+        justify-content: center;
+        font-weight: 400;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        min-height: 38.4px;
+        margin: 0px;
+        line-height: 1.6;
+        width: auto;
+        user-select: none;
+        background-color: var(--primary-color);
+        color: var(--text-color);
+        border: 1px solid var(--primary-color);
+        font-family: "Source Sans Pro", sans-serif;
+        font: var(--font);
+}
+
+button.primary {
+    background-color: var(--primary-color);
+}
+
+button.secondary {
+    background-color: var(--background-color);
+    border: 1px solid rgba(250, 250, 250, 0.2);
+}
+
+button:active {
+    background-color: transparent;
+    color: var(--primary-color);
+}
+
+button:focus {
+    outline: none;
+}
+
+button:focus-visible {
+    box-shadow: rgba(255, 75, 75, 0.5) 0px 0px 0px 0.2rem;
+}
+
+button:hover {
+    cursor: pointer;
+}
+
+button.secondary:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+button.secondary:active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--text-color);
+}
+
+button:not(:disabled) {
+    cursor: pointer;
+}
+
+button:disabled {
+    border-color: rgba(250, 250, 250, 0.2);
+    background-color: transparent;
+    color: rgba(250, 250, 250, 0.4);
+    cursor: not-allowed;
+}
