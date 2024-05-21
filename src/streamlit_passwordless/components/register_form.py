@@ -127,7 +127,7 @@ def bitwarden_register_form(
         The label of the submit button.
 
     button_type : Literal['primary', 'secondary'], default 'primary'
-        The styling of the submit button.
+        The styling of the button. Emulates the `type` parameter of :func:`streamlit.button`.
 
     Other Parameters
     ----------------
@@ -253,6 +253,8 @@ def bitwarden_register_form(
             public_key=client.public_key,
             credential_nickname=username,
             disabled=disabled,
+            label=submit_button_label,
+            button_type=button_type,
             key=ids.BP_REGISTER_FORM_SUBMIT_BUTTON,
         )
 

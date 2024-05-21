@@ -68,7 +68,7 @@ def bitwarden_sign_in_form(
         The label of the submit button.
 
     button_type : Literal['primary', 'secondary'], default 'primary'
-        The styling of the submit button.
+        The styling of the button. Emulates the `type` parameter of :func:`streamlit.button`.
 
     Other Parameters
     ----------------
@@ -126,6 +126,8 @@ def bitwarden_sign_in_form(
             alias=st.session_state.get(ids.BP_SIGN_IN_FORM_ALIAS_TEXT_INPUT),
             with_discoverable=with_discoverable,
             with_autofill=with_autofill,
+            label=submit_button_label,
+            button_type=button_type,
             key=ids.BP_SIGN_IN_FORM_SUBMIT_BUTTON,
         )
 
