@@ -7,8 +7,6 @@ const button = document.body.appendChild(document.createElement("button"));
 // Global variables
 
 // common
-let action: string; // 'register' or 'sign_in'
-let disabled: boolean;
 let passwordlessClient: Client;
 let buttonNrClicks: number = 0;
 
@@ -104,7 +102,7 @@ async function sign_in(client: Client, alias: string, withDiscoverable: boolean,
 /**
  * The callback function to be triggered when the register button is clicked.
  */
-async function registerOnClick () {
+function registerOnClick () {
 
   buttonNrClicks += 1;
   register(passwordlessClient, registerToken, credentialNickname).then(
@@ -122,7 +120,7 @@ async function registerOnClick () {
 /**
  * The callback function to be triggered when the sign_in button is clicked.
  */
-async function signInOnClick() {
+function signInOnClick() {
 
   buttonNrClicks += 1;
   sign_in(passwordlessClient, alias, withDiscoverable, withAutofill).then(
@@ -146,15 +144,19 @@ function onRender(event: Event): void {
   // Get the RenderData from the event
   const data = (event as CustomEvent<RenderData>).detail;
 
-  action = data.args['action'];
-  disabled = data.args['disabled'];
   const apiKey: string = data.args['public_key'];
+  const action: string = data.args['action'];
+  const disabled: boolean = data.args['disabled'];
+  const button_type: string = data.args['button_type'];
+  const button_label: string = data.args['label'];
 
   createPasswordlessClient(apiKey);
   console.log('passwordlessClient', passwordlessClient);
   console.log('isSecureContext', window.isSecureContext);
 
   button.disabled = disabled;
+  button.className = button_type === 'primary' ? 'primary' : 'secondary';
+  button.textContent = button_label;
 
   switch (action) {
     case 'register':
@@ -162,7 +164,6 @@ function onRender(event: Event): void {
       registerToken = data.args['register_token'];
       credentialNickname = data.args['credential_nickname'];
 
-      button.textContent = 'Register';
       button.onclick = registerOnClick;
       console.log('button', button)
 
@@ -173,7 +174,6 @@ function onRender(event: Event): void {
       withDiscoverable = data.args['with_discoverable'];
       withAutofill = data.args['with_autofill'];
 
-      button.textContent = 'Sign In';
       button.onclick = signInOnClick;
       console.log('button', button);
 
