@@ -31,6 +31,7 @@ class TestRegisterButton:
         public_key = 'public_key'
         credential_nickname = 'credential_nickname'
         disabled = True
+        label = 'Register Button'
         key = 'key'
         return_value = ('token', None, 1)
 
@@ -53,6 +54,8 @@ class TestRegisterButton:
             public_key=public_key,
             credential_nickname=credential_nickname,
             disabled=disabled,
+            label=label,
+            button_type='secondary',
             key=key,
         )
 
@@ -64,6 +67,8 @@ class TestRegisterButton:
             public_key=public_key,
             credential_nickname=credential_nickname,
             disabled=disabled,
+            label=label,
+            button_type='secondary',
             key=key,
         )
         assert token == return_value[0], 'token is incorrect!'
@@ -87,6 +92,7 @@ class TestSignInButton:
         with_discoverable = True
         with_autofill = False
         disabled = False
+        label = 'Sign in Button'
         key = 'key'
 
         return_value = ('token', None, 1)
@@ -111,6 +117,8 @@ class TestSignInButton:
             with_discoverable=with_discoverable,
             with_autofill=with_autofill,
             disabled=disabled,
+            label=label,
+            button_type='primary',
             key=key,
         )
 
@@ -123,6 +131,8 @@ class TestSignInButton:
             with_discoverable=with_discoverable,
             with_autofill=with_autofill,
             disabled=disabled,
+            label=label,
+            button_type='primary',
             key=key,
         )
         assert token == return_value[0], 'token is incorrect!'

@@ -1,7 +1,7 @@
 r"""Unit tests for the client module of the bitwarden_passwordless library."""
 
 # Standard library
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import Mock
 
 # Third party
