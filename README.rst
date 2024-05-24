@@ -1,7 +1,7 @@
 streamlit-passwordless
 ======================
 
-|PyPI| |LICENSE|
+|PyPI| |conda-forge| |conda-forge-platform| |Python| |LICENSE|
 
 
 streamlit-passwordless provides a user model for Streamlit applications based on the Bitwarden
@@ -12,19 +12,33 @@ The project is under development and not yet ready for production. The library c
 registering a new user by creating and registring a passkey with the user's device and
 letting the user sign in with the passkey. The user model is not fully implemented yet.
 
+A demo of the project is available at: https://passwordless.streamlit.app
+
 
 Installation
 ------------
 
-streamlit-passwordless is available on `PyPI`_ and can be installed with  `pip`_.
+streamlit-passwordless is available on `PyPI`_ and `conda-forge`_ and can be installed with `pip`_
+or `conda`_.
 
+.. _conda: https://docs.conda.io/en/latest/
+.. _conda-forge: https://anaconda.org/conda-forge/streamlit_passwordless
 .. _pip: https://pip.pypa.io/en/stable/getting-started/
 .. _PyPI: https://pypi.org/project/streamlit-passwordless/
 
 
+Install with pip:
+
 .. code-block:: bash
 
    $ pip install streamlit-passwordless
+
+
+Install with conda:
+
+.. code-block:: bash
+
+   $ conda install conda-forge::streamlit_passwordless
 
 
 License
@@ -139,13 +153,31 @@ Run the example app with the following command:
 
 Open the url in your favorite web browser and try it out!
 
+.. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/streamlit_passwordless?style=plastic
+   :alt: conda-forge - Version
+   :scale: 100%
+   :target: https://anaconda.org/conda-forge/streamlit_passwordless
+
+
+.. |conda-forge-platform| image:: https://img.shields.io/conda/pn/conda-forge/streamlit_passwordless?color=yellowgreen&style=plastic
+   :alt: conda-forge - Platform
+   :scale: 100%
+   :target: https://anaconda.org/conda-forge/streamlit_passwordless
+
+
+.. |LICENSE| image:: https://img.shields.io/pypi/l/streamlit-passwordless?style=plastic
+   :alt: PyPI - License
+   :scale: 100%
+   :target: https://github.com/antonlydell/streamlit-passwordless/blob/main/LICENSE
+
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/streamlit-passwordless?style=plastic
    :alt: PyPI
    :scale: 100%
    :target: https://pypi.org/project/streamlit-passwordless/
 
-.. |LICENSE| image:: https://img.shields.io/pypi/l/streamlit-passwordless?style=plastic
-   :alt: PyPI - License
+
+.. |Python| image:: https://img.shields.io/pypi/pyversions/streamlit-passwordless?style=plastic
+   :alt: PyPI - Python Version
    :scale: 100%
-   :target: https://github.com/antonlydell/streamlit-passwordless/blob/main/LICENSE
+   :target: https://pypi.org/project/streamlit-passwordless/
