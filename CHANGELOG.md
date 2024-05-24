@@ -15,6 +15,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The admin console to manage users and credentials.
 
 
+## [0.5.0] - 2024-05-24
+
+Buttons with style!
+
+The register and sign in buttons are now styled to look like buttons created with the function
+[streamlit.button](https://docs.streamlit.io/develop/api-reference/widgets/st.button). The
+styling respects the Streamlit system theme.
+
+
+### Changed
+
+- `register_button` and `sign_in_button` : Added the parameters `label` and `button_type`, which
+  allow to set the label and styling of the buttons. The `button_type` can be either "primary" or
+  "secondary" and emulates the `type` parameter of `streamlit.button`.
+
+- `register_form` and `sign_in_form` : Activated the use of the parameters `submit_button_label`
+  and `button_type`, which are linked to the `label` and `button_type` parameters of `register_button`
+  and `sign_in_button` respectively.
+
+
 ## [0.4.0] - 2024-05-15
 
 Register and sign in from an iPhone!
@@ -133,7 +153,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.5.0
 [0.4.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.4.0
 [0.3.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.3.0
 [0.2.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.2.0
