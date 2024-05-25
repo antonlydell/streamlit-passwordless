@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The admin console to manage users and credentials.
 
 
+## [0.5.1] - 2024-05-25
+
+Welcome [Vite](https://vitejs.dev/)!
+
+Changed javascript frontend tooling from the deprecated [react-scripts](https://www.npmjs.com/package/react-scripts)
+to [Vite](https://vitejs.dev/). This reduces the number of sub-dependencies and resolves known
+security vulnerabilities.
+
+
+### Security
+
+- Updated javascript dependencies to resolve known vulnerabilities.
+
+
 ## [0.5.0] - 2024-05-24
 
 Buttons with style!
@@ -153,7 +167,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.5.1
 [0.5.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.5.0
 [0.4.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.4.0
 [0.3.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.3.0
