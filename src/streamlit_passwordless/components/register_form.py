@@ -252,22 +252,22 @@ def bitwarden_register_form(
     register_token = ''
     error_msg = ''
     use_default_help = '__default__'
-    help: str | None = None
+    _help: str | None = None
     banner_container = st.empty()
 
     with st.container(border=border):
         st.markdown(title)
 
         if username_help == use_default_help:
-            help = 'A unique identifier for the account. E.g. an email address.'
+            _help = 'A unique identifier for the account. E.g. an email address.'
         else:
-            help = username_help
+            _help = username_help
 
         username = st.text_input(
             label=username_label,
             placeholder=username_placeholder,
             max_chars=username_max_length,
-            help=help,
+            help=_help,
             on_change=_validate_username,
             kwargs={
                 'db_session': db_session,
@@ -280,15 +280,15 @@ def bitwarden_register_form(
 
         if with_displayname:
             if displayname_help == use_default_help:
-                help = 'A descriptive name of the user.'
+                _help = 'A descriptive name of the user.'
             else:
-                help = displayname_help
+                _help = displayname_help
 
             displayname = st.text_input(
                 label=displayname_label,
                 placeholder=displayname_placeholder,
                 max_chars=displayname_max_length,
-                help=help,
+                help=_help,
                 disabled=disabled,
                 key=ids.BP_REGISTER_FORM_DISPLAYNAME_TEXT_INPUT,
             )
@@ -297,19 +297,19 @@ def bitwarden_register_form(
 
         if with_alias:
             if alias_help == use_default_help:
-                help = (
+                _help = (
                     'One or more aliases that can be used to sign in to the account. '
                     'Aliases are separated by semicolon (";"). The username is always '
                     'added as an alias. An alias must be unique across all users.'
                 )
             else:
-                help = alias_help
+                _help = alias_help
 
             aliases = st.text_input(
                 label=alias_label,
                 placeholder=alias_placeholder,
                 max_chars=alias_max_length,
-                help=help,
+                help=_help,
                 disabled=disabled,
                 key=ids.BP_REGISTER_FORM_ALIASES_TEXT_INPUT,
             )
