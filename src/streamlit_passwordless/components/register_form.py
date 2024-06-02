@@ -134,7 +134,9 @@ def _create_user(
 
 def bitwarden_register_form(
     client: BitwardenPasswordlessClient,
+    db_session: db.Session,
     is_admin: bool = False,
+    is_authenticated: bool = False,
     pre_authorized: bool = True,
     with_displayname: bool = False,
     with_alias: bool = False,
@@ -166,13 +168,19 @@ def bitwarden_register_form(
         The Bitwarden Passwordless client to use for interacting with
         the Bitwarden Passwordless application.
 
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
     is_admin : bool, default False
         True means that the user will be registered as an admin.
         Not implemented yet.
 
+    is_authenticated : bool, default False
+        True if the user is authenticated. An authenticated user may create new credentials.
+
     pre_authorized : bool, default True
-        If True require the username to exist in the pre_authorized table of the database
-        to allow the user to register. Not implemented yet.
+        If True require a user with the input username to exist in the database to allow
+        the user to register a new passkey credential. If False omit this validation.
 
     with_displayname : bool, default False
         If True the displayname field will be added to the form allowing
@@ -261,9 +269,14 @@ def bitwarden_register_form(
             max_chars=username_max_length,
             help=help,
             on_change=_validate_username,
+            kwargs={
+                'db_session': db_session,
+                'pre_authorized': pre_authorized,
+                'is_authenticated': is_authenticated,
+            },
             key=ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT,
         )
-        disabled = False if username else True
+        disabled = False if st.session_state[config.SK_USERNAME_IS_VALID] else True
 
         if with_displayname:
             if displayname_help == use_default_help:
@@ -303,9 +316,14 @@ def bitwarden_register_form(
         else:
             aliases = None
 
-        if username:
+        db_user = st.session_state.get(config.SK_DB_USER)
+
+        if not disabled:
             user, error_msg = _create_user(
-                username=username, displayname=displayname, aliases=aliases
+                username=username,
+                user_id=db_user.user_id if db_user else None,
+                displayname=displayname,
+                aliases=aliases,
             )
             if user is not None:
                 try:
@@ -335,12 +353,22 @@ def bitwarden_register_form(
     if not token and error:
         error_msg = f'Error creating passkey for user ({user})!\nerror : {error}'
         logger.error(error_msg)
+    elif not token:
+        error_msg = 'Unexpected error for missing token!'
+        logger.error(error_msg)
+
+    if error_msg:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
         return
 
-    if token:
-        msg = f'Successfully registered user: {user.username}!'  # type: ignore
-        logger.info(msg)
-        with banner_container:
-            st.success(msg, icon=config.ICON_SUCCESS)
+    if not db_user:
+        user_create = db.UserCreate(
+            user_id=user.user_id, username=user.username, displayname=user.displayname
+        )
+        db_user = db.create_user(session=db_session, user=user_create)
+
+    msg = f'Successfully registered user: {db_user.username}!'
+    logger.info(msg)
+    with banner_container:
+        st.success(msg, icon=config.ICON_SUCCESS)
