@@ -9,6 +9,7 @@ using the passkey FIDO2 and WebAuthn protocols.
 from datetime import date
 
 # Local
+import streamlit_passwordless.database as db
 from streamlit_passwordless.bitwarden_passwordless import (
     BitwardenPasswordlessClient,
     BitwardenPasswordlessVerifiedUser,
@@ -59,6 +60,8 @@ __all__ = [
     'bitwarden_register_form',
     'bitwarden_sign_in_form',
     'init_session_state',
+    # database
+    'db',
     # exceptions
     'RegisterUserError,',
     'SignInTokenVerificationError',
