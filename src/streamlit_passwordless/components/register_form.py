@@ -8,6 +8,7 @@ from typing import Literal
 import streamlit as st
 
 # Local
+from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import register_button
@@ -17,14 +18,70 @@ from . import config, ids
 logger = logging.getLogger(__name__)
 
 
-def _validate_username() -> None:
-    r"""Validate the input username."""
+def _validate_username(
+    db_session: db.Session,
+    is_authenticated: bool,
+    pre_authorized: bool = False,
+) -> None:
+    r"""Validate the input username.
 
+    Updates the following session state keys:
+    - `config.SK_DB_USER` :
+        Assigns the database user object if one exists.
+
+    - `config.SK_USERNAME_IS_VALID` :
+        Assigns True if no validation errors occurred and False otherwise.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.database.Session
+        An active database session.
+
+    is_authenticated : bool
+        True if the user is authenticated. An authenticated user may create new credentials.
+
+    pre_authorized : bool, default False
+        If True require a user with the input username to exist in the database to allow
+        the user to register a new passkey credential. If False omit this validation.
+    """
+
+    error_msg = ''
     username = st.session_state[ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT]
+
     if not username:
         error_msg = 'The username field is required!'
-        logger.error(error_msg)
+        logger.info(error_msg)
         st.error(error_msg, icon=config.ICON_ERROR)
+        return
+
+    user = db.get_user_by_username(session=db_session, username=username)
+    credentials: list = []  # TODO:  Get passkey credentials of the user.
+
+    if not user:
+        st.session_state[config.SK_DB_USER] = None
+
+        if pre_authorized:
+            error_msg = (
+                f'User {username} does not exist, but is required to exist '
+                'to allow registration!'
+            )
+            logger.warning(error_msg)
+
+    elif user:
+        st.session_state[config.SK_DB_USER] = user
+
+        if credentials and not is_authenticated:
+            error_msg = (
+                f'User {username} already exist! '
+                'To add additional passkeys, please sign in first.'
+            )
+            logger.warning(error_msg)
+
+    if error_msg:
+        st.error(error_msg, icon=config.ICON_ERROR)
+        st.session_state[config.SK_USERNAME_IS_VALID] = False
+    else:
+        st.session_state[config.SK_USERNAME_IS_VALID] = True
 
 
 def _create_user(
