@@ -85,7 +85,10 @@ def _validate_username(
 
 
 def _create_user(
-    username: str, displayname: str | None = None, aliases: str | None = None
+    username: str,
+    user_id: str | None = None,
+    displayname: str | None = None,
+    aliases: str | None = None,
 ) -> tuple[models.User | None, str]:
     r"""Create a new user to register.
 
@@ -94,10 +97,14 @@ def _create_user(
     username : str
         The username.
 
+    user_id : str or None, default None
+        The unique ID of the user, which serves as the primary key in the database.
+        If None it will be generated as a uuid.
+
     displayname : str or None, default None
         The optional displayname of the user.
 
-    aliases : str | None, default None
+    aliases : str or None, default None
         The optional aliases of the user as a semicolon separated string.
 
     Returns
@@ -112,7 +119,9 @@ def _create_user(
 
     error_msg = ''
     try:
-        user = models.User(username=username, displayname=displayname, aliases=aliases)
+        user = models.User(
+            username=username, user_id=user_id, displayname=displayname, aliases=aliases
+        )
     except exceptions.StreamlitPasswordlessError as e:
         error_msg = str(e)
         logger.error(error_msg)
