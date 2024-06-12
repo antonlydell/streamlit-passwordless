@@ -22,15 +22,12 @@ def _validate_username(
     db_session: db.Session,
     is_authenticated: bool,
     pre_authorized: bool = False,
-) -> None:
+) -> bool:
     r"""Validate the input username.
 
     Updates the following session state keys:
     - `config.SK_DB_USER` :
         Assigns the database user object if one exists.
-
-    - `config.SK_USERNAME_IS_VALID` :
-        Assigns True if no validation errors occurred and False otherwise.
 
     Parameters
     ----------
@@ -43,6 +40,11 @@ def _validate_username(
     pre_authorized : bool, default False
         If True require a user with the input username to exist in the database to allow
         the user to register a new passkey credential. If False omit this validation.
+
+    Returns
+    -------
+    bool
+        True if the username is valid and False otherwise.
     """
 
     error_msg = ''
@@ -79,11 +81,12 @@ def _validate_username(
 
     if error_msg:
         st.error(error_msg, icon=config.ICON_ERROR)
-        st.session_state[config.SK_USERNAME_IS_VALID] = False
+        return False
     else:
-        st.session_state[config.SK_USERNAME_IS_VALID] = True
+        return True
 
 
+@st.cache_data
 def _create_user(
     username: str,
     user_id: str | None = None,
@@ -130,6 +133,30 @@ def _create_user(
         logger.debug(f'Successfully created user: {user}')
 
     return user, error_msg
+
+
+def _validate_form(
+    db_session: db.Session, is_authenticated: bool, pre_authorized: bool = False
+) -> None:
+    r"""Validate the input fields of the register form.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.database.Session
+        An active database session.
+
+    is_authenticated : bool
+        True if the user is authenticated. An authenticated user may create new credentials.
+
+    pre_authorized : bool, default False
+        If True require a user with the input username to exist in the database to allow
+        the user to register a new passkey credential. If False omit this validation.
+    """
+
+    username_is_valid = _validate_username(
+        db_session=db_session, is_authenticated=is_authenticated, pre_authorized=pre_authorized
+    )
+    st.session_state[config.SK_REGISTER_FORM_IS_VALID] = username_is_valid
 
 
 def bitwarden_register_form(
@@ -257,68 +284,71 @@ def bitwarden_register_form(
 
     with st.container(border=border):
         st.markdown(title)
-
-        if username_help == use_default_help:
-            _help = 'A unique identifier for the account. E.g. an email address.'
-        else:
-            _help = username_help
-
-        username = st.text_input(
-            label=username_label,
-            placeholder=username_placeholder,
-            max_chars=username_max_length,
-            help=_help,
-            on_change=_validate_username,
-            kwargs={
-                'db_session': db_session,
-                'pre_authorized': pre_authorized,
-                'is_authenticated': is_authenticated,
-            },
-            key=ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT,
-        )
-        disabled = False if st.session_state[config.SK_USERNAME_IS_VALID] else True
-
-        if with_displayname:
-            if displayname_help == use_default_help:
-                _help = 'A descriptive name of the user.'
+        with st.form(key=ids.BP_REGISTER_FORM, clear_on_submit=False, border=False):
+            if username_help == use_default_help:
+                _help = 'A unique identifier for the account. E.g. an email address.'
             else:
-                _help = displayname_help
+                _help = username_help
 
-            displayname = st.text_input(
-                label=displayname_label,
-                placeholder=displayname_placeholder,
-                max_chars=displayname_max_length,
+            username = st.text_input(
+                label=username_label,
+                placeholder=username_placeholder,
+                max_chars=username_max_length,
                 help=_help,
-                disabled=disabled,
-                key=ids.BP_REGISTER_FORM_DISPLAYNAME_TEXT_INPUT,
+                key=ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT,
             )
-        else:
-            displayname = None
+            if with_displayname:
+                if displayname_help == use_default_help:
+                    _help = 'A descriptive name of the user.'
+                else:
+                    _help = displayname_help
 
-        if with_alias:
-            if alias_help == use_default_help:
-                _help = (
-                    'One or more aliases that can be used to sign in to the account. '
-                    'Aliases are separated by semicolon (";"). The username is always '
-                    'added as an alias. An alias must be unique across all users.'
+                displayname = st.text_input(
+                    label=displayname_label,
+                    placeholder=displayname_placeholder,
+                    max_chars=displayname_max_length,
+                    help=_help,
+                    key=ids.BP_REGISTER_FORM_DISPLAYNAME_TEXT_INPUT,
                 )
             else:
-                _help = alias_help
+                displayname = None
 
-            aliases = st.text_input(
-                label=alias_label,
-                placeholder=alias_placeholder,
-                max_chars=alias_max_length,
-                help=_help,
-                disabled=disabled,
-                key=ids.BP_REGISTER_FORM_ALIASES_TEXT_INPUT,
+            if with_alias:
+                if alias_help == use_default_help:
+                    _help = (
+                        'One or more aliases that can be used to sign in to the account. '
+                        'Aliases are separated by semicolon (";"). The username is always '
+                        'added as an alias. An alias must be unique across all users.'
+                    )
+                else:
+                    _help = alias_help
+
+                aliases = st.text_input(
+                    label=alias_label,
+                    placeholder=alias_placeholder,
+                    max_chars=alias_max_length,
+                    help=_help,
+                    key=ids.BP_REGISTER_FORM_ALIASES_TEXT_INPUT,
+                )
+            else:
+                aliases = None
+
+            st.form_submit_button(
+                label='Validate',
+                on_click=_validate_form,
+                kwargs={
+                    'db_session': db_session,
+                    'pre_authorized': pre_authorized,
+                    'is_authenticated': is_authenticated,
+                },
             )
-        else:
-            aliases = None
 
         db_user = st.session_state.get(config.SK_DB_USER)
 
-        if not disabled:
+        form_is_valid = st.session_state[config.SK_REGISTER_FORM_IS_VALID]
+        disabled = not form_is_valid
+
+        if form_is_valid:
             user, error_msg = _create_user(
                 username=username,
                 user_id=db_user.user_id if db_user else None,
