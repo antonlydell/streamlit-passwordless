@@ -2,6 +2,7 @@ r"""The register-form component and its callback functions."""
 
 # Standard library
 import logging
+from datetime import timedelta
 from typing import Literal
 
 # Third party
@@ -133,6 +134,46 @@ def _create_user(
         logger.debug(f'Successfully created user: {user}')
 
     return user, error_msg
+
+
+@st.cache_data(
+    ttl=timedelta(minutes=2),
+    show_spinner=False,
+    hash_funcs={BitwardenPasswordlessClient: hash, models.User: hash},
+)
+def _create_register_token(
+    client: BitwardenPasswordlessClient, user: models.User
+) -> tuple[str, str]:
+    r"""Create a register token to register a new passkey with the user's device.
+
+    Parameters
+    ----------
+    client : BitwardenPasswordlessClient
+        The Bitwarden Passwordless client to use for interacting with
+        the Bitwarden Passwordless API.
+
+    user : models.User
+        The user to register.
+
+    Returns
+    -------
+    register_token : str
+        The register token. An empty string is returned if an error occurred.
+
+    error_msg : str
+        An error message if the register token could not be created.
+        An empty string is returned if no error occurred.
+    """
+
+    error_msg = ''
+
+    try:
+        register_token = client.create_register_token(user=user)
+    except exceptions.RegisterUserError as e:
+        error_msg = str(e)
+        register_token = ''
+
+    return register_token, error_msg
 
 
 def _validate_form(
@@ -355,12 +396,8 @@ def bitwarden_register_form(
                 displayname=displayname,
                 aliases=aliases,
             )
-            if user is not None:
-                try:
-                    register_token = client.create_register_token(user=user)
-                except exceptions.RegisterUserError as e:
-                    error_msg = str(e)
-                    logger.error(error_msg)
+            if not error_msg:
+                register_token, error_msg = _create_register_token(client=client, user=user)
 
         token, error, clicked = register_button(
             register_token=register_token,

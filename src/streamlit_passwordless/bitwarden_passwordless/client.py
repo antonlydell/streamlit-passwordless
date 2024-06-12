@@ -50,6 +50,9 @@ class BitwardenPasswordlessClient(models.BaseModel):
             private_key=self.private_key, url=str(self.url)
         )
 
+    def __hash__(self) -> int:
+        return hash(self.private_key + self.public_key)
+
     def create_register_token(self, user: models.User) -> str:
         r"""Create a register token to use for registering a passkey with the user's device.
 
