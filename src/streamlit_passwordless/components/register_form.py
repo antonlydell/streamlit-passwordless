@@ -210,8 +210,11 @@ def bitwarden_register_form(
     with_alias: bool = False,
     title: str = '#### Register a new passkey with your device',
     border: bool = True,
-    submit_button_label: str = 'Register',
-    button_type: Literal['primary', 'secondary'] = 'primary',
+    validate_button_label: str = 'Validate',
+    register_button_label: str = 'Register',
+    validate_button_type: Literal['primary', 'secondary'] | None = None,
+    register_button_type: Literal['primary', 'secondary'] = 'primary',
+    clear_on_validate: bool = False,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe@example.com',
@@ -265,11 +268,23 @@ def bitwarden_register_form(
     border : bool, default True
         If True a border will be rendered around the form.
 
-    submit_button_label : str, default 'Register'
-        The label of the submit button.
+    validate_button_label : str, default 'Validate'
+        The label of the validate button. The validate button validates the fields of the form.
 
-    button_type : Literal['primary', 'secondary'], default 'primary'
-        The styling of the button. Emulates the `type` parameter of :func:`streamlit.button`.
+    register_button_label : str, default 'Register'
+        The label of the register button. The register button registers a new passkey with the
+        user's device. It is enabled when the form is valid.
+
+    validate_button_type : Literal['primary', 'secondary'] or None, default None
+        The styling of the validate button. Emulates the `type` parameter of :func:`streamlit.button`.
+        If None the button type will be 'secondary' when the form is valid and 'primary' when invalid.
+
+    register_button_type : Literal['primary', 'secondary'], default 'primary'
+        The styling of the register button. Emulates the `type` parameter of :func:`streamlit.button`.
+
+    clear_on_validate : bool, default False
+        True if the form fields should be cleared when the validate form button is clicked
+        and False otherwise.
 
     Other Parameters
     ----------------
@@ -325,7 +340,7 @@ def bitwarden_register_form(
 
     with st.container(border=border):
         st.markdown(title)
-        with st.form(key=ids.BP_REGISTER_FORM, clear_on_submit=False, border=False):
+        with st.form(key=ids.BP_REGISTER_FORM, clear_on_submit=clear_on_validate, border=False):
             if username_help == use_default_help:
                 _help = 'A unique identifier for the account. E.g. an email address.'
             else:
@@ -374,8 +389,15 @@ def bitwarden_register_form(
             else:
                 aliases = None
 
+            form_is_valid = st.session_state[config.SK_REGISTER_FORM_IS_VALID]
+            if validate_button_type is None:
+                button_type = 'secondary' if form_is_valid else 'primary'
+            else:
+                button_type = validate_button_type
+
             st.form_submit_button(
-                label='Validate',
+                label=validate_button_label,
+                type=button_type,
                 on_click=_validate_form,
                 kwargs={
                     'db_session': db_session,
@@ -386,7 +408,6 @@ def bitwarden_register_form(
 
         db_user = st.session_state.get(config.SK_DB_USER)
 
-        form_is_valid = st.session_state[config.SK_REGISTER_FORM_IS_VALID]
         disabled = not form_is_valid
 
         if form_is_valid:
@@ -404,8 +425,8 @@ def bitwarden_register_form(
             public_key=client.public_key,
             credential_nickname=username,
             disabled=disabled,
-            label=submit_button_label,
-            button_type=button_type,
+            label=register_button_label,
+            button_type=register_button_type,
             key=ids.BP_REGISTER_FORM_SUBMIT_BUTTON,
         )
 
