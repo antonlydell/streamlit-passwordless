@@ -51,6 +51,9 @@ class User(BaseModel):
     displayname: str | None = None
     aliases: tuple[str, ...] | str | None = Field(default=None, validate_default=True)
 
+    def __hash__(self) -> int:
+        return hash(self.user_id)
+
     @field_validator('user_id')
     def generate_user_id(cls, v: str | None) -> str:
         r"""Generate a user ID if not supplied."""
