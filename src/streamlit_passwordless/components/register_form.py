@@ -14,7 +14,7 @@ from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import register_button
 
-from . import config, ids
+from . import config, core, ids
 
 logger = logging.getLogger(__name__)
 
@@ -449,6 +449,14 @@ def bitwarden_register_form(
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
         return
+
+    # The user is still registered even though the sign in may fail
+    verified_user, error_msg = core.verify_sign_in(client=client, token=token)
+    if verified_user is None and not verified_user.success:
+        error_msg = f'User {username} was registered, but the sign in attempt with registered passkey failed!'
+    if error_msg:
+        with banner_container:
+            st.error(error_msg, icon=config.ICON_ERROR)
 
     if not db_user:
         user_create = db.UserCreate(
