@@ -14,6 +14,7 @@ from streamlit_passwordless.bitwarden_passwordless import (
     BitwardenPasswordlessClient,
     BitwardenPasswordlessVerifiedUser,
     BitwardenRegisterConfig,
+    PasskeyCredential,
     register_button,
     sign_in_button,
 )
@@ -51,6 +52,7 @@ __all__ = [
     'BitwardenPasswordlessClient',
     'BitwardenPasswordlessVerifiedUser',
     'BitwardenRegisterConfig',
+    'PasskeyCredential',
     'register_button',
     'sign_in_button',
     # components

@@ -2,15 +2,18 @@ r"""The client to use to interact with Bitwarden Passwordless."""
 
 # Standard library
 import logging
-from typing import Any
+from typing import Any, TypeAlias
 
 # Third party
+from passwordless import Credential, PasswordlessError
 from pydantic import AnyHttpUrl, Field, PrivateAttr
 
 # Local
-from streamlit_passwordless import models
+from streamlit_passwordless import exceptions, models
 
 from . import backend
+
+PasskeyCredential: TypeAlias = Credential
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +23,6 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
     Parameters
     ----------
-
     public_key : str
         The public key of the Bitwarden Passwordless application.
 
@@ -103,3 +105,44 @@ class BitwardenPasswordlessClient(models.BaseModel):
         """
 
         return backend._verify_sign_in_token(client=self._backend_client, token=token)
+
+    def get_credentials(self, user_id: str, origin: str | None = None) -> list[PasskeyCredential]:
+        r"""Get the registered passkey credentials for a user.
+
+        Parameters
+        ----------
+        client : BackendClient
+            The Bitwarden Passwordless backend client to communicate
+            with the Bitwarden Passwordless backend.
+
+        user_id : str
+            The unique ID of the user.
+
+        origin : str or None, default None
+            Filter the credentials by origin. Origin is the domain name a
+            credential is registred to. If None all credentials are returned.
+
+        Returns
+        -------
+        credentials : list[streamlit_passwordless.PasskeyCredential]
+            The registered passkey credentials of the user.
+
+        Raises
+        ------
+        streamlit_passwordless.StreamlitPasswordlessError
+            If the credentials cannot be retrieved from Bitwarden Passwordless.
+        """
+
+        try:
+            credentials: list[PasskeyCredential] = self._backend_client.get_credentials(
+                user_id=user_id
+            )
+        except PasswordlessError as e:
+            error_msg = f'Error retrieving credentials for {user_id=}!\nproblem_details: {e.problem_details}'
+            data = {
+                'user_id': user_id,
+                'problem_details': e.problem_details,
+            }
+            raise exceptions.StreamlitPasswordlessError(error_msg, data=data) from None
+
+        return [c for c in credentials if c.origin == origin] if origin else credentials

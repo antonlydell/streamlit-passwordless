@@ -1,12 +1,19 @@
 r"""Unit tests for the client module of the bitwarden_passwordless library."""
 
 # Standard library
-from datetime import timedelta
-from unittest.mock import Mock
+from datetime import datetime, timedelta
+from unittest.mock import Mock, call
+from zoneinfo import ZoneInfo
 
 # Third party
 import pytest
-from passwordless import PasswordlessError, RegisteredToken
+from passwordless import (
+    Credential,
+    CredentialDescriptor,
+    PasswordlessClient,
+    PasswordlessError,
+    RegisteredToken,
+)
 from pydantic import AnyHttpUrl
 
 # Local
@@ -16,6 +23,82 @@ from streamlit_passwordless.bitwarden_passwordless.client import (
     BitwardenPasswordlessClient,
     backend,
 )
+
+# =============================================================================================
+# Fixtures
+# =============================================================================================
+
+
+@pytest.fixture()
+def list_of_credentials() -> tuple[list[Credential], str, list[Credential]]:
+    r"""A list of passkey credentials with different origins.
+
+    Returns
+    -------
+    credentials : list[Credential]
+
+    origin_filter : str
+        The origin to use for filtering `credentials`.
+
+    credentials_filtered : list[Credential]
+        The expected output after filtering credentials with `origin_filter`.
+    """
+
+    origin_filter = 'https://passkeys.example.com'
+    tz = ZoneInfo('UTC')
+
+    credentials = [
+        Credential(
+            descriptor=CredentialDescriptor(type='descriptor', id='1', transports=None),
+            public_key='public_key_1',
+            user_handle='user_handle_1',
+            signature_counter=1,
+            attestation_fmt='attestation',
+            created_at=datetime(2024, 5, 14, 20, 34, 0, tzinfo=tz),
+            aa_guid='aa_guid_1',
+            last_user_at=datetime(2024, 6, 14, 21, 35, 2, tzinfo=tz),
+            rp_id='passkeys.example.com',
+            origin='https://passkeys.example.com',
+            country='SE',
+            device='iPhone 3GS',
+            user_id='user_1',
+        ),
+        Credential(
+            descriptor=CredentialDescriptor(type='descriptor', id='2', transports=None),
+            public_key='public_key_2',
+            user_handle='user_handle_1',
+            signature_counter=10,
+            attestation_fmt='attestation',
+            created_at=datetime(2024, 3, 26, 10, 34, 0, tzinfo=tz),
+            aa_guid='aa_guid_2',
+            last_user_at=datetime(2024, 6, 15, 13, 23, 8, tzinfo=tz),
+            rp_id='passkeys.example.com',
+            origin='https://passkeys.example.com',
+            country='SE',
+            device='Windows XP',
+            user_id='user_1',
+        ),
+        Credential(
+            descriptor=CredentialDescriptor(type='descriptor', id='3', transports=None),
+            public_key='public_key_3',
+            user_handle='user_handle_2',
+            signature_counter=15,
+            attestation_fmt='attestation',
+            created_at=datetime(2024, 1, 7, 18, 2, 23, tzinfo=tz),
+            aa_guid='aa_guid_2',
+            last_user_at=datetime(2024, 6, 6, 14, 12, 18, tzinfo=tz),
+            rp_id='localhost:8501',
+            origin='http://localhost:8501',
+            country='DK',
+            device='Windows 95',
+            user_id='user_2',
+        ),
+    ]
+
+    credentials_filtered = credentials[0:2].copy()
+
+    return credentials, origin_filter, credentials_filtered
+
 
 # =============================================================================================
 # Tests
@@ -288,6 +371,84 @@ class TestVerifySignInMethod:
         # Verify
         # ===========================================================
         m.assert_called_once_with(client=client._backend_client, token=token)
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestGetCredentialsMethod:
+    r"""Tests for the method `BitwardenPasswordlessClient.get_credentials`."""
+
+    def test_called_correctly(
+        self,
+        list_of_credentials: tuple[list[Credential], str, list[Credential]],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        r"""Test that the `get_credentials` method can be called correctly."""
+
+        # Setup
+        # ===========================================================
+        credentials, _, _ = list_of_credentials
+        user_id = 'user_1'
+
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='private_key', public_key='public_key'
+        )
+
+        m = Mock(
+            spec_set=PasswordlessClient.get_credentials,
+            name='mocked__backend_client.get_credentials',
+            return_value=credentials,
+        )
+
+        monkeypatch.setattr(client._backend_client, 'get_credentials', m)
+
+        # Exercise
+        # ===========================================================
+        credentials_result = client.get_credentials(user_id=user_id)
+
+        # Verify
+        # ===========================================================
+        m.assert_called_once()
+        assert m.call_args == call(user_id=user_id), 'call_args are incorrect!'
+        assert credentials_result == credentials, 'credentials are incorrect!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_filter_by_origin(
+        self,
+        list_of_credentials: tuple[list[Credential], str, list[Credential]],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        r"""Test to filter the credentials by their origin."""
+
+        # Setup
+        # ===========================================================
+        credentials, origin_filter, exp_credentials = list_of_credentials
+        user_id = 'user_1'
+
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='private_key', public_key='public_key'
+        )
+
+        m = Mock(
+            spec_set=PasswordlessClient.get_credentials,
+            name='mocked__backend_client.get_credentials',
+            return_value=credentials,
+        )
+
+        monkeypatch.setattr(client._backend_client, 'get_credentials', m)
+
+        # Exercise
+        # ===========================================================
+        credentials_result = client.get_credentials(user_id=user_id, origin=origin_filter)
+
+        # Verify
+        # ===========================================================
+        m.assert_called_once()
+        assert m.call_args == call(user_id=user_id), 'call_args are incorrect!'
+        assert credentials_result == exp_credentials, 'credentials are incorrect!'
 
         # Clean up - None
         # ===========================================================
