@@ -13,78 +13,11 @@ from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import register_button
+from streamlit_passwordless.web import get_origin_header
 
 from . import config, core, ids
 
 logger = logging.getLogger(__name__)
-
-
-def _validate_username(
-    db_session: db.Session,
-    is_authenticated: bool,
-    pre_authorized: bool = False,
-) -> bool:
-    r"""Validate the input username.
-
-    Updates the following session state keys:
-    - `config.SK_DB_USER` :
-        Assigns the database user object if one exists.
-
-    Parameters
-    ----------
-    db_session : streamlit_passwordless.database.Session
-        An active database session.
-
-    is_authenticated : bool
-        True if the user is authenticated. An authenticated user may create new credentials.
-
-    pre_authorized : bool, default False
-        If True require a user with the input username to exist in the database to allow
-        the user to register a new passkey credential. If False omit this validation.
-
-    Returns
-    -------
-    bool
-        True if the username is valid and False otherwise.
-    """
-
-    error_msg = ''
-    username = st.session_state[ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT]
-
-    if not username:
-        error_msg = 'The username field is required!'
-        logger.info(error_msg)
-        st.error(error_msg, icon=config.ICON_ERROR)
-        return
-
-    user = db.get_user_by_username(session=db_session, username=username)
-    credentials: list = []  # TODO:  Get passkey credentials of the user.
-
-    if not user:
-        st.session_state[config.SK_DB_USER] = None
-
-        if pre_authorized:
-            error_msg = (
-                f'User {username} does not exist, but is required to exist '
-                'to allow registration!'
-            )
-            logger.warning(error_msg)
-
-    elif user:
-        st.session_state[config.SK_DB_USER] = user
-
-        if credentials and not is_authenticated:
-            error_msg = (
-                f'User {username} already exist! '
-                'To add additional passkeys, please sign in first.'
-            )
-            logger.warning(error_msg)
-
-    if error_msg:
-        st.error(error_msg, icon=config.ICON_ERROR)
-        return False
-    else:
-        return True
 
 
 @st.cache_data
@@ -177,27 +110,90 @@ def _create_register_token(
 
 
 def _validate_form(
-    db_session: db.Session, is_authenticated: bool, pre_authorized: bool = False
+    db_session: db.Session,
+    client: BitwardenPasswordlessClient,
+    origin: str,
+    pre_authorized: bool = False,
 ) -> None:
     r"""Validate the input fields of the register form.
+
+    Updates the following session state keys:
+    - `config.SK_DB_USER` :
+        Assigns the database user object. None is assigned if the user does
+        not exist in the database.
+
+    - `config.SK_REGISTER_FORM_IS_VALID` :
+        True if the form validation passed and False otherwise.
 
     Parameters
     ----------
     db_session : streamlit_passwordless.database.Session
         An active database session.
 
-    is_authenticated : bool
-        True if the user is authenticated. An authenticated user may create new credentials.
+    client : streamlit_passwordless.BitwardenPasswordlessClient
+        The Bitwarden Passwordless client to use for interacting with
+        the Bitwarden Passwordless backend API.
+
+    origin : str
+        The domain name of the application. Used to fetch existing passkey credentials of the
+        the user for the application. An authenticated user with existing credentials to the
+        application may create new credentials.
 
     pre_authorized : bool, default False
         If True require a user with the input username to exist in the database to allow
         the user to register a new passkey credential. If False omit this validation.
     """
 
-    username_is_valid = _validate_username(
-        db_session=db_session, is_authenticated=is_authenticated, pre_authorized=pre_authorized
-    )
-    st.session_state[config.SK_REGISTER_FORM_IS_VALID] = username_is_valid
+    error_msg = ''
+
+    username = st.session_state[ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT]
+    if not username:
+        error_msg = 'The username field is required!'
+        st.error(error_msg, icon=config.ICON_ERROR)
+        st.session_state[config.SK_REGISTER_FORM_IS_VALID] = False
+        return
+
+    user = db.get_user_by_username(session=db_session, username=username)
+
+    if not user:
+        st.session_state[config.SK_DB_USER] = None
+
+        if pre_authorized:
+            error_msg = (
+                f'User {username} does not exist, but is required to exist '
+                'to allow registration!'
+            )
+            logger.warning(error_msg)
+
+    elif user:
+        st.session_state[config.SK_DB_USER] = user
+
+        if origin:
+            try:
+                credentials = client.get_credentials(user_id=user.user_id, origin=origin)
+            except exceptions.StreamlitPasswordlessError as e:
+                error_msg = f'Could not get passkey credentials for user {username}!\n{str(e)}'
+                credentials = []
+        else:
+            credentials = []
+
+        if (verified_user := st.session_state.get(config.SK_BP_VERIFIED_USER)) is not None:
+            is_authenticated = True if verified_user.user_id == user.user_id else False
+        else:
+            is_authenticated = False
+
+        if not error_msg and credentials and not is_authenticated:
+            error_msg = (
+                f'User {username} already exist! '
+                'To add additional passkeys, please sign in first.'
+            )
+            logger.warning(error_msg)
+
+    if error_msg:
+        st.error(error_msg, icon=config.ICON_ERROR)
+        st.session_state[config.SK_REGISTER_FORM_IS_VALID] = False
+    else:
+        st.session_state[config.SK_REGISTER_FORM_IS_VALID] = True
 
 
 def bitwarden_register_form(
