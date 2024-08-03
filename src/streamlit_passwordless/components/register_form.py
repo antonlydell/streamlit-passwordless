@@ -200,7 +200,6 @@ def bitwarden_register_form(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
     is_admin: bool = False,
-    is_authenticated: bool = False,
     pre_authorized: bool = True,
     with_displayname: bool = False,
     with_alias: bool = False,
@@ -208,8 +207,8 @@ def bitwarden_register_form(
     border: bool = True,
     validate_button_label: str = 'Validate',
     register_button_label: str = 'Register',
-    validate_button_type: Literal['primary', 'secondary'] | None = None,
-    register_button_type: Literal['primary', 'secondary'] = 'primary',
+    validate_button_type: core.ButtonType | None = None,
+    register_button_type: core.ButtonType = 'primary',
     clear_on_validate: bool = False,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
@@ -241,9 +240,6 @@ def bitwarden_register_form(
     is_admin : bool, default False
         True means that the user will be registered as an admin.
         Not implemented yet.
-
-    is_authenticated : bool, default False
-        True if the user is authenticated. An authenticated user may create new credentials.
 
     pre_authorized : bool, default True
         If True require a user with the input username to exist in the database to allow
@@ -387,9 +383,15 @@ def bitwarden_register_form(
 
             form_is_valid = st.session_state[config.SK_REGISTER_FORM_IS_VALID]
             if validate_button_type is None:
-                button_type = 'secondary' if form_is_valid else 'primary'
+                button_type: core.ButtonType = 'secondary' if form_is_valid else 'primary'
             else:
                 button_type = validate_button_type
+
+            try:
+                origin = get_origin_header()
+            except exceptions.StreamlitPasswordlessError as e:
+                error_msg = str(e)
+                origin = ''
 
             st.form_submit_button(
                 label=validate_button_label,
@@ -397,8 +399,9 @@ def bitwarden_register_form(
                 on_click=_validate_form,
                 kwargs={
                     'db_session': db_session,
+                    'client': client,
+                    'origin': origin,
                     'pre_authorized': pre_authorized,
-                    'is_authenticated': is_authenticated,
                 },
             )
 
@@ -435,7 +438,7 @@ def bitwarden_register_form(
         return
 
     if not token and error:
-        error_msg = f'Error creating passkey for user ({user})!\nerror : {error}'
+        error_msg = f'Error creating passkey for user ({username})!\nerror : {error}'
         logger.error(error_msg)
     elif not token:
         error_msg = 'Unexpected error for missing token!'
@@ -446,11 +449,10 @@ def bitwarden_register_form(
             st.error(error_msg, icon=config.ICON_ERROR)
         return
 
-    # The user is still registered even though the sign in may fail
+    # The user is still registered even though the sign in may fail!
     verified_user, error_msg = core.verify_sign_in(client=client, token=token)
     if verified_user is None and not verified_user.success:
         error_msg = f'User {username} was registered, but the sign in attempt with registered passkey failed!'
-    if error_msg:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
 
