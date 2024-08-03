@@ -2,6 +2,7 @@ r"""Helper functions and core components that can be used by other components.""
 
 # Standard library
 import logging
+from typing import Literal, TypeAlias
 
 # Third party
 import streamlit as st
@@ -13,6 +14,7 @@ from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswo
 
 from . import config
 
+ButtonType: TypeAlias = Literal['primary', 'secondary']
 logger = logging.getLogger(__name__)
 
 
