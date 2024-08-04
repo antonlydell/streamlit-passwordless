@@ -8,11 +8,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- The user data model and database functionality.
-
-- Session state management of authenticated users.
-
 - The admin console to manage users and credentials.
+
+
+## [0.6.0] - 2024-08-04
+
+First implementation of the user model!
+
+The user model allows to save registered users to the streamlit-passwordless database.
+The database can be an existing or a new database. [SQLAlchemy](https://docs.sqlalchemy.org/en/20/)
+is used to manage the database interactions and has been added as project dependency.
+
+
+### Added
+
+- `streamlit_passwordless.db` : All database related objects except for the models.
+
+  - `streamlit_passwordless.db.create_session_factory` : Creates the database session factory,
+     which can produce database sessions.
+
+  - `streamlit_passwordless.db.create_user` : Creates a new user.
+
+  - `streamlit_passwordless.db.get_all_users` : Gets all users from the database.
+
+  - `streamlit_passwordless.db.get_user_by_username` : Gets a user by its username.
+
+  - `streamlit_passwordless.db.UserCreate` : The schema for creating a new user.
+
+- `streamlit_passwordless.db.models` : All database models, which describe the tables of the database.
+
+  - `streamlit_passwordless.db.models.User` : The user table.
+
+  - `streamlit_passwordless.db.models.Email` : The email addresses of a user.
+
+- `streamlit_passwordless.BitwardenPasswordlessClient.get_credentials` : Gets the registered passkey
+   credentials for a user.
+
+
+### Changed
+
+- `streamlit_passwordless.register_form` : Added support for saving registered users to the database
+   and several other improvements. Some of the highlights are:
+
+  - The *Register* button has been replaced with a *Validate* and a *Register* button to be able
+  to validate the form fields before proceeding to register a new passkey credential for the user.
+  If the validation does not pass the *Register* button is disabled.
+
+  - The user is now signed in after successful passkey registration.
+
+  - The `pre_authorized` parameter has been implemented, requiring a user to
+    exist in the database before allowing registration of passkeys.
+
+  - Added and updated various parameters for improved control of the register form.
 
 
 ## [0.5.1] - 2024-05-25
@@ -167,7 +214,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.6.0
 [0.5.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.5.1
 [0.5.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.5.0
 [0.4.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.4.0
