@@ -3,7 +3,6 @@ r"""The register-form component and its callback functions."""
 # Standard library
 import logging
 from datetime import timedelta
-from typing import Literal
 
 # Third party
 import streamlit as st
@@ -324,7 +323,6 @@ def bitwarden_register_form(
     """
 
     user = None
-    register_token = ''
     error_msg = ''
     use_default_help = '__default__'
     _help: str | None = None
@@ -408,6 +406,7 @@ def bitwarden_register_form(
         db_user = st.session_state.get(config.SK_DB_USER)
 
         disabled = not form_is_valid
+        register_token = ''
 
         if form_is_valid:
             user, error_msg = _create_user(
@@ -416,7 +415,7 @@ def bitwarden_register_form(
                 displayname=displayname,
                 aliases=aliases,
             )
-            if not error_msg:
+            if user is not None:
                 register_token, error_msg = _create_register_token(client=client, user=user)
 
         token, error, clicked = register_button(
@@ -432,7 +431,7 @@ def bitwarden_register_form(
     if disabled or not clicked:
         return
 
-    if error_msg:
+    if user is None:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
         return
@@ -451,7 +450,7 @@ def bitwarden_register_form(
 
     # The user is still registered even though the sign in may fail!
     verified_user, error_msg = core.verify_sign_in(client=client, token=token)
-    if verified_user is None and not verified_user.success:
+    if verified_user is None or not verified_user.success:
         error_msg = f'User {username} was registered, but the sign in attempt with registered passkey failed!'
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
