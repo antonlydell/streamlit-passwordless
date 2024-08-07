@@ -1,10 +1,18 @@
-r"""Functions to work with the browser and the underlaying websocket connection of Streamlit."""
+r"""Functions to work with the browser and the underlying websocket connection of Streamlit."""
 
 # Standard library
 import logging
 
 # Third party
-from streamlit.web.server.websocket_headers import _get_websocket_headers
+import streamlit as st
+
+if (context := getattr(st, 'context', None)) is None:
+    from streamlit.web.server.websocket_headers import _get_websocket_headers
+else:  # streamlit >= 1.37
+
+    def _get_websocket_headers() -> dict[str, str] | None:
+        return getattr(context, 'headers', None)
+
 
 # Local
 from streamlit_passwordless import exceptions
