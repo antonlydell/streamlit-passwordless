@@ -199,7 +199,7 @@ def bitwarden_register_form(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
     is_admin: bool = False,
-    pre_authorized: bool = True,
+    pre_authorized: bool = False,
     with_displayname: bool = False,
     with_alias: bool = False,
     title: str = '#### Register a new passkey with your device',
@@ -240,7 +240,7 @@ def bitwarden_register_form(
         True means that the user will be registered as an admin.
         Not implemented yet.
 
-    pre_authorized : bool, default True
+    pre_authorized : bool, default False
         If True require a user with the input username to exist in the database to allow
         the user to register a new passkey credential. If False omit this validation.
 
