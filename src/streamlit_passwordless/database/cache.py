@@ -16,7 +16,7 @@ def create_session_factory(
     expire_on_commit: bool = False,
     create_database: bool = True,
     **engine_config,
-) -> tuple[core.SessionFactory, core.Engine]:
+) -> core.SessionFactory:
     r"""Create the database session factory, which can produce database sessions.
 
     The database engine is bound to each session produced by the factory.
@@ -45,10 +45,6 @@ def create_session_factory(
     -------
     session_factory : sqlalchemy.orm.Session
         The session factory that can produce new database sessions.
-
-    engine : sqlalchemy.Engine
-        The database engine that manages the database connections and is bound
-        to `session_factory`.
     """
 
     session_factory, engine = core.create_session_factory(
@@ -59,4 +55,4 @@ def create_session_factory(
         **engine_config,
     )
 
-    return session_factory, engine
+    return session_factory
