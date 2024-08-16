@@ -102,7 +102,13 @@ working directory *stp_demo*.
    import streamlit_passwordless as stp
 
    DOTENV_FILE = Path.cwd() / '.env'
+   DB_URL = 'sqlite:///streamlit_passwordless.db'
 
+   @st.cache_data
+   def create_client(public_key: str, private_key: str) -> stp.BitwardenPasswordlessClient:
+      r"""Create the client to connect to Bitwarden Passwordless backend API."""
+
+      return stp.BitwardenPasswordlessClient(public_key=public_key, private_key=private_key)
 
    def main() -> None:
       r"""The main function to run the app."""
@@ -114,21 +120,26 @@ working directory *stp_demo*.
          stp.init_session_state()  # Initialize the session state needed by streamlit-passwordless.
 
       dotenv.load_dotenv(DOTENV_FILE)  # Load the public and private key into environment variables.
+      public_key, private_key = os.getenv('PUBLIC_KEY'), os.getenv('PRIVATE_KEY')
+
+      if public_key is None or private_key is None:
+         st.error('Public or private key not found in environment!', icon=stp.ICON_ERROR)
+         return
 
       try:
-         client = stp.BitwardenPasswordlessClient(
-               public_key=os.getenv('PUBLIC_KEY'),
-               private_key=os.getenv('PRIVATE_KEY'),
-         )
+         client = create_client(public_key=public_key, private_key=private_key)
       except stp.StreamlitPasswordlessError as e:
          st.error(str(e), icon=stp.ICON_ERROR)
          return
 
-      register_tab, signin_in_tab = st.tabs(['Register', 'Sign in'])
-      with register_tab:
-         stp.bitwarden_register_form(client=client)
-      with signin_in_tab:
-         stp.bitwarden_sign_in_form(client=client)
+      session_factory = stp.db.create_session_factory(url=DB_URL)
+
+      with session_factory.begin() as session:
+         register_tab, signin_in_tab = st.tabs(['Register', 'Sign in'])
+         with register_tab:
+            stp.bitwarden_register_form(client=client, db_session=session)
+         with signin_in_tab:
+            stp.bitwarden_sign_in_form(client=client)
 
 
    if __name__ == '__main__':
@@ -138,6 +149,9 @@ working directory *stp_demo*.
 The app first initializes the session state variables needed by streamlit-passwordless.
 Then it loads the public and private key from the *.env* file and creates the
 ``BitwardenPasswordlessClient``, which is used to communicate with Bitwarden Passwordless.dev.
+The database session factory, needed to connect to the user database, is created from the cached
+resource function `create_session_factory`. A SQLite database (streamlit_passwordless.db) located
+in the current working directory is used in the example and if it does not exist it will be created.
 Lastly the forms to *register* and *sign in* are rendered in separate tabs.
 Run the example app with the following command:
 
