@@ -11,6 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The admin console to manage users and credentials.
 
 
+## [0.6.1] - 2024-08-17
+
+Fix retrieving http headers from websocket connection for Streamlit >= v1.37.
+
+
+### Changed
+
+- `streamlit_passwordless.db.create_session_factory` : Changed to only return the session_factory
+  and not the engine that is bound to the session_factory. The engine will rarely be of use to the user.
+
+- `streamlit_passwordless.register_from` : Changed the default value from True to False for parameter
+  `pre_authorized` since it is a more sensible default value.
+
+
+### Fixed
+
+- `streamlit_passwordless.register_from` : Properly extracting the http headers from the websocket
+  connection using `st.context.headers` for Streamlit >= v1.37. This removes the deprecation warning
+  banner.
+
+
 ## [0.6.0] - 2024-08-04
 
 First implementation of the user model!
@@ -214,7 +235,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.6.1
 [0.6.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.6.0
 [0.5.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.5.1
 [0.5.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.5.0
