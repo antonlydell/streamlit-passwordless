@@ -169,29 +169,24 @@ Open the url in your favorite web browser and try it out!
 
 .. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/streamlit_passwordless?style=plastic
    :alt: conda-forge - Version
-   :scale: 100%
    :target: https://anaconda.org/conda-forge/streamlit_passwordless
 
 
 .. |conda-forge-platform| image:: https://img.shields.io/conda/pn/conda-forge/streamlit_passwordless?color=yellowgreen&style=plastic
    :alt: conda-forge - Platform
-   :scale: 100%
    :target: https://anaconda.org/conda-forge/streamlit_passwordless
 
 
 .. |LICENSE| image:: https://img.shields.io/pypi/l/streamlit-passwordless?style=plastic
    :alt: PyPI - License
-   :scale: 100%
    :target: https://github.com/antonlydell/streamlit-passwordless/blob/main/LICENSE
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/streamlit-passwordless?style=plastic
    :alt: PyPI
-   :scale: 100%
    :target: https://pypi.org/project/streamlit-passwordless/
 
 
 .. |Python| image:: https://img.shields.io/pypi/pyversions/streamlit-passwordless?style=plastic
    :alt: PyPI - Python Version
-   :scale: 100%
    :target: https://pypi.org/project/streamlit-passwordless/
