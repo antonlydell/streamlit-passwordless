@@ -57,12 +57,16 @@ class User(Base):
     displayname : Optional[str]
         A descriptive name of the user that is easy to understand for a human.
 
+    verified_at : Optional[datetime]
+        The timestamp in UTC when the user was verified. A user is verified, when
+        at least one verified email address is associated with the user.
+
     disabled : bool, default False
         If False the user is enabled and if True the user is disabled.
         A disabled user is not able to register credentials or sign in.
 
     disabled_timestamp : Optional[datetime]
-        The timestamp when the user was disabled.
+        The timestamp in UTC when the user was disabled.
 
     emails : list[Email]
         The email addresses associated with the user.
@@ -77,6 +81,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(unique=True)
     ad_username: Mapped[Optional[str]]
     displayname: Mapped[Optional[str]]
+    verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
     disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     emails: Mapped[list['Email']] = relationship(back_populates='user')
@@ -89,9 +94,9 @@ class User(Base):
             f'    username={self.username},\n'
             f'    ad_username={self.username},\n'
             f'    displayname={self.displayname},\n'
+            f'    verified_at={self.verified_at},\n'
             f'    disabled={self.disabled},\n'
-            f'    disabled_timestamp={self.disabled},\n'
-            f'    emails={len(self.emails)}\n)'
+            f'    disabled_timestamp={self.disabled_timestamp},\n)'
         )
 
 
