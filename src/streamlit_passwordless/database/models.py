@@ -114,8 +114,18 @@ class Email(Base):
     email : str
         An email address of a user. Must be unique.
 
-    active : bool, default False
-        If the email address is active or not.
+    is_primary : bool
+        True if the email address is the primary email address of the user
+        and False otherwise. A user can only have one primary email address.
+
+    verified_at : Optional[datetime]
+        The timestamp in UTC when the email address was verified by the user.
+
+    disabled : bool, default False
+        If the email address is disabled or not.
+
+    disabled_timestamp : Optional[datetime]
+        The timestamp in UTC when the email address was disabled.
 
     user : User
         The user object the email address belongs to.
@@ -126,7 +136,10 @@ class Email(Base):
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id))
     email: Mapped[str] = mapped_column(unique=True)
-    active: Mapped[bool] = mapped_column(default=True)
+    is_primary: Mapped[bool]
+    verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    disabled: Mapped[bool] = mapped_column(default=False)
+    disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     user: Mapped['User'] = relationship(back_populates='emails')
 
     def __repr__(self) -> str:
@@ -135,7 +148,10 @@ class Email(Base):
             f'    email_id={self.email_id},\n'
             f'    user_id={self.user_id},\n'
             f'    email={self.email},\n'
-            f'    active={self.active},\n)'
+            f'    is_primary={self.is_primary},\n'
+            f'    verified_at={self.verified_at},\n'
+            f'    disabled={self.disabled},\n'
+            f'    disabled_timestamp={self.disabled_timestamp},\n)'
         )
 
 
