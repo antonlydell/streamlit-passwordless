@@ -94,3 +94,84 @@ class RegisterUserError(StreamlitPasswordlessError):
 
 class SignInTokenVerificationError(StreamlitPasswordlessError):
     r"""Raised for errors when the backend is verifying the sign in token."""
+
+
+class DatabaseError(StreamlitPasswordlessError):
+    r"""Base exception for database related errors.
+
+    Attributes
+    ----------
+    db_api_exception_name : str or None
+        The name with module path to the underlying database api exception
+        that triggered the database error.
+    """
+
+    def __init__(self, message: str, e: Exception | None = None) -> None:
+        if e is not None:
+            self.db_api_exception_name = self._get_db_api_exception_name(e=e)
+            self.parent_message = self._get_parent_error_message(e=e)
+        else:
+            self.db_api_exception_name = None
+
+        super().__init__(message, e=e)
+
+    @staticmethod
+    def _get_db_api_exception_name(e: Exception) -> str | None:
+        r"""Get the name of the exception raised from the underlying database api."""
+
+        if (orig := getattr(e, 'orig', None)) is None:
+            return None
+        else:
+            return f'{orig.__module__}.{orig.__class__.__name__}'
+
+    @staticmethod
+    def _get_parent_error_message(e: Exception) -> str | None:
+        r"""Get the error message from the parent exception."""
+
+        if (orig := getattr(e, 'orig', None)) is None:
+            return orig
+        else:
+            return str(orig)
+
+    @property
+    def detailed_message(self) -> str:
+        return (
+            f'{self.name}({self.message})\n'
+            f'Parent Exception : {self.parent_exception_name}\n'
+            f'DB API Exception : {self.db_api_exception_name}\n'
+            f'Parent Exception Message : {self.parent_message}'
+        )
+
+
+class DatabaseStatementError(DatabaseError):
+    r"""Raised for errors related to the executed SQL statement.
+
+    Attributes
+    ----------
+    statement : str or None
+        The SQL statement that caused the error.
+
+    params : str or None
+        The parameters supplied to `statement`.
+    """
+
+    def __init__(self, message: str, e: Exception | None) -> None:
+        if e is not None:
+            self.statement = getattr(e, 'statement')
+            self.params = getattr(e, 'params')
+        else:
+            self.statement = None
+            self.params = None
+
+        super().__init__(message, e=e)
+
+    @property
+    def detailed_message(self) -> str:
+        return (
+            f'{self.name}({self.message})\n'
+            f'Parent Exception : {self.parent_exception_name}\n'
+            f'DB API Exception : {self.db_api_exception_name}\n'
+            f'Statement : {self.statement}\n'
+            f'Params : {self.params}\n'
+            f'Parent Exception Message : {self.parent_message}'
+        )

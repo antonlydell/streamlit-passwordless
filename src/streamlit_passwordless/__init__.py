@@ -27,6 +27,8 @@ from streamlit_passwordless.components import (
     init_session_state,
 )
 from streamlit_passwordless.exceptions import (
+    DatabaseError,
+    DatabaseStatementError,
     RegisterUserError,
     SignInTokenVerificationError,
     StreamlitPasswordlessError,
@@ -65,6 +67,8 @@ __all__ = [
     # database
     'db',
     # exceptions
+    'DatabaseError',
+    'DatabaseStatementError',
     'RegisterUserError,',
     'SignInTokenVerificationError',
     'StreamlitPasswordlessError',
