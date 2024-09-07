@@ -82,7 +82,7 @@ def _process_user_sign_in_in_db(
                 f'Signed in user (user_id={verified_user.user_id}, '
                 f'credential_nickname={verified_user.credential_nickname}) '
                 'was not found in local database!\n'
-                'A mismatch between Bitwarden Passwordless.dev and local database has ocurred!'
+                'A mismatch between Bitwarden Passwordless.dev and local database has occurred!'
             )
         username = verified_user.credential_nickname
     else:
