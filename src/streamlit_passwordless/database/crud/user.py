@@ -13,6 +13,7 @@ from streamlit_passwordless import exceptions
 
 from .. import models
 from ..core import Session
+from ..core import commit as db_commit
 from ..schemas import user as schemas
 
 
@@ -135,11 +136,8 @@ def get_user_by_user_id(
         ) from None
 
 
-def create_user(session: Session, user: schemas.UserCreate) -> models.User:
-    r"""Create a new user.
-
-    The user is added to the session and will be persisted in the
-    database when the method `session.commit` is executed.
+def create_user(session: Session, user: schemas.UserCreate, commit: bool = False) -> models.User:
+    r"""Create a new user in the database.
 
     Parameters
     ----------
@@ -149,13 +147,32 @@ def create_user(session: Session, user: schemas.UserCreate) -> models.User:
     user : schemas.UserCreate
         The user to crete.
 
+    commit : bool, default False
+        True if the added user should be committed after being added to the session and False
+        to commit later. Note that the returned `db_user` object will be in a expired state
+        if committing and will be re-loaded from the database upon next access.
+
     Returns
     -------
-    streamlit_passwordless.db.models.User
+    db_user : streamlit_passwordless.db.models.User
         The database model of the created user.
+
+    Raises
+    ------
+    streamlit_passwordless.DatabaseError
+        If an error occurs while saving the user to the database.
+
+    streamlit_passwordless.DatabaseStatementError
+        If there is an error with the executed SQL statement.
     """
 
     db_user = models.User(**user.model_dump())
     session.add(db_user)
+
+    if commit:
+        error_msg = (
+            f'Unable to save user {user.username} to database! Check the logs for more details.'
+        )
+        db_commit(session=session, error_msg=error_msg)
 
     return db_user
