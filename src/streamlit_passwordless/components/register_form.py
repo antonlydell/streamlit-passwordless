@@ -195,6 +195,42 @@ def _validate_form(
         st.session_state[config.SK_REGISTER_FORM_IS_VALID] = True
 
 
+def _create_user_in_database(session: db.Session, user: models.User) -> tuple[bool, str]:
+    r"""Create a new user in the database.
+
+    Parameters
+    ----------
+    session : streamlit_passwordless.db.Session
+        An active database session.
+
+    user : models.User
+        The user to save to the database.
+
+    Returns
+    -------
+    success : bool
+        True if the user was successfully saved to the database and False otherwise.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with creating the user
+        in the database. If no error occurred an empty string is returned.
+    """
+
+    user_create = db.UserCreate(
+        user_id=user.user_id, username=user.username, displayname=user.displayname
+    )
+
+    try:
+        db.create_user(session=session, user=user_create, commit=True)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        success = False
+    else:
+        error_msg = ''
+        success = True
+
+    return success, error_msg
 def bitwarden_register_form(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
