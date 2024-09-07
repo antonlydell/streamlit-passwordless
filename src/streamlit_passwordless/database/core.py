@@ -7,10 +7,13 @@ from typing import TypeAlias
 from sqlalchemy import URL as _URL
 from sqlalchemy import Engine as _Engine
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError, StatementError
 from sqlalchemy.orm import Session as _Session
 from sqlalchemy.orm import sessionmaker
 
 # Local
+from streamlit_passwordless import exceptions
+
 from .models import Base
 
 Engine: TypeAlias = _Engine
@@ -69,3 +72,33 @@ def create_session_factory(
         Base.metadata.create_all(bind=engine)
 
     return session_factory, engine
+
+
+def commit(session: Session, error_msg: str = 'Error committing transaction!') -> None:
+    r"""Commit a database transaction.
+
+    session : streamlit_passwordless.db.Session
+        An active database session.
+
+    error_msg : str, default 'Error committing transaction!'
+        An error message to add to the raised exception if an error occurs.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    streamlit_passwordless.DatabaseError
+        If an error occurs while processing the database transaction.
+
+    streamlit_passwordless.DatabaseStatementError
+        If there is an error with the executed SQL statement(s).
+    """
+
+    try:
+        session.commit()
+    except StatementError as e:
+        raise exceptions.DatabaseStatementError(message=error_msg, e=e) from None
+    except SQLAlchemyError as e:
+        raise exceptions.DatabaseError(message=error_msg, e=e) from None
