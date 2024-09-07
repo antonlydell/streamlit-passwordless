@@ -10,6 +10,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The admin console to manage users and credentials.
 
+- Roles and custom roles of the user database model.
+
+- Verifying user email addresses.
+
+
+## [0.7.0] - 2024-09-07
+
+Support to log user sign ins to the database!
+
+When signing in using the sign in form data about the user and passkey credential that signed in
+is logged to the database. A user is also signed in after successful passkey registration
+using the register form and an entry about the registration sign in is also logged to the database.
+
+
+### Added
+
+- `streamlit_passwordless.DatabaseError` : Base exception for database related errors.
+
+- `streamlit_passwordless.DatabaseStatementError` : Raised for errors related to the executed SQL statement.
+
+- `streamlit_passwordless.db.commit` : Commit a database transaction within a session.
+
+- `streamlit_passwordless.db.create_user_sign_in` : Create a new user sign in entry in the database.
+
+- `streamlit_passwordless.db.get_user_by_user_id` : Get a user by user_id from the database.
+
+- `streamlit_passwordless.db.UserSignInCreate` : The schema for creating a new user sign in entry.
+
+- `streamlit_passwordless.db.models.UserSignIn` : A logging table of when a user has signed in to the application.
+
+
+### Changed
+
+- `streamlit_passwordless.register_form` : Added support to save user sign in data to the database.
+
+- `streamlit_passwordless.sign_in_form` : Added support to save user sign in data to the database.
+
+- `streamlit_passwordless.db.create_user` : Added the parameter `commit` to select if the created user
+   should be committed to the database after it has been added to the session. The default is to not commit.
+
+- `streamlit_passwordless.db.models.Email` : Added columns `is_primary` and `verified_at`, which describe
+  if an email address is the user's primary address and the timestamp when the address was verified by the user.
+  Replaced column `active` with `disabled` and `disabled_at` to align the column naming with the user model.
+
+  `streamlit_passwordless.db.models.User` : Added column `verified_at`, which contains the timestamp of
+  when a user first verified an email.
+
 
 ## [0.6.1] - 2024-08-17
 
@@ -21,13 +68,13 @@ Fix retrieving http headers from websocket connection for Streamlit >= v1.37.
 - `streamlit_passwordless.db.create_session_factory` : Changed to only return the session_factory
   and not the engine that is bound to the session_factory. The engine will rarely be of use to the user.
 
-- `streamlit_passwordless.register_from` : Changed the default value from True to False for parameter
+- `streamlit_passwordless.register_form` : Changed the default value from True to False for parameter
   `pre_authorized` since it is a more sensible default value.
 
 
 ### Fixed
 
-- `streamlit_passwordless.register_from` : Properly extracting the http headers from the websocket
+- `streamlit_passwordless.register_form` : Properly extracting the http headers from the websocket
   connection using `st.context.headers` for Streamlit >= v1.37. This removes the deprecation warning
   banner.
 
@@ -235,7 +282,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.7.0
 [0.6.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.6.1
 [0.6.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.6.0
 [0.5.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.5.1
