@@ -10,6 +10,7 @@ import streamlit as st
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
+from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import register_button
 from streamlit_passwordless.web import get_origin_header
@@ -193,6 +194,93 @@ def _validate_form(
         st.session_state[config.SK_REGISTER_FORM_IS_VALID] = False
     else:
         st.session_state[config.SK_REGISTER_FORM_IS_VALID] = True
+
+
+def _create_user_in_database(session: db.Session, user: models.User) -> tuple[bool, str]:
+    r"""Create a new user in the database.
+
+    Parameters
+    ----------
+    session : streamlit_passwordless.db.Session
+        An active database session.
+
+    user : models.User
+        The user to save to the database.
+
+    Returns
+    -------
+    success : bool
+        True if the user was successfully saved to the database and False otherwise.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with creating the user
+        in the database. If no error occurred an empty string is returned.
+    """
+
+    user_create = db.UserCreate(
+        user_id=user.user_id, username=user.username, displayname=user.displayname
+    )
+
+    try:
+        db.create_user(session=session, user=user_create, commit=True)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        success = False
+    else:
+        error_msg = ''
+        success = True
+
+    return success, error_msg
+
+
+def _save_user_sign_in_to_database(
+    session: db.Session, verified_user: BitwardenPasswordlessVerifiedUser
+) -> tuple[bool, str]:
+    r"""Save the user sign in entry to the database.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    verified_user : BitwardenPasswordlessVerifiedUser
+        The verified user that signed in after registration.
+
+    Returns
+    -------
+    success : bool
+        True if the user sign in was successfully saved to the database and False otherwise.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with saving the user sign
+        in entry to the database. If no error occurred an empty string is returned.
+    """
+
+    user_sign_in = db.UserSignInCreate(
+        user_id=verified_user.user_id,
+        sign_in_timestamp=verified_user.sign_in_timestamp,
+        success=verified_user.success,
+        origin=verified_user.origin,
+        device=verified_user.device,
+        country=verified_user.country,
+        credential_nickname=verified_user.credential_nickname,
+        credential_id=verified_user.credential_id,
+        sign_in_type=verified_user.type,
+        rp_id=verified_user.rp_id,
+    )
+
+    try:
+        db.create_user_sign_in(session=session, user_sign_in=user_sign_in, commit=True)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        success = False
+    else:
+        error_msg = ''
+        success = True
+
+    return success, error_msg
 
 
 def bitwarden_register_form(
@@ -448,20 +536,56 @@ def bitwarden_register_form(
             st.error(error_msg, icon=config.ICON_ERROR)
         return
 
-    # The user is still registered even though the sign in may fail!
-    verified_user, error_msg = core.verify_sign_in(client=client, token=token)
-    if verified_user is None or not verified_user.success:
-        error_msg = f'User {username} was registered, but the sign in attempt with registered passkey failed!'
-        with banner_container:
-            st.error(error_msg, icon=config.ICON_ERROR)
-
+    final_error_msg = ''
     if not db_user:
-        user_create = db.UserCreate(
-            user_id=user.user_id, username=user.username, displayname=user.displayname
-        )
-        db_user = db.create_user(session=db_session, user=user_create)
+        can_save_sign_in_to_db, error_msg = _create_user_in_database(session=db_session, user=user)
+        if not can_save_sign_in_to_db:
+            final_error_msg = (
+                f'Could not save user {user.username} to database! '
+                'A mismatch between Bitwarden Passwordless.dev and local database has occurred!'
+            )
+    else:
+        can_save_sign_in_to_db = True
 
-    msg = f'Successfully registered user: {db_user.username}!'
-    logger.info(msg)
-    with banner_container:
-        st.success(msg, icon=config.ICON_SUCCESS)
+    # The user is still registered even though the sign in may fail!
+    verified_user, _ = core.verify_sign_in(client=client, token=token)
+    sign_in_failed_error_msg = (
+        f'User {username} was registered, but the sign in attempt with registered passkey failed!'
+    )
+    if verified_user is None:
+        final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
+        save_user_sign_in_to_db_ok = False
+
+    elif can_save_sign_in_to_db:
+        if not verified_user.success:
+            final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
+
+        save_user_sign_in_to_db_ok, error_msg = _save_user_sign_in_to_database(
+            session=db_session, verified_user=verified_user
+        )
+        if not save_user_sign_in_to_db_ok:
+            final_error_msg = f'{final_error_msg}\n{error_msg}'
+    else:
+        save_user_sign_in_to_db_ok = False
+
+    if not can_save_sign_in_to_db:
+        with banner_container:
+            logger.error(final_error_msg)
+            st.error(final_error_msg, icon=config.ICON_ERROR)
+
+    elif save_user_sign_in_to_db_ok:
+        msg = f'Successfully registered user: {user.username}!'
+        logger.info(msg)
+        with banner_container:
+            st.success(msg, icon=config.ICON_SUCCESS)
+
+    elif not save_user_sign_in_to_db_ok:
+        with banner_container:
+            logger.warning(final_error_msg)
+            st.warning(final_error_msg, icon=config.ICON_WARNING)
+
+    else:
+        with banner_container:
+            final_error_msg = f'{final_error_msg}\n Unexpected error!'
+            logger.error(final_error_msg)
+            st.error(final_error_msg, icon=config.ICON_ERROR)

@@ -2,30 +2,105 @@ r"""The sign in form component."""
 
 # Standard library
 import logging
-from typing import Literal
 
 # Third party
 import streamlit as st
 
+# Local
+from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions
+from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import sign_in_button
 
-# Local
-from . import config, ids
+from . import config, core, ids
 
 logger = logging.getLogger(__name__)
 
 
+def _process_user_sign_in_in_db(
+    session: db.Session, verified_user: BitwardenPasswordlessVerifiedUser
+) -> tuple[db.models.User | None, str, str]:
+    r"""Process the user sign in entry in the database.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    verified_user : BitwardenPasswordlessVerifiedUser
+        The verified user that signed in.
+
+    Returns
+    -------
+    db_user : db.models.User or None
+        The database user object. None is returned if no user with a matching
+        user_id from `verified_user` was found.
+
+    username : str
+        The name of the signed in user to display to the user. If the database user
+        was not found the nickname of the passkey credential used for signing in is
+        used instead.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with saving
+        the user sign in entry to the database.
+    """
+
+    user_sign_in = db.UserSignInCreate(
+        user_id=verified_user.user_id,
+        sign_in_timestamp=verified_user.sign_in_timestamp,
+        success=verified_user.success,
+        origin=verified_user.origin,
+        device=verified_user.device,
+        country=verified_user.country,
+        credential_nickname=verified_user.credential_nickname,
+        credential_id=verified_user.credential_id,
+        sign_in_type=verified_user.type,
+        rp_id=verified_user.rp_id,
+    )
+
+    try:
+        db.create_user_sign_in(session=session, user_sign_in=user_sign_in, commit=True)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+    else:
+        error_msg = ''
+
+    try:
+        db_user = db.get_user_by_user_id(session=session, user_id=verified_user.user_id)
+        load_db_user_error = False
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        load_db_user_error = True
+        db_user = None
+
+    if db_user is None:
+        if not load_db_user_error:
+            logger.warning(
+                f'Signed in user (user_id={verified_user.user_id}, '
+                f'credential_nickname={verified_user.credential_nickname}) '
+                'was not found in local database!\n'
+                'A mismatch between Bitwarden Passwordless.dev and local database has occurred!'
+            )
+        username = verified_user.credential_nickname
+    else:
+        username = db_user.username
+
+    return db_user, username, error_msg
+
+
 def bitwarden_sign_in_form(
     client: BitwardenPasswordlessClient,
+    db_session: db.Session,
     with_alias: bool = True,
     with_discoverable: bool = True,
     with_autofill: bool = False,
     title: str = '#### Sign in',
     border: bool = True,
     submit_button_label: str = 'Sign in',
-    button_type: Literal['primary', 'secondary'] = 'primary',
+    button_type: core.ButtonType = 'primary',
     alias_label: str = 'Alias',
     alias_max_length: int | None = 50,
     alias_placeholder: str | None = 'john.doe@example.com',
@@ -40,6 +115,9 @@ def bitwarden_sign_in_form(
     client : streamlit_passwordless.BitwardenPasswordlessClient
         The Bitwarden Passwordless client to use for interacting with
         the Bitwarden Passwordless application.
+
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
 
     with_alias : bool, default True
         If True the field to enter the alias to use for signing in will be rendered. If False
@@ -141,23 +219,25 @@ def bitwarden_sign_in_form(
             st.error(error_msg, icon=config.ICON_ERROR)
         return
 
-    try:
-        verified_user = client.verify_sign_in(token=token)
-    except exceptions.SignInTokenVerificationError as e:
-        error_msg = str(e)
-        logger.error(error_msg)
-    except exceptions.StreamlitPasswordlessError as e:
-        error_msg = f'Error creating verified user!\n{str(e)}'
-        logger.error(error_msg)
+    verified_user, error_msg = core.verify_sign_in(client=client, token=token)
 
-    if error_msg:
+    if verified_user is None or verified_user.success is False:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
         return
 
-    st.session_state[config.SK_BP_VERIFIED_USER] = verified_user
+    _, username, error_msg = _process_user_sign_in_in_db(
+        session=db_session, verified_user=verified_user
+    )
+
     with banner_container:
-        st.success(
-            f'Successfully signed in user {verified_user.credential_nickname}',
-            icon=config.ICON_SUCCESS,
-        )
+        if error_msg:
+            st.warning(
+                f'{error_msg} User {username} was still signed in.',
+                icon=config.ICON_WARNING,
+            )
+        else:
+            st.success(
+                f'Successfully signed in user {username}',
+                icon=config.ICON_SUCCESS,
+            )

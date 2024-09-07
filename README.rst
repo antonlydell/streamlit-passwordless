@@ -134,12 +134,12 @@ working directory *stp_demo*.
 
       session_factory = stp.db.create_session_factory(url=DB_URL)
 
-      with session_factory.begin() as session:
+      with session_factory() as session:
          register_tab, signin_in_tab = st.tabs(['Register', 'Sign in'])
          with register_tab:
             stp.bitwarden_register_form(client=client, db_session=session)
          with signin_in_tab:
-            stp.bitwarden_sign_in_form(client=client)
+            stp.bitwarden_sign_in_form(client=client, db_session=session)
 
 
    if __name__ == '__main__':
