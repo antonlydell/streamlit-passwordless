@@ -8,9 +8,7 @@ from typing import Literal, Self, TypeAlias
 # Third party
 from passwordless import (
     PasswordlessClient,
-    PasswordlessClientBuilder,
     PasswordlessError,
-    PasswordlessOptions,
     RegisterToken,
     VerifiedUser,
     VerifySignIn,
@@ -157,32 +155,6 @@ class BitwardenPasswordlessVerifiedUser(models.BaseModel):
             type=verified_user.type,
             rp_id=verified_user.rp_id,
         )
-
-
-def _build_backend_client(private_key: str, url: str) -> BackendClient:
-    r"""Build the Bitwarden Passwordless backend client.
-
-    Parameters
-    ----------
-    private_key : str
-        The private key that the client uses for authenticating with the
-        Bitwarden Passwordless backend API.
-
-    url : str
-        The base url to the backend API.
-
-    Returns
-    -------
-    BackendClient
-        The backend client.
-    """
-
-    try:
-        options = PasswordlessOptions(api_secret=private_key, api_url=url)
-        return PasswordlessClientBuilder(options=options).build()
-    except Exception as e:
-        error_msg = f'Could not build Bitwarden backend client! {type(e).__name__} : {str(e)}'
-        raise exceptions.StreamlitPasswordlessError(error_msg) from None
 
 
 def _create_register_token(

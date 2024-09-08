@@ -14,14 +14,12 @@ from pydantic import AnyHttpUrl
 
 # Local
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless import backend
 from streamlit_passwordless.bitwarden_passwordless.backend import (
     BackendClient,
     BitwardenPasswordlessVerifiedUser,
     BitwardenRegisterConfig,
     PasswordlessError,
     RegisterToken,
-    _build_backend_client,
     _create_register_token,
     _verify_sign_in_token,
 )
@@ -141,60 +139,6 @@ class TestBitwardenRegisterConfig:
         # Verify
         # ===========================================================
         assert config.expires_at == expires_at_exp
-
-        # Clean up - None
-        # ===========================================================
-
-
-class TestBuildBackendClient:
-    r"""Tests for the function `_build_backend_client`."""
-
-    def test_build_backend_client(self) -> None:
-        r"""Test building an instance of the backend client."""
-
-        # Setup
-        # ===========================================================
-        private_key = 'private key'
-        url = 'https://afterlife.ax7.com'
-
-        # Exercise
-        # ===========================================================
-        client = _build_backend_client(private_key=private_key, url=url)
-
-        # Verify
-        # ===========================================================
-        assert client.options.api_url == url, 'api_url is incorrect!'
-        assert client.options.api_secret == private_key, 'api_secret is incorrect!'
-
-        # Clean up - None
-        # ===========================================================
-
-    @pytest.mark.raises
-    def test_raises_exception(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        r"""Test that a raised exception will be re-raised as `StreamlitPasswordlessError`."""
-
-        # Setup
-        # ===========================================================
-        error_msg_text = 'Unexpected!'
-        error_msg_exp = f'Could not build Bitwarden backend client! ValueError : {error_msg_text}'
-        monkeypatch.setattr(
-            backend.PasswordlessClientBuilder,
-            'build',
-            Mock(side_effect=ValueError(error_msg_text)),
-        )
-
-        # Exercise
-        # ===========================================================
-        with pytest.raises(exceptions.StreamlitPasswordlessError) as exc_info:
-            _build_backend_client(private_key='private_key', url='url')
-
-        # Verify
-        # ===========================================================
-        exc_info_text = exc_info.exconly()
-        print(exc_info_text)
-        error_msg = exc_info.value.args[0]
-
-        assert error_msg == error_msg_exp
 
         # Clean up - None
         # ===========================================================

@@ -12,6 +12,7 @@ from passwordless import (
     CredentialDescriptor,
     PasswordlessClient,
     PasswordlessError,
+    PasswordlessProblemDetails,
     RegisteredToken,
 )
 from pydantic import AnyHttpUrl
@@ -19,6 +20,7 @@ from pydantic import AnyHttpUrl
 # Local
 import streamlit_passwordless.bitwarden_passwordless.client
 from streamlit_passwordless import exceptions, models
+from streamlit_passwordless.bitwarden_passwordless import client
 from streamlit_passwordless.bitwarden_passwordless.client import (
     BitwardenPasswordlessClient,
     backend,
@@ -198,6 +200,41 @@ class TestBitwardenPasswordlessClient:
         # ===========================================================
         assert client._backend_client.options.api_url == url_exp, 'api_url is incorrect!'
         assert client._backend_client.options.api_secret == private_key, 'api_secret is incorrect!'
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.raises
+    def test_backend_client_raises_exception(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        r"""Test raising a `PasswordlessError` from the backend client.
+
+        The raised exception should re-raised as a `StreamlitPasswordlessError`.
+        """
+
+        # Setup
+        # ===========================================================
+        error_msg_exp = 'Could not build Bitwarden Passwordless backend client!'
+        problem_details = PasswordlessProblemDetails(
+            type='fake_error_type', title='error_title', status=400, error_code='error_code'
+        )
+        exception_to_raise = PasswordlessError(problem_details=problem_details)
+
+        monkeypatch.setattr(
+            client.PasswordlessClientBuilder, 'build', Mock(side_effect=exception_to_raise)
+        )
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(exceptions.StreamlitPasswordlessError) as exc_info:
+            BitwardenPasswordlessClient(public_key='public_key', private_key='private_key')
+
+        # Verify
+        # ===========================================================
+        print(exc_info.exconly())
+        e = exc_info.value  # The captured exception
+
+        assert e.displayable_message == error_msg_exp, 'Error message is incorrect!'
+        assert e.parent_exception is exception_to_raise, 'Parent exception is incorrect!'
 
         # Clean up - None
         # ===========================================================

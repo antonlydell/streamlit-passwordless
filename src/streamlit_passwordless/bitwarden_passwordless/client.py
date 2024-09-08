@@ -5,7 +5,13 @@ import logging
 from typing import Any, TypeAlias
 
 # Third party
-from passwordless import Credential, PasswordlessError
+from passwordless import (
+    Credential,
+    PasswordlessClient,
+    PasswordlessClientBuilder,
+    PasswordlessError,
+    PasswordlessOptions,
+)
 from pydantic import AnyHttpUrl, Field, PrivateAttr
 
 # Local
@@ -13,8 +19,8 @@ from streamlit_passwordless import exceptions, models
 
 from . import backend
 
+BackendClient: TypeAlias = PasswordlessClient
 PasskeyCredential: TypeAlias = Credential
-
 logger = logging.getLogger(__name__)
 
 
@@ -43,14 +49,17 @@ class BitwardenPasswordlessClient(models.BaseModel):
     register_config: backend.BitwardenRegisterConfig = Field(
         default_factory=backend.BitwardenRegisterConfig
     )
-    _backend_client: backend.BackendClient = PrivateAttr()
+    _backend_client: BackendClient = PrivateAttr()
 
     def model_post_init(self, __context: Any) -> None:
         r"""Setup the Bitwarden Passwordless backend client."""
 
-        self._backend_client = backend._build_backend_client(
-            private_key=self.private_key, url=str(self.url)
-        )
+        try:
+            options = PasswordlessOptions(api_secret=self.private_key, api_url=str(self.url))
+            self._backend_client = PasswordlessClientBuilder(options=options).build()
+        except PasswordlessError as e:
+            error_msg = 'Could not build Bitwarden Passwordless backend client!'
+            raise exceptions.StreamlitPasswordlessError(error_msg, e=e) from None
 
     def __hash__(self) -> int:
         return hash(self.private_key + self.public_key)
