@@ -54,7 +54,7 @@ class StreamlitPasswordlessError(Exception):
             self.parent_exception_name = None
             self.parent_full_message = None
 
-        if not getattr(self, 'parent_message'):
+        if getattr(self, 'parent_message', None) is None:
             self.parent_message = None if e is None else self._get_parent_error_message(e=e)
 
         super().__init__(message)
@@ -65,7 +65,7 @@ class StreamlitPasswordlessError(Exception):
 
         try:
             return e.args[0]
-        except KeyError:
+        except IndexError:
             return None
 
     @property
@@ -83,8 +83,9 @@ class StreamlitPasswordlessError(Exception):
         """
 
         return (
-            f'{self.message}\nParent Exception : {self.parent_exception_name}\n'
-            f'{self.parent_full_message}'
+            f'Message : {self.message}\n'
+            f'Parent Exception : {self.parent_exception_name}\n'
+            f'Parent Full Message :{self.parent_full_message}'
         )
 
 
