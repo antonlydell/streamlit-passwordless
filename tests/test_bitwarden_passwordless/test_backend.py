@@ -1,7 +1,6 @@
 r"""Unit tests for the backend module of the bitwarden_passwordless library."""
 
 # Standard library
-from collections import namedtuple
 from datetime import datetime, timedelta
 from typing import Any
 from unittest.mock import Mock
@@ -13,14 +12,12 @@ from passwordless import VerifiedUser
 from pydantic import AnyHttpUrl
 
 # Local
-from streamlit_passwordless import exceptions, models
+from streamlit_passwordless import exceptions
 from streamlit_passwordless.bitwarden_passwordless.backend import (
     BackendClient,
     BitwardenPasswordlessVerifiedUser,
     BitwardenRegisterConfig,
     PasswordlessError,
-    RegisterToken,
-    _create_register_token,
     _verify_sign_in_token,
 )
 
@@ -139,92 +136,6 @@ class TestBitwardenRegisterConfig:
         # Verify
         # ===========================================================
         assert config.expires_at == expires_at_exp
-
-        # Clean up - None
-        # ===========================================================
-
-
-class TestCreateRegisterToken:
-    r"""Tests for the function `_create_register_token`."""
-
-    def test_called_correctly(
-        self, monkeypatch: pytest.MonkeyPatch, mocked_get_current_datetime: datetime
-    ) -> None:
-        r"""Test that the `_create_register_token` function can be called correctly."""
-
-        # Setup
-        # ===========================================================
-        register_token_mock_return = namedtuple('register_token_mock_return', 'token')
-        token_exp = 'syn.gates'
-
-        user = models.User(username='SynGates')
-
-        validity = timedelta(seconds=120)
-        expires_at = mocked_get_current_datetime + validity
-        monkeypatch.setattr(BitwardenRegisterConfig, 'expires_at', expires_at)
-
-        client = Mock(spec_set=BackendClient, name='MockedBackendClient')
-        client.register_token.return_value = register_token_mock_return(token=token_exp)
-
-        bitwarden_register_config = BitwardenRegisterConfig()
-
-        register_config = user.model_dump(
-            exclude={'email', 'displayname'}
-        ) | bitwarden_register_config.model_dump(exclude={'validity'})
-
-        register_config['display_name'] = user.displayname
-        register_config['expires_at'] = expires_at
-
-        input_register_config_exp = RegisterToken(**register_config)
-
-        # Exercise
-        # ===========================================================
-        token = _create_register_token(
-            client=client, user=user, register_config=bitwarden_register_config
-        )
-
-        # Verify
-        # ===========================================================
-        assert token == token_exp, 'token is incorrect!'
-        client.register_token.assert_called_once_with(register_token=input_register_config_exp)
-
-        # Clean up - None
-        # ===========================================================
-
-    @pytest.mark.raises
-    def test_raises_register_user_error(self) -> None:
-        r"""Test that a raised `PasswordlessError` will be re-raised as a `RegisterUserError`."""
-
-        # Setup
-        # ===========================================================
-        problem_details = {'error': True}
-        user = models.User(username='SynGates')
-
-        client = Mock(spec_set=BackendClient, name='MockedBackendClient')
-        client.register_token.side_effect = PasswordlessError(problem_details=problem_details)
-
-        # Exercise
-        # ===========================================================
-        with pytest.raises(exceptions.RegisterUserError) as exc_info:
-            _create_register_token(
-                client=client, user=user, register_config=BitwardenRegisterConfig()
-            )
-
-        # Verify
-        # ===========================================================
-        error_msg = exc_info.exconly()
-        print(error_msg)
-
-        assert 'Error creating register token!' in error_msg, 'Error message is incorrect!'
-        assert f'{problem_details}' in error_msg, 'Error message problem_details are incorrect!'
-
-        assert (
-            problem_details == exc_info.value.data['problem_details']
-        ), 'problem_details are incorrect!'
-
-        assert isinstance(
-            exc_info.value.data['input_register_config'], RegisterToken
-        ), 'input_register_config is incorrect!'
 
         # Clean up - None
         # ===========================================================

@@ -11,6 +11,7 @@ from passwordless import (
     PasswordlessClientBuilder,
     PasswordlessError,
     PasswordlessOptions,
+    RegisterToken,
 )
 from pydantic import AnyHttpUrl, Field, PrivateAttr
 
@@ -84,11 +85,33 @@ class BitwardenPasswordlessClient(models.BaseModel):
             using the Bitwarden Passwordless backend API.
         """
 
-        return backend._create_register_token(
-            client=self._backend_client,
-            user=user,
-            register_config=self.register_config,  # type: ignore
+        register_config = self.register_config
+        input_register_token = RegisterToken(
+            user_id=user.user_id,
+            username=user.username,
+            display_name=user.displayname,
+            attestation=register_config.attestation,
+            authenticator_type=register_config.authenticator_type,
+            discoverable=register_config.discoverable,
+            user_verification=register_config.user_verification,
+            aliases=user.aliases,
+            alias_hashing=register_config.alias_hashing,
+            expires_at=register_config.expires_at,
         )
+
+        try:
+            registered_token = self._backend_client.register_token(
+                register_token=input_register_token
+            )
+        except PasswordlessError as e:
+            error_msg = f'Error creating register token! {str(e)}'
+            data = {
+                'input_register_config': input_register_token,
+                'problem_details': e.problem_details,
+            }
+            raise exceptions.RegisterUserError(error_msg, data=data, e=e) from None
+
+        return registered_token.token  # type: ignore
 
     def verify_sign_in(self, token: str) -> backend.BitwardenPasswordlessVerifiedUser:
         r"""Verify the sign in token with the backend to complete the sign in process.

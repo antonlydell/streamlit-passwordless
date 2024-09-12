@@ -6,13 +6,7 @@ from datetime import datetime, timedelta
 from typing import Literal, Self, TypeAlias
 
 # Third party
-from passwordless import (
-    PasswordlessClient,
-    PasswordlessError,
-    RegisterToken,
-    VerifiedUser,
-    VerifySignIn,
-)
+from passwordless import PasswordlessClient, PasswordlessError, VerifiedUser, VerifySignIn
 from pydantic import AnyHttpUrl
 
 # Local
@@ -155,63 +149,6 @@ class BitwardenPasswordlessVerifiedUser(models.BaseModel):
             type=verified_user.type,
             rp_id=verified_user.rp_id,
         )
-
-
-def _create_register_token(
-    client: BackendClient, user: models.User, register_config: BitwardenRegisterConfig
-) -> str:
-    r"""Create a register token to use for registering a device for a user.
-
-    Parameters
-    ----------
-    client : BackendClient
-        The Bitwarden Passwordless backend client to use for creating the register token.
-
-    user : streamlit_passwordless.models.User
-        The user to register.
-
-    register_config : BitwardenRegisterConfig
-        The configuration for creating the register token.
-
-    Returns
-    -------
-    str
-        The token to use for registering a device for a user.
-
-    Raises
-    ------
-    streamlit_passwordless.exceptions.RegisterUserError
-        If an error occurs while trying to create the register token using the
-        Bitwarden Passwordless backend API.
-    """
-
-    input_register_config = RegisterToken(
-        user_id=user.user_id,
-        username=user.username,
-        display_name=user.displayname,
-        attestation=register_config.attestation,
-        authenticator_type=register_config.authenticator_type,
-        discoverable=register_config.discoverable,
-        user_verification=register_config.user_verification,
-        aliases=user.aliases,
-        alias_hashing=register_config.alias_hashing,
-        expires_at=register_config.expires_at,
-    )
-
-    try:
-        registered_token = client.register_token(register_token=input_register_config)
-    except PasswordlessError as e:
-        error_msg = f'Error creating register token! {str(e)}\nproblem_details: {e.problem_details}'
-        data = {
-            'input_register_config': input_register_config,
-            'problem_details': e.problem_details,
-        }
-        logger.error(error_msg)
-        raise exceptions.RegisterUserError(error_msg, data=data) from None
-    else:
-        logger.info(f'Successfully created register token for user_id={user.user_id}')
-
-    return registered_token.token  # type: ignore
 
 
 def _verify_sign_in_token(client: BackendClient, token: str) -> BitwardenPasswordlessVerifiedUser:

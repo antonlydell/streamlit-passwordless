@@ -14,6 +14,7 @@ from passwordless import (
     PasswordlessError,
     PasswordlessProblemDetails,
     RegisteredToken,
+    RegisterToken,
 )
 from pydantic import AnyHttpUrl
 
@@ -354,12 +355,14 @@ class TestCreateRegisterTokenMethod:
         client = BitwardenPasswordlessClient(
             url='https://ax7.com', private_key='public key', public_key='private key'
         )
-        problem_details = {'error': True}
+
+        problem_details = PasswordlessProblemDetails(
+            type='fake_error_type', title='error_title', status=400, error_code='error_code'
+        )
+        exception_to_raise = PasswordlessError(problem_details=problem_details)
 
         monkeypatch.setattr(
-            client._backend_client,
-            'register_token',
-            Mock(side_effect=PasswordlessError(problem_details=problem_details)),
+            client._backend_client, 'register_token', Mock(side_effect=exception_to_raise)
         )
 
         # Exercise
@@ -371,8 +374,13 @@ class TestCreateRegisterTokenMethod:
         # ===========================================================
         error_msg = exc_info.exconly()
         print(error_msg)
+        e = exc_info.value
 
-        assert exc_info.value.data['problem_details'] == problem_details
+        assert 'Error creating register token!' in error_msg, 'Error message is incorrect!'
+        assert e.data['problem_details'] == problem_details, 'problem_details are incorrect!'
+        assert isinstance(
+            e.data['input_register_config'], RegisterToken
+        ), 'input_register_config is incorrect!'
 
         # Clean up - None
         # ===========================================================
