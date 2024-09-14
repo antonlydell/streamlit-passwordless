@@ -26,6 +26,7 @@ from streamlit_passwordless.bitwarden_passwordless import client
 from streamlit_passwordless.bitwarden_passwordless.client import (
     BackendClient,
     BitwardenPasswordlessClient,
+    BitwardenRegisterConfig,
     backend,
 )
 
@@ -108,6 +109,77 @@ def list_of_credentials() -> tuple[list[Credential], str, list[Credential]]:
 # =============================================================================================
 # Tests
 # =============================================================================================
+
+
+class TestBitwardenRegisterConfig:
+    r"""Tests for the `BitwardenRegisterConfig` model."""
+
+    def test__init__(self) -> None:
+        r"""Test to initialize an instance of `BitwardenRegisterConfig`."""
+
+        # Setup
+        # ===========================================================
+        data = {
+            'attestation': 'direct',
+            'authenticator_type': 'platform',
+            'discoverable': False,
+            'user_verification': 'required',
+            'validity': timedelta(seconds=240),
+            'alias_hashing': False,
+        }
+
+        # Exercise
+        # ===========================================================
+        config = BitwardenRegisterConfig.model_validate(data)
+
+        # Verify
+        # ===========================================================
+        assert config.model_dump() == data
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_expires_at_property_with_default_value_for_validity(
+        self, mocked_get_current_datetime: datetime
+    ) -> None:
+        r"""Test the `expires_at` property with the default value for `validity`."""
+
+        # Setup
+        # ===========================================================
+        validity = timedelta(seconds=120)
+        expires_at_exp = mocked_get_current_datetime + validity
+
+        # Exercise
+        # ===========================================================
+        config = BitwardenRegisterConfig()
+
+        # Verify
+        # ===========================================================
+        assert config.expires_at == expires_at_exp
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_expires_at_property_with_custom_value_for_validity(
+        self, mocked_get_current_datetime: datetime
+    ) -> None:
+        r"""Test the `expires_at` property with a custom value for `validity`."""
+
+        # Setup
+        # ===========================================================
+        validity = timedelta(hours=1)
+        expires_at_exp = mocked_get_current_datetime + validity
+
+        # Exercise
+        # ===========================================================
+        config = BitwardenRegisterConfig(validity=validity)
+
+        # Verify
+        # ===========================================================
+        assert config.expires_at == expires_at_exp
+
+        # Clean up - None
+        # ===========================================================
 
 
 class TestBitwardenPasswordlessClient:

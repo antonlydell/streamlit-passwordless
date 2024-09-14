@@ -2,7 +2,8 @@ r"""The client to use to interact with Bitwarden Passwordless."""
 
 # Standard library
 import logging
-from typing import Any, TypeAlias
+from datetime import datetime, timedelta
+from typing import Any, Literal, TypeAlias
 
 # Third party
 from passwordless import (
@@ -17,13 +18,62 @@ from passwordless import (
 from pydantic import AnyHttpUrl, Field, PrivateAttr
 
 # Local
-from streamlit_passwordless import exceptions, models
+from streamlit_passwordless import common, exceptions, models
 
 from . import backend
 
 BackendClient: TypeAlias = PasswordlessClient
 PasskeyCredential: TypeAlias = Credential
 logger = logging.getLogger(__name__)
+
+
+class BitwardenRegisterConfig(models.BaseModel):
+    r"""The available passkey configuration when registering a new user.
+
+    See the `Bitwarden Passwordless`_ documentation for more info about the parameters.
+
+    .. _ Bitwarden Passwordless: https://docs.passwordless.dev/guide/api.html#register-token
+
+    Parameters
+    ----------
+    attestation : Literal['none', 'direct', 'indirect'], default 'none'
+        WebAuthn attestation conveyance preference. 'direct' and 'indirect' are exclusive to the
+        Enterprise plan of Bitwarden Passwordless. Trial & Pro plans are limited to 'none'.
+
+    authenticator_type : Literal['any', 'platform', 'cross-platform'], default 'any'
+        WebAuthn authenticator attachment modality. 'platform' refers to platform specific options
+        such as Windows Hello, FaceID or TouchID, while 'cross-platform' means roaming devices such
+        as security keys. 'any' (default) means any authenticator type is allowed.
+
+    discoverable : bool, default True
+        True allows the user to sign in without a username or alias by creating a
+        client-side discoverable credential.
+
+    user_verification : Literal['preferred', 'required', 'discouraged'], default 'preferred'
+        Set the preference for how user verification (e.g. PIN code or biometrics) works when
+        authenticating.
+
+    validity : timedelta, default timedelta(seconds=120)
+        When the registration token expires and becomes invalid defined as an offset
+        from the start of the registration process.
+
+    alias_hashing : bool, default True
+        True means that aliases for a user are hashed before they are stored in the
+        Bitwarden Passwordless database.
+    """
+
+    attestation: Literal['none', 'direct', 'indirect'] = 'none'
+    authenticator_type: Literal['any', 'platform', 'cross-platform'] = 'any'
+    discoverable: bool = True
+    user_verification: Literal['preferred', 'required', 'discouraged'] = 'preferred'
+    validity: timedelta = timedelta(seconds=120)
+    alias_hashing: bool = True
+
+    @property
+    def expires_at(self) -> datetime:
+        r"""The expiry time of the registration token in timezone UTC."""
+
+        return common.get_current_datetime() + self.validity
 
 
 class BitwardenPasswordlessClient(models.BaseModel):
@@ -48,9 +98,7 @@ class BitwardenPasswordlessClient(models.BaseModel):
     public_key: str
     private_key: str
     url: AnyHttpUrl = AnyHttpUrl('https://v4.passwordless.dev')
-    register_config: backend.BitwardenRegisterConfig = Field(
-        default_factory=backend.BitwardenRegisterConfig
-    )
+    register_config: BitwardenRegisterConfig = Field(default_factory=BitwardenRegisterConfig)
     _backend_client: BackendClient = PrivateAttr()
 
     def model_post_init(self, __context: Any) -> None:

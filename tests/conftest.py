@@ -144,7 +144,7 @@ def mocked_get_current_datetime(monkeypatch: pytest.MonkeyPatch) -> datetime:
     m = Mock(spec_set=common.get_current_datetime, return_value=now)
 
     monkeypatch.setattr(
-        streamlit_passwordless.bitwarden_passwordless.backend.common, 'get_current_datetime', m
+        streamlit_passwordless.bitwarden_passwordless.client.common, 'get_current_datetime', m
     )
 
     return now
