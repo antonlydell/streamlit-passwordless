@@ -12,6 +12,7 @@ from passwordless import (
     PasswordlessError,
     PasswordlessOptions,
     RegisterToken,
+    VerifySignIn,
 )
 from pydantic import AnyHttpUrl, Field, PrivateAttr
 
@@ -136,7 +137,19 @@ class BitwardenPasswordlessClient(models.BaseModel):
             successfully created.
         """
 
-        return backend._verify_sign_in_token(client=self._backend_client, token=token)
+        try:
+            _verified_user = self._backend_client.sign_in(verify_sign_in=VerifySignIn(token=token))
+        except PasswordlessError as e:
+            error_msg = f'Error verifying the sign in token! {str(e)}'
+            data = {
+                'token': token,
+                'problem_details': e.problem_details,
+            }
+            raise exceptions.SignInTokenVerificationError(error_msg, data=data, e=e) from None
+
+        return backend.BitwardenPasswordlessVerifiedUser._from_passwordless_verified_user(
+            verified_user=_verified_user
+        )
 
     def get_credentials(self, user_id: str, origin: str | None = None) -> list[PasskeyCredential]:
         r"""Get the registered passkey credentials for a user.

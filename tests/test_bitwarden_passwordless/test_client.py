@@ -2,6 +2,7 @@ r"""Unit tests for the client module of the bitwarden_passwordless library."""
 
 # Standard library
 from datetime import datetime, timedelta
+from typing import Any
 from unittest.mock import Mock, call
 from zoneinfo import ZoneInfo
 
@@ -15,14 +16,15 @@ from passwordless import (
     PasswordlessProblemDetails,
     RegisteredToken,
     RegisterToken,
+    VerifiedUser,
 )
 from pydantic import AnyHttpUrl
 
 # Local
-import streamlit_passwordless.bitwarden_passwordless.client
 from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless import client
 from streamlit_passwordless.bitwarden_passwordless.client import (
+    BackendClient,
     BitwardenPasswordlessClient,
     backend,
 )
@@ -389,33 +391,82 @@ class TestCreateRegisterTokenMethod:
 class TestVerifySignInMethod:
     r"""Tests for the method `BitwardenPasswordlessClient.verify_sign_in`."""
 
-    def test_called_correctly(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_called_correctly(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        passwordless_verified_user: tuple[VerifiedUser, dict[str, Any]],
+        bp_verified_user: tuple[backend.BitwardenPasswordlessVerifiedUser, dict[str, Any]],
+    ) -> None:
         r"""Test that the `verify_sign_in` method can be called correctly."""
 
         # Setup
         # ===========================================================
-        token = 'token'
-
         client = BitwardenPasswordlessClient(
             url='https://ax7.com', private_key='private key', public_key='public_key'
         )
+        verified_user, _ = passwordless_verified_user
+        bp_verified_user_exp, _ = bp_verified_user
+        token = 'token'
 
         m = Mock(
-            spec_set=backend._verify_sign_in_token,
-            name='mocked__verify_sign_in_function',
+            spec_set=client._backend_client.sign_in,
+            name='mocked__backend_client_sign_in',
+            return_value=verified_user,
         )
-
-        monkeypatch.setattr(
-            streamlit_passwordless.bitwarden_passwordless.client.backend, '_verify_sign_in_token', m
-        )
+        monkeypatch.setattr(client._backend_client, 'sign_in', m)
 
         # Exercise
         # ===========================================================
-        client.verify_sign_in(token=token)
+        bp_verified_user_result = client.verify_sign_in(token=token)
 
         # Verify
         # ===========================================================
-        m.assert_called_once_with(client=client._backend_client, token=token)
+        assert bp_verified_user_result.model_dump() == bp_verified_user_exp.model_dump()
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.raises
+    def test_raises_sign_in_token_verification_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        r"""Test raising `SignInTokenVerificationError`.
+
+        A raised `PasswordlessError` should be re-raised as a `SignInTokenVerificationError`.
+        """
+
+        # Setup
+        # ===========================================================
+        client = BitwardenPasswordlessClient(
+            url='https://ax7.com', private_key='public key', public_key='private key'
+        )
+        token = 'my_token'
+
+        problem_details = PasswordlessProblemDetails(
+            type='fake_error_type', title='error_title', status=400, error_code='error_code'
+        )
+        exception_to_raise = PasswordlessError(problem_details=problem_details)
+
+        m = Mock(
+            spec_set=BackendClient.sign_in,
+            name='mocked__backend_client_sign_in',
+            side_effect=exception_to_raise,
+        )
+        monkeypatch.setattr(client._backend_client, 'sign_in', m)
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(exceptions.SignInTokenVerificationError) as exc_info:
+            client.verify_sign_in(token=token)
+
+        # Verify
+        # ===========================================================
+        error_msg = exc_info.exconly()
+        print(error_msg)
+        e = exc_info.value
+
+        assert 'Error verifying the sign in token!' in error_msg, 'Error message is incorrect!'
+        assert str(problem_details) in error_msg, 'Error message problem_details are incorrect!'
+        assert problem_details == e.data['problem_details'], 'problem_details are incorrect!'
+        assert token == e.data['token'], 'token is incorrect!'
 
         # Clean up - None
         # ===========================================================
