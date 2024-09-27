@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime
 
 # Third party
+from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
@@ -60,6 +61,64 @@ class Email(BaseModel):
     verified_at: datetime | None = None
     disabled: bool = False
     disabled_timestamp: datetime | None = None
+
+
+class UserSignIn(BaseModel):
+    r"""A model of a user sign in with a passkey credential.
+
+    Parameters
+    ----------
+    user_sign_in_id : int or None, default None
+        The unique ID of sign in entry. The primary key of the database table.
+        None is used when the sign in entry is not persisted in the database.
+
+    user_id : str
+        The unique ID of the user that signed in to the application.
+
+    sign_in_timestamp : datetime
+        The timestamp in timezone UTC when the user signed in. Alias `timestamp`.
+
+    success : bool
+        True if the user was successfully signed in and False otherwise.
+
+    origin : str
+        The domain name or IP-address of the application the user signed in to.
+
+    device : str
+        The device the user signed in from. E.g. a web browser.
+
+    country : str
+        The country code of the country that the user signed in from. E.g. SE for Sweden.
+
+    credential_nickname : str
+        The nickname of the passkey that was used to sign in. Alias `nickname`.
+
+    credential_id : str
+        The ID of the passkey credential used to sign in.
+
+    sign_in_type : str
+        The type of sign in method. E.g. 'passkey_signin'. Alias `type`.
+
+    rp_id : str or None
+        The ID of the relaying party, which is the server that
+        verifies the credentials during the sign in process.
+    """
+
+    user_sign_in_id: int | None = None
+    user_id: str
+    sign_in_timestamp: datetime = Field(
+        validation_alias=AliasChoices('sign_in_timestamp', 'timestamp')
+    )
+    success: bool
+    origin: str
+    device: str
+    country: str
+    credential_nickname: str = Field(
+        validation_alias=AliasChoices('credential_nickname', 'nickname')
+    )
+    credential_id: str
+    sign_in_type: str = Field(validation_alias=AliasChoices('sign_in_type', 'type'))
+    rp_id: str | None = None
 
 
 class User(BaseModel):
