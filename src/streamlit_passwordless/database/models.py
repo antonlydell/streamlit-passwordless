@@ -52,7 +52,7 @@ class User(Base):
         The username of the user. It must be unique across all users.
 
     ad_username : Optional[str]
-        The active directory username of the user is such exists.
+        The active directory username of the user.
 
     displayname : Optional[str]
         A descriptive name of the user that is easy to understand for a human.
