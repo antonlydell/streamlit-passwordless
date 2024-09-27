@@ -126,29 +126,51 @@ class User(BaseModel):
 
     Parameters
     ----------
-    username : str
-        The username of the user.
-
-    user_id : str | None, default None
+    user_id : str or None, default None
         The unique ID of the user which serves as the primary key in the database.
         If None it will be generated as a uuid.
 
-    email : str | None, default None
-        The email address of the user.
+    username : str
+        The username of the user. It must be unique across all users.
 
-    displayname : str | None, default None
+    ad_username : str or None, default None
+        The active directory username of the user if such exists.
+
+    displayname : str or None, default None
         A descriptive name of the user that is easy to understand for a human.
 
-    aliases : tuple[str, ...] | str | None, default None
+    verified_at : datetime or None, default None
+        The timestamp in UTC when the user was verified. A user is verified when
+        at least one verified email address is associated with the user.
+
+    disabled : bool, default False
+        If False the user is enabled and if True the user is disabled.
+        A disabled user is not able to register credentials or sign in.
+
+    disabled_timestamp : datetime or None, default None
+        The timestamp in UTC when the user was disabled.
+
+    emails : list[Email] or None, default None
+        The email addresses associated with the user.
+
+    sign_in : UserSignIn or None, default None
+        Info about when the user signed in to the application.
+
+    aliases : tuple[str, ...] or str or None, default None
         Additional ID:s that can be used to identify the user when signing in.
         A string with aliases separated by semicolon ";" can be used to supply multiple
         aliases if tuple is not used.
     """
 
-    username: str
     user_id: str | None = Field(default=None, validate_default=True)
-    email: str | None = None
+    username: str
+    ad_username: str | None = None
     displayname: str | None = None
+    verified_at: datetime | None = None
+    disabled: bool = False
+    disabled_timestamp: datetime | None = None
+    emails: list[Email] | None = None
+    sign_in: UserSignIn | None = None
     aliases: tuple[str, ...] | str | None = Field(default=None, validate_default=True)
 
     def __hash__(self) -> int:
@@ -168,3 +190,12 @@ class User(BaseModel):
             return tuple(v for a in aliases.split(';') if (v := a.strip()))
         else:
             return aliases
+
+    @property
+    def is_authenticated(self) -> bool:
+        r"""Check if the user is authenticated with the application."""
+
+        if (sign_in := self.sign_in) is None:
+            return False
+        else:
+            return sign_in.success
