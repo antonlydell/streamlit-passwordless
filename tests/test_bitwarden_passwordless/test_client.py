@@ -29,6 +29,9 @@ from streamlit_passwordless.bitwarden_passwordless.client import (
     BitwardenRegisterConfig,
     backend,
 )
+from streamlit_passwordless.database import models as db_models
+
+from ..config import ModelData
 
 # =============================================================================================
 # Fixtures
@@ -381,7 +384,9 @@ class TestBitwardenPasswordlessClient:
 class TestCreateRegisterTokenMethod:
     r"""Tests for the method `BitwardenPasswordlessClient.create_register_token`."""
 
-    def test_called_correctly(self, user: models.User, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_called_correctly(
+        self, user_1: tuple[models.User, db_models.User, ModelData], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         r"""Test that the `create_register_token` method can be called correctly."""
 
         # Setup
@@ -400,6 +405,8 @@ class TestCreateRegisterTokenMethod:
             ),
         )
 
+        user, _, _ = user_1
+
         # Exercise
         # ===========================================================
         register_token = client.create_register_token(user=user)
@@ -415,7 +422,7 @@ class TestCreateRegisterTokenMethod:
 
     @pytest.mark.raises
     def test_backend_raises_register_user_error(
-        self, user: models.User, monkeypatch: pytest.MonkeyPatch
+        self, user_1: tuple[models.User, db_models.User, ModelData], monkeypatch: pytest.MonkeyPatch
     ) -> None:
         r"""Test that `exceptions.RegisterUserError` can be properly raised.
 
@@ -438,6 +445,8 @@ class TestCreateRegisterTokenMethod:
         monkeypatch.setattr(
             client._backend_client, 'register_token', Mock(side_effect=exception_to_raise)
         )
+
+        user, _, _ = user_1
 
         # Exercise
         # ===========================================================
