@@ -5,7 +5,7 @@ import uuid
 
 # Third party
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import Field, ValidationError, field_validator
+from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 # Local
 from . import exceptions
@@ -13,6 +13,8 @@ from . import exceptions
 
 class BaseModel(PydanticBaseModel):
     r"""The BaseModel that all models inherit from."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     def __init__(self, **kwargs) -> None:
         try:
