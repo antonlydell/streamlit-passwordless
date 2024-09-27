@@ -2,6 +2,7 @@ r"""The data models of streamlit-passwordless."""
 
 # Standard library
 import uuid
+from datetime import datetime
 
 # Third party
 from pydantic import BaseModel as PydanticBaseModel
@@ -21,6 +22,44 @@ class BaseModel(PydanticBaseModel):
             super().__init__(**kwargs)
         except ValidationError as e:
             raise exceptions.StreamlitPasswordlessError(str(e)) from None
+
+
+class Email(BaseModel):
+    r"""An Email address of a user.
+
+    Parameters
+    ----------
+    email_id : int or None, default None
+        The unique identifier of the email and the primary key in the database.
+        None is used when the email is not persisted in the database.
+
+    user_id : str
+        The unique ID of the user the email address belongs to.
+
+    email : str
+        An email address of a user. Must be unique across all users.
+
+    is_primary : bool
+        True if the email address is the primary email address of the user
+        and False otherwise. A user can only have one primary email address.
+
+    verified_at : datetime or None, default None
+        The timestamp in UTC when the email address was verified by the user.
+
+    disabled : bool, default False
+        If the email address is disabled or not.
+
+    disabled_timestamp : datetime or None, default None
+        The timestamp in UTC when the email address was disabled.
+    """
+
+    email_id: int | None = None
+    user_id: str
+    email: str
+    is_primary: bool
+    verified_at: datetime | None = None
+    disabled: bool = False
+    disabled_timestamp: datetime | None = None
 
 
 class User(BaseModel):
