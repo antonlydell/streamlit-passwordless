@@ -297,7 +297,7 @@ def bitwarden_register_form(
     alias_max_length: int | None = 50,
     alias_placeholder: str | None = 'j;john;jd',
     alias_help: str | None = '__default__',
-) -> None:
+) -> models.User | None:
     r"""Render the Bitwarden Passwordless register form.
 
     Allows the user to register an account with the application by creating
@@ -396,6 +396,12 @@ def bitwarden_register_form(
     alias_help : str or None, default '__default__'
         The help text to display for the alias field. If '__default__' a sensible default
         help text will be used and if None the help text is removed.
+
+    Returns
+    -------
+    user : streamlit_passwordless.User or None
+        The user object of the user that registered a passkey credential. None is returned if a user
+        has not registered yet or if the registration failed and a user object could not be retrieved.
     """
 
     user = None
@@ -505,12 +511,12 @@ def bitwarden_register_form(
         )
 
     if disabled or not clicked:
-        return
+        return None
 
     if user is None:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
-        return
+        return None
 
     if not token and error:
         error_msg = f'Error creating passkey for user ({username})!\nerror : {error}'
@@ -522,7 +528,7 @@ def bitwarden_register_form(
     if error_msg:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
-        return
+        return None
 
     final_error_msg = ''
     if not db_user:
@@ -536,20 +542,23 @@ def bitwarden_register_form(
         can_save_sign_in_to_db = True
 
     # The user is still registered even though the sign in may fail!
-    verified_user, _ = core.verify_sign_in(client=client, token=token)
+    user_sign_in, _ = core.verify_sign_in(client=client, token=token)
+    user.sign_in = user_sign_in
+    st.session_state[config.SK_USER] = user
+
     sign_in_failed_error_msg = (
         f'User {username} was registered, but the sign in attempt with registered passkey failed!'
     )
-    if verified_user is None:
+    if user_sign_in is None:
         final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
         save_user_sign_in_to_db_ok = False
 
     elif can_save_sign_in_to_db:
-        if not verified_user.success:
+        if not user_sign_in.success:
             final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
 
         save_user_sign_in_to_db_ok, error_msg = _save_user_sign_in_to_database(
-            session=db_session, verified_user=verified_user
+            session=db_session, user_sign_in=user_sign_in
         )
         if not save_user_sign_in_to_db_ok:
             final_error_msg = f'{final_error_msg}\n{error_msg}'
@@ -573,7 +582,6 @@ def bitwarden_register_form(
             st.warning(final_error_msg, icon=config.ICON_WARNING)
 
     else:
-        with banner_container:
-            final_error_msg = f'{final_error_msg}\n Unexpected error!'
-            logger.error(final_error_msg)
-            st.error(final_error_msg, icon=config.ICON_ERROR)
+        pass
+
+    return user
