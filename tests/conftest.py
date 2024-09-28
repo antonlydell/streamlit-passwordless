@@ -301,7 +301,7 @@ def user_1_with_unsuccessful_signin(
 
 
 @pytest.fixture()
-def passwordless_verified_user() -> tuple[VerifiedUser, dict[str, Any]]:
+def passwordless_verified_user() -> tuple[VerifiedUser, models.UserSignIn, ModelData]:
     r"""An instance of `passwordless.VerifiedUser`.
 
     Returns
@@ -309,8 +309,11 @@ def passwordless_verified_user() -> tuple[VerifiedUser, dict[str, Any]]:
     verified_user : passwordless.VerifiedUser
         The verified user instance.
 
-    data : dict[str, Any]
-        The data used to create `verified_user`.
+    model : streamlit_passwordless.models.UserSignIn
+        The corresponding `UserSignIn` model of `verified_user`.
+
+    data : ModelData
+        The input data that created `verified_user`.
     """
 
     data = {
@@ -329,12 +332,26 @@ def passwordless_verified_user() -> tuple[VerifiedUser, dict[str, Any]]:
     }
     verified_user = VerifiedUser(**data)
 
-    return verified_user, data
+    user_sign_in = models.UserSignIn(
+        user_sign_in_id=None,
+        user_id=data['user_id'],
+        sign_in_timestamp=data['timestamp'],
+        success=data['success'],
+        origin=data['origin'],
+        device=data['device'],
+        country=data['country'],
+        credential_nickname=data['nickname'],
+        credential_id=data['credential_id'],
+        sign_in_type=data['type'],
+        rp_id=data['rp_id'],
+    )
+
+    return verified_user, user_sign_in, data
 
 
 @pytest.fixture()
 def bp_verified_user(
-    passwordless_verified_user: tuple[VerifiedUser, dict[str, Any]]
+    passwordless_verified_user: tuple[VerifiedUser, models.UserSignIn, ModelData]
 ) -> tuple[BitwardenPasswordlessVerifiedUser, dict[str, Any]]:
     r"""An instance of `BitwardenPasswordlessVerifiedUser`.
 
@@ -350,7 +367,7 @@ def bp_verified_user(
         The data used to create `bp_verified_user`.
     """
 
-    _, input_data = passwordless_verified_user
+    _, _, input_data = passwordless_verified_user
 
     data = input_data.copy()
     data['origin'] = AnyHttpUrl(input_data['origin'])  # type: ignore

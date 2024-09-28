@@ -11,7 +11,7 @@ from passwordless import VerifiedUser
 from pydantic import AnyHttpUrl
 
 # Local
-from streamlit_passwordless import exceptions
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
 
 # =============================================================================================
@@ -104,14 +104,14 @@ class TestBitwardenPasswordlessVerifiedUser:
 
     def test_from_passwordless_verified_user(
         self,
-        passwordless_verified_user: tuple[VerifiedUser, dict[str, Any]],
+        passwordless_verified_user: tuple[VerifiedUser, models.UserSignIn, dict[str, Any]],
         bp_verified_user: tuple[BitwardenPasswordlessVerifiedUser, dict[str, Any]],
     ) -> None:
         r"""Test the alternative constructor method `_from_passwordless_verified_user`."""
 
         # Setup
         # ===========================================================
-        input_verified_user, _ = passwordless_verified_user
+        input_verified_user, _, _ = passwordless_verified_user
         bp_verified_user_exp, _ = bp_verified_user
 
         # Exercise
