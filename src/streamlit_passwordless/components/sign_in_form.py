@@ -8,8 +8,7 @@ import streamlit as st
 
 # Local
 from streamlit_passwordless import database as db
-from streamlit_passwordless import exceptions
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import sign_in_button
 
@@ -19,23 +18,27 @@ logger = logging.getLogger(__name__)
 
 
 def _process_user_sign_in_in_db(
-    session: db.Session, verified_user: BitwardenPasswordlessVerifiedUser
-) -> tuple[db.models.User | None, str, str]:
+    session: db.Session, user_sign_in: models.UserSignIn
+) -> tuple[models.User | None, str, str]:
     r"""Process the user sign in entry in the database.
+
+    The following session state keys are updated with data about the user that signed in:
+    - config.SK_DB_USER : The database user object.
+    - config.SK_USER : The user object.
 
     Parameters
     ----------
     db_session : streamlit_passwordless.db.Session
         An active database session.
 
-    verified_user : BitwardenPasswordlessVerifiedUser
-        The verified user that signed in.
+    user_sign_in : streamlit_passwordless.models.UserSignIn
+        Data from Bitwarden Passwordless about the user that signed in.
 
     Returns
     -------
-    db_user : db.models.User or None
-        The database user object. None is returned if no user with a matching
-        user_id from `verified_user` was found.
+    user : streamlit_passwordless.models.User or None
+        The user object of the user that signed in. None is returned if no user with a
+        matching user_id from `user_sign_in` was found in the database.
 
     username : str
         The name of the signed in user to display to the user. If the database user
@@ -47,21 +50,10 @@ def _process_user_sign_in_in_db(
         the user sign in entry to the database.
     """
 
-    user_sign_in = db.UserSignInCreate(
-        user_id=verified_user.user_id,
-        sign_in_timestamp=verified_user.sign_in_timestamp,
-        success=verified_user.success,
-        origin=verified_user.origin,
-        device=verified_user.device,
-        country=verified_user.country,
-        credential_nickname=verified_user.credential_nickname,
-        credential_id=verified_user.credential_id,
-        sign_in_type=verified_user.type,
-        rp_id=verified_user.rp_id,
-    )
+    user_sign_in_to_db = db.UserSignInCreate.model_validate(user_sign_in)
 
     try:
-        db.create_user_sign_in(session=session, user_sign_in=user_sign_in, commit=True)
+        db.create_user_sign_in(session=session, user_sign_in=user_sign_in_to_db, commit=True)
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
         error_msg = e.displayable_message
@@ -69,26 +61,33 @@ def _process_user_sign_in_in_db(
         error_msg = ''
 
     try:
-        db_user = db.get_user_by_user_id(session=session, user_id=verified_user.user_id)
+        db_user = db.get_user_by_user_id(session=session, user_id=user_sign_in.user_id)
         load_db_user_error = False
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
         load_db_user_error = True
         db_user = None
 
+    st.session_state[config.SK_DB_USER] = db_user
+
     if db_user is None:
         if not load_db_user_error:
             logger.warning(
-                f'Signed in user (user_id={verified_user.user_id}, '
-                f'credential_nickname={verified_user.credential_nickname}) '
+                f'Signed in user (user_id={user_sign_in.user_id}, '
+                f'credential_nickname={user_sign_in.credential_nickname}) '
                 'was not found in local database!\n'
                 'A mismatch between Bitwarden Passwordless.dev and local database has occurred!'
             )
-        username = verified_user.credential_nickname
+        username = user_sign_in.credential_nickname
+        user = None
     else:
         username = db_user.username
+        user = models.User.model_validate(db_user)
+        user.sign_in = user_sign_in
 
-    return db_user, username, error_msg
+    st.session_state[config.SK_USER] = user
+
+    return user, username, error_msg
 
 
 def bitwarden_sign_in_form(
