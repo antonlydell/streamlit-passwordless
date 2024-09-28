@@ -104,7 +104,7 @@ def bitwarden_sign_in_form(
     alias_max_length: int | None = 50,
     alias_placeholder: str | None = 'john.doe@example.com',
     alias_help: str | None = '__default__',
-) -> None:
+) -> models.User | None:
     r"""Render the Bitwarden Passwordless sign in form.
 
     Allows the user to sign in to the application with a registered passkey.
@@ -162,6 +162,12 @@ def bitwarden_sign_in_form(
     alias_help : str or None, default '__default__'
         The help text to display for the alias field. If '__default__' a sensible default
         help text will be used and if None the help text is removed.
+
+    Returns
+    -------
+    user : streamlit_passwordless.User or None
+        The user object of the user that signed in. None is returned if a user has not
+        signed in yet or if the sign in failed and a user object could not be retrieved.
     """
 
     error_msg = ''
@@ -176,7 +182,7 @@ def bitwarden_sign_in_form(
             )
             logger.error(error_msg)
             st.error(error_msg, icon=config.ICON_ERROR)
-            return
+            return None
 
     with st.container(border=border):
         st.markdown(title)
@@ -209,24 +215,24 @@ def bitwarden_sign_in_form(
         )
 
     if not clicked:
-        return
+        return None
 
     if not token and error:
         error_msg = f'Error signing in!\nerror : {error}'
         logger.error(error_msg)
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
-        return
+        return None
 
-    verified_user, error_msg = core.verify_sign_in(client=client, token=token)
+    user_sign_in, error_msg = core.verify_sign_in(client=client, token=token)
 
-    if verified_user is None or verified_user.success is False:
+    if user_sign_in is None or user_sign_in.success is False:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
-        return
+        return None
 
-    _, username, error_msg = _process_user_sign_in_in_db(
-        session=db_session, verified_user=verified_user
+    user, username, error_msg = _process_user_sign_in_in_db(
+        session=db_session, user_sign_in=user_sign_in
     )
 
     with banner_container:
@@ -240,3 +246,5 @@ def bitwarden_sign_in_form(
                 f'Successfully signed in user {username}',
                 icon=config.ICON_SUCCESS,
             )
+
+    return user
