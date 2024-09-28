@@ -2,7 +2,6 @@ r"""Unit tests for the client module of the bitwarden_passwordless library."""
 
 # Standard library
 from datetime import datetime, timedelta
-from typing import Any
 from unittest.mock import Mock, call
 from zoneinfo import ZoneInfo
 
@@ -27,7 +26,6 @@ from streamlit_passwordless.bitwarden_passwordless.client import (
     BackendClient,
     BitwardenPasswordlessClient,
     BitwardenRegisterConfig,
-    backend,
 )
 from streamlit_passwordless.database import models as db_models
 
@@ -475,8 +473,7 @@ class TestVerifySignInMethod:
     def test_called_correctly(
         self,
         monkeypatch: pytest.MonkeyPatch,
-        passwordless_verified_user: tuple[VerifiedUser, dict[str, Any]],
-        bp_verified_user: tuple[backend.BitwardenPasswordlessVerifiedUser, dict[str, Any]],
+        passwordless_verified_user: tuple[VerifiedUser, models.UserSignIn, ModelData],
     ) -> None:
         r"""Test that the `verify_sign_in` method can be called correctly."""
 
@@ -485,9 +482,7 @@ class TestVerifySignInMethod:
         client = BitwardenPasswordlessClient(
             url='https://ax7.com', private_key='private key', public_key='public_key'
         )
-        verified_user, _ = passwordless_verified_user
-        bp_verified_user_exp, _ = bp_verified_user
-        token = 'token'
+        verified_user, user_sign_in_exp, _ = passwordless_verified_user
 
         m = Mock(
             spec_set=client._backend_client.sign_in,
@@ -498,11 +493,11 @@ class TestVerifySignInMethod:
 
         # Exercise
         # ===========================================================
-        bp_verified_user_result = client.verify_sign_in(token=token)
+        user_sign_in_result = client.verify_sign_in(token='token')
 
         # Verify
         # ===========================================================
-        assert bp_verified_user_result.model_dump() == bp_verified_user_exp.model_dump()
+        assert user_sign_in_result.model_dump() == user_sign_in_exp.model_dump()
 
         # Clean up - None
         # ===========================================================

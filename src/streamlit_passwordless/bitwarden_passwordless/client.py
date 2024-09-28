@@ -162,7 +162,7 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
         return registered_token.token  # type: ignore
 
-    def verify_sign_in(self, token: str) -> backend.BitwardenPasswordlessVerifiedUser:
+    def verify_sign_in(self, token: str) -> models.UserSignIn:
         r"""Verify the sign in token with the backend to complete the sign in process.
 
         Parameters
@@ -172,8 +172,8 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
         Returns
         -------
-        streamlit_passwordless.BitwardenPasswordlessVerifiedUser
-            Details from Bitwarden Passwordless about the user that was signed in.
+        streamlit_passwordless.UserSignIn
+            Details from Bitwarden Passwordless about the user that signed in.
 
         Raises
         ------
@@ -181,23 +181,18 @@ class BitwardenPasswordlessClient(models.BaseModel):
             If the `token` token cannot be verified successfully.
 
         streamlit_passwordless.StreamlitPasswordlessError
-            If an instance of `backend.BitwardenPasswordlessVerifiedUser` cannot be
+            If an instance of `streamlit_passwordless.UserSignIn` cannot be
             successfully created.
         """
 
         try:
-            _verified_user = self._backend_client.sign_in(verify_sign_in=VerifySignIn(token=token))
+            verified_user = self._backend_client.sign_in(verify_sign_in=VerifySignIn(token=token))
         except PasswordlessError as e:
             error_msg = f'Error verifying the sign in token! {str(e)}'
-            data = {
-                'token': token,
-                'problem_details': e.problem_details,
-            }
+            data = {'token': token, 'problem_details': e.problem_details}
             raise exceptions.SignInTokenVerificationError(error_msg, data=data, e=e) from None
 
-        return backend.BitwardenPasswordlessVerifiedUser._from_passwordless_verified_user(
-            verified_user=_verified_user
-        )
+        return models.UserSignIn.model_validate(verified_user)
 
     def get_credentials(self, user_id: str, origin: str | None = None) -> list[PasskeyCredential]:
         r"""Get the registered passkey credentials for a user.
