@@ -8,8 +8,7 @@ from typing import Literal, TypeAlias
 import streamlit as st
 
 # Local
-from streamlit_passwordless import exceptions
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 
 from . import config
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def verify_sign_in(
     client: BitwardenPasswordlessClient, token: str
-) -> tuple[BitwardenPasswordlessVerifiedUser | None, str]:
+) -> tuple[models.UserSignIn | None, str]:
     r"""Verify the sign in token with the backend to complete the sign in process.
 
     Parameters
@@ -34,10 +33,10 @@ def verify_sign_in(
 
     Returns
     -------
-    verified_user : streamlit_passwordless.BitwardenPasswordlessVerifiedUser or None
-        Details from Bitwarden Passwordless about the user that was signed in.
-        None is returned if an error occurred during the sign in process. `verified_user` is
-        also stored in the session state with the key `config.SK_BP_VERIFIED_USER`.
+    user_sign_in : streamlit_passwordless.UserSignIn or None
+        Details from Bitwarden Passwordless about the user that signed in.
+        None is returned if an error occurred during the sign in process. `user_sign_in` is
+        also stored in the session state with the key `config.SK_USER_SIGN_IN`.
 
     error_msg : str
         An error message about what failed during the sign in process.
@@ -45,17 +44,17 @@ def verify_sign_in(
     """
 
     error_msg = ''
-    verified_user: BitwardenPasswordlessVerifiedUser | None = None
+    user_sign_in: models.UserSignIn | None = None
 
     try:
-        verified_user = client.verify_sign_in(token=token)
+        user_sign_in = client.verify_sign_in(token=token)
     except exceptions.SignInTokenVerificationError as e:
-        error_msg = str(e)
-        logger.error(error_msg)
+        error_msg = e.displayable_message
+        logger.error(str(e))
     except exceptions.StreamlitPasswordlessError as e:
-        error_msg = f'Error creating verified user!\n{str(e)}'
-        logger.error(error_msg)
+        error_msg = f'Error creating user sign in!\n{e.displayable_message}'
+        logger.error(f'Error creating user sign in!\n{str(e)}')
 
-    st.session_state[config.SK_USER_SIGN_IN] = verified_user
+    st.session_state[config.SK_USER_SIGN_IN] = user_sign_in
 
-    return verified_user, error_msg
+    return user_sign_in, error_msg
