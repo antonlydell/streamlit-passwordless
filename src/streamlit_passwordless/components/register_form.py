@@ -10,7 +10,6 @@ import streamlit as st
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
 from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import register_button
 from streamlit_passwordless.web import get_origin_header
@@ -235,7 +234,7 @@ def _create_user_in_database(session: db.Session, user: models.User) -> tuple[bo
 
 
 def _save_user_sign_in_to_database(
-    session: db.Session, verified_user: BitwardenPasswordlessVerifiedUser
+    session: db.Session, user_sign_in: models.UserSignIn
 ) -> tuple[bool, str]:
     r"""Save the user sign in entry to the database.
 
@@ -244,8 +243,8 @@ def _save_user_sign_in_to_database(
     db_session : streamlit_passwordless.db.Session
         An active database session.
 
-    verified_user : BitwardenPasswordlessVerifiedUser
-        The verified user that signed in after registration.
+    user_sign_in : models.UserSignIn
+        Data about the user sign in after registration.
 
     Returns
     -------
@@ -257,21 +256,10 @@ def _save_user_sign_in_to_database(
         in entry to the database. If no error occurred an empty string is returned.
     """
 
-    user_sign_in = db.UserSignInCreate(
-        user_id=verified_user.user_id,
-        sign_in_timestamp=verified_user.sign_in_timestamp,
-        success=verified_user.success,
-        origin=verified_user.origin,
-        device=verified_user.device,
-        country=verified_user.country,
-        credential_nickname=verified_user.credential_nickname,
-        credential_id=verified_user.credential_id,
-        sign_in_type=verified_user.type,
-        rp_id=verified_user.rp_id,
-    )
+    user_sign_in_to_db = db.UserSignInCreate.model_validate(user_sign_in)
 
     try:
-        db.create_user_sign_in(session=session, user_sign_in=user_sign_in, commit=True)
+        db.create_user_sign_in(session=session, user_sign_in=user_sign_in_to_db, commit=True)
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
         error_msg = e.displayable_message
