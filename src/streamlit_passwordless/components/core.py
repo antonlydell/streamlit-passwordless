@@ -56,6 +56,6 @@ def verify_sign_in(
         error_msg = f'Error creating verified user!\n{str(e)}'
         logger.error(error_msg)
 
-    st.session_state[config.SK_BP_VERIFIED_USER] = verified_user
+    st.session_state[config.SK_USER_SIGN_IN] = verified_user
 
     return verified_user, error_msg

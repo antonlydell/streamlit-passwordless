@@ -177,8 +177,8 @@ def _validate_form(
         else:
             credentials = []
 
-        if (verified_user := st.session_state.get(config.SK_BP_VERIFIED_USER)) is not None:
-            is_authenticated = True if verified_user.user_id == user.user_id else False
+        if (user_sign_in := st.session_state.get(config.SK_USER_SIGN_IN)) is not None:
+            is_authenticated = True if user_sign_in.user_id == user.user_id else False
         else:
             is_authenticated = False
 

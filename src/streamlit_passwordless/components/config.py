@@ -12,7 +12,7 @@ import streamlit as st
 # Session state keys
 # =====================================================================================
 
-SK_BP_VERIFIED_USER = 'stp-bp-verified-user'
+SK_USER_SIGN_IN = 'stp-user-sign-in'
 SK_DB_USER = 'stp-db-user'
 SK_REGISTER_FORM_IS_VALID = 'stp-register-form-is-valid'
 
@@ -35,8 +35,8 @@ def init_session_state() -> None:
 
     Session state keys
     ------------------
-    SK_BP_VERIFIED_USER : streamlit_passwordless.BitwardenPasswordlessVerifiedUser or None, default None
-        A verified user from Bitwarden Passwordless.
+    SK_USER_SIGN_IN : streamlit_passwordless.UserSignIn or None, default None
+        Details from Bitwarden Passwordless about the user that signed in.
 
     SK_DB_USER : streamlit_passwordless.db.models.User or None, default None
         The database user. If None the user does not exist in the database.
@@ -45,7 +45,7 @@ def init_session_state() -> None:
         True if the input to register form is valid and False otherwise.
     """
 
-    none_keys = (SK_BP_VERIFIED_USER, SK_DB_USER)
+    none_keys = (SK_USER_SIGN_IN, SK_DB_USER)
     for key in none_keys:
         st.session_state[key] = None
 
