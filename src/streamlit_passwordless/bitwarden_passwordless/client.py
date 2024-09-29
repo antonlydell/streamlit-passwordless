@@ -20,8 +20,6 @@ from pydantic import AnyHttpUrl, Field, PrivateAttr
 # Local
 from streamlit_passwordless import common, exceptions, models
 
-from . import backend
-
 BackendClient: TypeAlias = PasswordlessClient
 PasskeyCredential: TypeAlias = Credential
 logger = logging.getLogger(__name__)

@@ -2,19 +2,16 @@ r"""Fixtures for testing streamlit-passwordless."""
 
 # Standard library
 from datetime import datetime
-from typing import Any
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
 
 # Third party
 import pytest
 from passwordless import VerifiedUser
-from pydantic import AnyHttpUrl
 
 # Local
-import streamlit_passwordless.bitwarden_passwordless.backend
+import streamlit_passwordless.bitwarden_passwordless.client
 from streamlit_passwordless import common, models
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
 from streamlit_passwordless.database import models as db_models
 
 from .config import TZ_UTC, ModelData
@@ -347,38 +344,6 @@ def passwordless_verified_user() -> tuple[VerifiedUser, models.UserSignIn, Model
     )
 
     return verified_user, user_sign_in, data
-
-
-@pytest.fixture()
-def bp_verified_user(
-    passwordless_verified_user: tuple[VerifiedUser, models.UserSignIn, ModelData]
-) -> tuple[BitwardenPasswordlessVerifiedUser, dict[str, Any]]:
-    r"""An instance of `BitwardenPasswordlessVerifiedUser`.
-
-    `BitwardenPasswordlessVerifiedUser` is the `streamlit_passwordless`
-    implementation of `passwordless.VerifiedUser`.
-
-    Returns
-    -------
-    bp_verified_user : bitwarden_passwordless.backend.BitwardenPasswordlessVerifiedUser
-        The verified user instance.
-
-    data : dict[str, Any]
-        The data used to create `bp_verified_user`.
-    """
-
-    _, _, input_data = passwordless_verified_user
-
-    data = input_data.copy()
-    data['origin'] = AnyHttpUrl(input_data['origin'])  # type: ignore
-    data['sign_in_timestamp'] = input_data['timestamp']
-    del data['timestamp']
-    data['credential_nickname'] = input_data['nickname']
-    del data['nickname']
-
-    bp_verified_user = BitwardenPasswordlessVerifiedUser.model_validate(data)
-
-    return bp_verified_user, data
 
 
 # =============================================================================================
