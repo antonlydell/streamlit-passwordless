@@ -12,7 +12,6 @@ from datetime import date
 import streamlit_passwordless.database as db
 from streamlit_passwordless.bitwarden_passwordless import (
     BitwardenPasswordlessClient,
-    BitwardenPasswordlessVerifiedUser,
     BitwardenRegisterConfig,
     PasskeyCredential,
     register_button,
@@ -52,7 +51,6 @@ r"""The release date of the version specified in :data:`__versiontuple__`."""
 __all__ = [
     # bitwarden_passwordless
     'BitwardenPasswordlessClient',
-    'BitwardenPasswordlessVerifiedUser',
     'BitwardenRegisterConfig',
     'PasskeyCredential',
     'register_button',

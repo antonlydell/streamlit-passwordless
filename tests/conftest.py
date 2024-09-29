@@ -2,19 +2,16 @@ r"""Fixtures for testing streamlit-passwordless."""
 
 # Standard library
 from datetime import datetime
-from typing import Any
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
 
 # Third party
 import pytest
 from passwordless import VerifiedUser
-from pydantic import AnyHttpUrl
 
 # Local
 import streamlit_passwordless.bitwarden_passwordless.backend
 from streamlit_passwordless import common, models
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
 from streamlit_passwordless.database import models as db_models
 
 from .config import TZ_UTC, ModelData
@@ -301,7 +298,7 @@ def user_1_with_unsuccessful_signin(
 
 
 @pytest.fixture()
-def passwordless_verified_user() -> tuple[VerifiedUser, dict[str, Any]]:
+def passwordless_verified_user() -> tuple[VerifiedUser, models.UserSignIn, ModelData]:
     r"""An instance of `passwordless.VerifiedUser`.
 
     Returns
@@ -309,8 +306,11 @@ def passwordless_verified_user() -> tuple[VerifiedUser, dict[str, Any]]:
     verified_user : passwordless.VerifiedUser
         The verified user instance.
 
-    data : dict[str, Any]
-        The data used to create `verified_user`.
+    model : streamlit_passwordless.models.UserSignIn
+        The corresponding `UserSignIn` model of `verified_user`.
+
+    data : ModelData
+        The input data that created `verified_user`.
     """
 
     data = {
@@ -329,39 +329,21 @@ def passwordless_verified_user() -> tuple[VerifiedUser, dict[str, Any]]:
     }
     verified_user = VerifiedUser(**data)
 
-    return verified_user, data
+    user_sign_in = models.UserSignIn(
+        user_sign_in_id=None,
+        user_id=data['user_id'],
+        sign_in_timestamp=data['timestamp'],
+        success=data['success'],
+        origin=data['origin'],
+        device=data['device'],
+        country=data['country'],
+        credential_nickname=data['nickname'],
+        credential_id=data['credential_id'],
+        sign_in_type=data['type'],
+        rp_id=data['rp_id'],
+    )
 
-
-@pytest.fixture()
-def bp_verified_user(
-    passwordless_verified_user: tuple[VerifiedUser, dict[str, Any]]
-) -> tuple[BitwardenPasswordlessVerifiedUser, dict[str, Any]]:
-    r"""An instance of `BitwardenPasswordlessVerifiedUser`.
-
-    `BitwardenPasswordlessVerifiedUser` is the `streamlit_passwordless`
-    implementation of `passwordless.VerifiedUser`.
-
-    Returns
-    -------
-    bp_verified_user : bitwarden_passwordless.backend.BitwardenPasswordlessVerifiedUser
-        The verified user instance.
-
-    data : dict[str, Any]
-        The data used to create `bp_verified_user`.
-    """
-
-    _, input_data = passwordless_verified_user
-
-    data = input_data.copy()
-    data['origin'] = AnyHttpUrl(input_data['origin'])  # type: ignore
-    data['sign_in_timestamp'] = input_data['timestamp']
-    del data['timestamp']
-    data['credential_nickname'] = input_data['nickname']
-    del data['nickname']
-
-    bp_verified_user = BitwardenPasswordlessVerifiedUser.model_validate(data)
-
-    return bp_verified_user, data
+    return verified_user, user_sign_in, data
 
 
 # =============================================================================================
@@ -383,7 +365,7 @@ def mocked_get_current_datetime(monkeypatch: pytest.MonkeyPatch) -> datetime:
     m = Mock(spec_set=common.get_current_datetime, return_value=now)
 
     monkeypatch.setattr(
-        streamlit_passwordless.bitwarden_passwordless.client.common, 'get_current_datetime', m
+        streamlit_passwordless.bitwarden_passwordless.backend.common, 'get_current_datetime', m
     )
 
     return now

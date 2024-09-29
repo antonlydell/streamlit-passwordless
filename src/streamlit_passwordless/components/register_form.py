@@ -10,8 +10,7 @@ import streamlit as st
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessVerifiedUser
-from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import register_button
 from streamlit_passwordless.web import get_origin_header
 
@@ -60,8 +59,8 @@ def _create_user(
             username=username, user_id=user_id, displayname=displayname, aliases=aliases
         )
     except exceptions.StreamlitPasswordlessError as e:
-        error_msg = str(e)
-        logger.error(error_msg)
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
         user = None
     else:
         logger.debug(f'Successfully created user: {user}')
@@ -103,7 +102,8 @@ def _create_register_token(
     try:
         register_token = client.create_register_token(user=user)
     except exceptions.RegisterUserError as e:
-        error_msg = str(e)
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
         register_token = ''
 
     return register_token, error_msg
@@ -177,8 +177,8 @@ def _validate_form(
         else:
             credentials = []
 
-        if (verified_user := st.session_state.get(config.SK_BP_VERIFIED_USER)) is not None:
-            is_authenticated = True if verified_user.user_id == user.user_id else False
+        if (user_sign_in := st.session_state.get(config.SK_USER_SIGN_IN)) is not None:
+            is_authenticated = True if user_sign_in.user_id == user.user_id else False
         else:
             is_authenticated = False
 
@@ -235,7 +235,7 @@ def _create_user_in_database(session: db.Session, user: models.User) -> tuple[bo
 
 
 def _save_user_sign_in_to_database(
-    session: db.Session, verified_user: BitwardenPasswordlessVerifiedUser
+    session: db.Session, user_sign_in: models.UserSignIn
 ) -> tuple[bool, str]:
     r"""Save the user sign in entry to the database.
 
@@ -244,8 +244,8 @@ def _save_user_sign_in_to_database(
     db_session : streamlit_passwordless.db.Session
         An active database session.
 
-    verified_user : BitwardenPasswordlessVerifiedUser
-        The verified user that signed in after registration.
+    user_sign_in : models.UserSignIn
+        Data about the user sign in after registration.
 
     Returns
     -------
@@ -257,21 +257,10 @@ def _save_user_sign_in_to_database(
         in entry to the database. If no error occurred an empty string is returned.
     """
 
-    user_sign_in = db.UserSignInCreate(
-        user_id=verified_user.user_id,
-        sign_in_timestamp=verified_user.sign_in_timestamp,
-        success=verified_user.success,
-        origin=verified_user.origin,
-        device=verified_user.device,
-        country=verified_user.country,
-        credential_nickname=verified_user.credential_nickname,
-        credential_id=verified_user.credential_id,
-        sign_in_type=verified_user.type,
-        rp_id=verified_user.rp_id,
-    )
+    user_sign_in_to_db = db.UserSignInCreate.model_validate(user_sign_in)
 
     try:
-        db.create_user_sign_in(session=session, user_sign_in=user_sign_in, commit=True)
+        db.create_user_sign_in(session=session, user_sign_in=user_sign_in_to_db, commit=True)
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
         error_msg = e.displayable_message
@@ -309,7 +298,7 @@ def bitwarden_register_form(
     alias_max_length: int | None = 50,
     alias_placeholder: str | None = 'j;john;jd',
     alias_help: str | None = '__default__',
-) -> None:
+) -> models.User | None:
     r"""Render the Bitwarden Passwordless register form.
 
     Allows the user to register an account with the application by creating
@@ -408,6 +397,12 @@ def bitwarden_register_form(
     alias_help : str or None, default '__default__'
         The help text to display for the alias field. If '__default__' a sensible default
         help text will be used and if None the help text is removed.
+
+    Returns
+    -------
+    user : streamlit_passwordless.User or None
+        The user object of the user that registered a passkey credential. None is returned if a user
+        has not registered yet or if the registration failed and a user object could not be retrieved.
     """
 
     user = None
@@ -476,7 +471,8 @@ def bitwarden_register_form(
             try:
                 origin = get_origin_header()
             except exceptions.StreamlitPasswordlessError as e:
-                error_msg = str(e)
+                logger.error(e.detailed_message)
+                error_msg = e.displayable_message
                 origin = ''
 
             st.form_submit_button(
@@ -517,12 +513,12 @@ def bitwarden_register_form(
         )
 
     if disabled or not clicked:
-        return
+        return None
 
     if user is None:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
-        return
+        return None
 
     if not token and error:
         error_msg = f'Error creating passkey for user ({username})!\nerror : {error}'
@@ -534,7 +530,7 @@ def bitwarden_register_form(
     if error_msg:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
-        return
+        return None
 
     final_error_msg = ''
     if not db_user:
@@ -548,20 +544,23 @@ def bitwarden_register_form(
         can_save_sign_in_to_db = True
 
     # The user is still registered even though the sign in may fail!
-    verified_user, _ = core.verify_sign_in(client=client, token=token)
+    user_sign_in, _ = core.verify_sign_in(client=client, token=token)
+    user.sign_in = user_sign_in
+    st.session_state[config.SK_USER] = user
+
     sign_in_failed_error_msg = (
         f'User {username} was registered, but the sign in attempt with registered passkey failed!'
     )
-    if verified_user is None:
+    if user_sign_in is None:
         final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
         save_user_sign_in_to_db_ok = False
 
     elif can_save_sign_in_to_db:
-        if not verified_user.success:
+        if not user_sign_in.success:
             final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
 
         save_user_sign_in_to_db_ok, error_msg = _save_user_sign_in_to_database(
-            session=db_session, verified_user=verified_user
+            session=db_session, user_sign_in=user_sign_in
         )
         if not save_user_sign_in_to_db_ok:
             final_error_msg = f'{final_error_msg}\n{error_msg}'
@@ -585,7 +584,6 @@ def bitwarden_register_form(
             st.warning(final_error_msg, icon=config.ICON_WARNING)
 
     else:
-        with banner_container:
-            final_error_msg = f'{final_error_msg}\n Unexpected error!'
-            logger.error(final_error_msg)
-            st.error(final_error_msg, icon=config.ICON_ERROR)
+        pass
+
+    return user
