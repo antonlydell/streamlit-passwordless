@@ -10,7 +10,7 @@ import pytest
 from passwordless import VerifiedUser
 
 # Local
-import streamlit_passwordless.bitwarden_passwordless.client
+import streamlit_passwordless.bitwarden_passwordless.backend
 from streamlit_passwordless import common, models
 from streamlit_passwordless.database import models as db_models
 
@@ -365,7 +365,7 @@ def mocked_get_current_datetime(monkeypatch: pytest.MonkeyPatch) -> datetime:
     m = Mock(spec_set=common.get_current_datetime, return_value=now)
 
     monkeypatch.setattr(
-        streamlit_passwordless.bitwarden_passwordless.client.common, 'get_current_datetime', m
+        streamlit_passwordless.bitwarden_passwordless.backend.common, 'get_current_datetime', m
     )
 
     return now

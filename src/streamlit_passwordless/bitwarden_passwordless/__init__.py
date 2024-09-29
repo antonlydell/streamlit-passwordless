@@ -1,7 +1,7 @@
 r"""The Bitwarden Passwordless package."""
 
 # Local
-from .client import BitwardenPasswordlessClient, BitwardenRegisterConfig, PasskeyCredential
+from .backend import BitwardenPasswordlessClient, BitwardenRegisterConfig, PasskeyCredential
 from .frontend import register_button, sign_in_button
 
 # The Public API

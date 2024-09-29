@@ -1,4 +1,4 @@
-r"""Unit tests for the client module of the bitwarden_passwordless library."""
+r"""Unit tests for the backend module of the bitwarden_passwordless library."""
 
 # Standard library
 from datetime import datetime, timedelta
@@ -21,8 +21,8 @@ from pydantic import AnyHttpUrl
 
 # Local
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless import client
-from streamlit_passwordless.bitwarden_passwordless.client import (
+from streamlit_passwordless.bitwarden_passwordless import backend
+from streamlit_passwordless.bitwarden_passwordless.backend import (
     BackendClient,
     BitwardenPasswordlessClient,
     BitwardenRegisterConfig,
@@ -296,7 +296,7 @@ class TestBitwardenPasswordlessClient:
         exception_to_raise = PasswordlessError(problem_details=problem_details)
 
         monkeypatch.setattr(
-            client.PasswordlessClientBuilder, 'build', Mock(side_effect=exception_to_raise)
+            backend.PasswordlessClientBuilder, 'build', Mock(side_effect=exception_to_raise)
         )
 
         # Exercise

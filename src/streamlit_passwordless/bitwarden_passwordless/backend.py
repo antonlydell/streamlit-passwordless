@@ -1,4 +1,4 @@
-r"""The client to use to interact with Bitwarden Passwordless."""
+r"""The client to use for interacting with the Bitwarden Passwordless backend API."""
 
 # Standard library
 import logging

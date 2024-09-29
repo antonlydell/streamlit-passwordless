@@ -9,7 +9,7 @@ import streamlit as st
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless.client import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessClient
 from streamlit_passwordless.bitwarden_passwordless.frontend import sign_in_button
 
 from . import config, core, ids
