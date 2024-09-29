@@ -59,8 +59,8 @@ def _create_user(
             username=username, user_id=user_id, displayname=displayname, aliases=aliases
         )
     except exceptions.StreamlitPasswordlessError as e:
-        error_msg = str(e)
-        logger.error(error_msg)
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
         user = None
     else:
         logger.debug(f'Successfully created user: {user}')
@@ -102,7 +102,8 @@ def _create_register_token(
     try:
         register_token = client.create_register_token(user=user)
     except exceptions.RegisterUserError as e:
-        error_msg = str(e)
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
         register_token = ''
 
     return register_token, error_msg
@@ -470,7 +471,8 @@ def bitwarden_register_form(
             try:
                 origin = get_origin_header()
             except exceptions.StreamlitPasswordlessError as e:
-                error_msg = str(e)
+                logger.error(e.detailed_message)
+                error_msg = e.displayable_message
                 origin = ''
 
             st.form_submit_button(
