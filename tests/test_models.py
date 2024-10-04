@@ -397,6 +397,30 @@ class TestUser:
         # Clean up - None
         # ===========================================================
 
+    def test_is_authenticated_user_sign_in_user_id_not_equal_to_user_user_id(
+        self, user_1_sign_in_successful: tuple[models.UserSignIn, db_models.UserSignIn, ModelData]
+    ) -> None:
+        r"""Test comparing `user.user_id` to `user.sign_in.user_id` when checking authentication.
+
+        If `user.user_id` differs from `user.sign_in.user_id` the user should not be
+        authenticated. This safe guards against if a `models.UserSignIn` instance for one
+        user is accidentally assigned to another user.
+        """
+
+        # Setup
+        # ===========================================================
+        user_sign_in, _, _ = user_1_sign_in_successful
+        user = models.User(user_id='user_id_not_equal_user_sign_in_user_id', username='username')
+        user.sign_in = user_sign_in
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authenticated is False, 'user.is_authenticated is True!'
+        assert getattr(user.sign_in, 'success') is True, 'user.sign_in.success is False!'
+
+        # Clean up - None
+        # ===========================================================
+
     @pytest.mark.parametrize(
         'aliases, aliases_exp',
         (

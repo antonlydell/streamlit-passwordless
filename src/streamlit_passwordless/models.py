@@ -198,4 +198,4 @@ class User(BaseModel):
         if (sign_in := self.sign_in) is None:
             return False
         else:
-            return sign_in.success
+            return sign_in.user_id == self.user_id and sign_in.success
