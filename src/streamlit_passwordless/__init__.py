@@ -25,6 +25,12 @@ from streamlit_passwordless.components import (
     bitwarden_sign_in_form,
     init_session_state,
 )
+from streamlit_passwordless.components.config import (
+    SK_DB_USER,
+    SK_REGISTER_FORM_IS_VALID,
+    SK_USER,
+    SK_USER_SIGN_IN,
+)
 from streamlit_passwordless.exceptions import (
     DatabaseError,
     DatabaseStatementError,
@@ -32,6 +38,7 @@ from streamlit_passwordless.exceptions import (
     SignInTokenVerificationError,
     StreamlitPasswordlessError,
 )
+from streamlit_passwordless.models import Email, User, UserSignIn
 
 __versiontuple__ = (0, 7, 0)
 r"""The version of streamlit-passwordless in a comparable form.
@@ -70,6 +77,15 @@ __all__ = [
     'RegisterUserError,',
     'SignInTokenVerificationError',
     'StreamlitPasswordlessError',
+    # models
+    'Email',
+    'User',
+    'UserSignIn',
+    # session state
+    'SK_DB_USER',
+    'SK_REGISTER_FORM_IS_VALID',
+    'SK_USER',
+    'SK_USER_SIGN_IN',
     # attributes
     '__versiontuple__',
     '__version__',
