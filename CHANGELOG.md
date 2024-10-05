@@ -15,6 +15,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.8.0] - 2024-10-05
+
+Revamped user model!
+
+The user model is now analogous to the database model.
+
+**Breaking Change** : Session state key `SK_BP_VERIFIED_USER` has been renamed to `SK_USER_SIGN_IN` and now
+contains a `streamlit_passwordless.UserSignIn` object that replaces
+`streamlit_passwordless.BitwardenPasswordlessVerifiedUser`, which has been removed.
+
+
+### Added
+
+- `streamlit_passwordless.Email` : An Email address of a user.
+
+- `streamlit_passwordless.UserSignIn` : A model of a user sign in with a passkey credential.
+
+- Session state keys:
+
+  - `streamlit_passwordless.SK_DB_USER` : The database object of the current user signed in to the application
+    (`streamlit_passwordless.db.models.User`).
+
+  - `streamlit_passwordless.SK_REGISTER_FORM_IS_VALID`: True if the input to the register form is valid and False otherwise.
+
+  - `streamlit_passwordless.SK_USER` : Contains the current user signed in to the application (`streamlit_passwordless.User`).
+
+  - `streamlit_passwordless.SK_USER_SIGN_IN` : Details from Bitwarden Passwordless about the user that signed in
+    (`streamlit_passwordless.UserSignIn`).
+
+
+### Changed
+
+- `streamlit_passwordless.User` : Updated with the fields defined on `streamlit_passwordless.db.models.User`.
+  Added a connection to `streamlit_passwordless.Email` and `streamlit_passwordless.UserSignIn` through the
+  `emails` and `sign_in` attributes respectively.
+
+- Renamed session state key `SK_BP_VERIFIED_USER` --> `SK_USER_SIGN_IN` : Now contains an instance of
+  `streamlit_passwordless.UserSignIn`.
+
+- `streamlit_passwordless.bitwarden_register_form` & `streamlit_passwordless.bitwarden_sign_in_form` :
+   Added returning `streamlit_passwordless.User` or `None` from the forms. This will be useful to detect a
+   change when a user has registered or signed in when using the `st.fragment` decorator on the forms.
+
+
+### Fixed
+
+- `streamlit_passwordless.StreamlitPasswordlessError` : Fixed error when accessing the `parent_message` attribute.
+
+
+### Removed
+
+- `streamlit_passwordless.BitwardenPasswordlessVerifiedUser` : Replaced by `streamlit_passwordless.UserSignIn`,
+  which can be accessed from `streamlit_passwordless.User.sign_in`
+
+
+### Security
+
+- Updated javascript dependencies to resolve security vulnerabilities:
+  - *vite* : fixed in version 5.2.14
+    - Vite DOM Clobbering gadget found in vite bundled scripts that leads to XSS,
+    - Vite's `server.fs.deny` is bypassed when using `?import&raw`.
+
+  - *rollup* : fixed in version 4.22.4
+    - DOM Clobbering Gadget found in rollup bundled scripts that leads to XSS.
+
+
 ## [0.7.0] - 2024-09-07
 
 Support to log user sign ins to the database!
@@ -54,7 +120,7 @@ using the register form and an entry about the registration sign in is also logg
   if an email address is the user's primary address and the timestamp when the address was verified by the user.
   Replaced column `active` with `disabled` and `disabled_at` to align the column naming with the user model.
 
-  `streamlit_passwordless.db.models.User` : Added column `verified_at`, which contains the timestamp of
+- `streamlit_passwordless.db.models.User` : Added column `verified_at`, which contains the timestamp of
   when a user first verified an email.
 
 
@@ -282,7 +348,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.8.0
 [0.7.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.7.0
 [0.6.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.6.1
 [0.6.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.6.0
