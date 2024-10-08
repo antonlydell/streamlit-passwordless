@@ -19,6 +19,13 @@ from . import config, core, ids
 logger = logging.getLogger(__name__)
 
 
+USE_DEFAULT_HELP = '__default__'
+CREDENTIAL_NICKNAME_HELP = (
+    'A nickname for the passkey credential to make it easier to '
+    'identify which device it belongs to.'
+)
+
+
 @st.cache_data
 def _create_user(
     username: str,
@@ -278,6 +285,7 @@ def bitwarden_register_form(
     is_admin: bool = False,
     pre_authorized: bool = False,
     with_displayname: bool = False,
+    with_credential_nickname: bool = True,
     with_alias: bool = False,
     title: str = '#### Register a new passkey with your device',
     border: bool = True,
@@ -294,6 +302,10 @@ def bitwarden_register_form(
     displayname_max_length: int | None = 50,
     displayname_placeholder: str | None = 'John Doe',
     displayname_help: str | None = '__default__',
+    credential_nickname_label: str = 'Credential Nickname',
+    credential_nickname_max_length: int | None = 50,
+    credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
+    credential_nickname_help: str | None = '__default__',
     alias_label: str = 'Alias',
     alias_max_length: int | None = 50,
     alias_placeholder: str | None = 'j;john;jd',
@@ -324,6 +336,11 @@ def bitwarden_register_form(
     with_displayname : bool, default False
         If True the displayname field will be added to the form allowing
         the user to fill out a displayname for the account.
+
+    with_credential_nickname : bool, default True
+        If True the credential_nickname field will be added to the form allowing the user to
+        specify a nickname for the passkey credential to create e.g. "YubiKey-5C-NFC".
+        If False the username will be used as the `credential_nickname`.
 
     with_alias : bool, default False
         If True the alias field will be added to the form allowing the user to fill
@@ -384,6 +401,20 @@ def bitwarden_register_form(
         The help text to display for the displayname field. If '__default__' a sensible default
         help text will be used and if None the help text is removed.
 
+    credential_nickname_label : str, default 'Credential Nickname'
+        The label of the credential_nickname field.
+
+    credential_nickname_max_length : int or None, default 50
+        The maximum allowed number of characters of the credential_nickname field.
+        If None the upper limit is removed.
+
+    credential_nickname_placeholder : str or None, default 'Bitwarden or YubiKey-5C-NFC'
+        The placeholder of the credential_nickname field. If None the placeholder is removed.
+
+    credential_nickname_help : str or None, default '__default__'
+        The help text to display for the credential_nickname field. If '__default__' a sensible
+        default help text is used and if None the help text is removed.
+
     alias_label : str, default 'Alias'
         The label of the alias field.
 
@@ -441,6 +472,21 @@ def bitwarden_register_form(
                 )
             else:
                 displayname = None
+
+            if with_credential_nickname:
+                credential_nickname = st.text_input(
+                    label=credential_nickname_label,
+                    placeholder=credential_nickname_placeholder,
+                    max_chars=credential_nickname_max_length,
+                    help=(
+                        CREDENTIAL_NICKNAME_HELP
+                        if credential_nickname_help == USE_DEFAULT_HELP
+                        else credential_nickname_help
+                    ),
+                    key=ids.BP_REGISTER_FORM_CREDENTIAL_NICKNAME_TEXT_INPUT,
+                )
+            else:
+                credential_nickname = username
 
             if with_alias:
                 if alias_help == use_default_help:
@@ -505,7 +551,7 @@ def bitwarden_register_form(
         token, error, clicked = register_button(
             register_token=register_token,
             public_key=client.public_key,
-            credential_nickname=username,
+            credential_nickname=credential_nickname,
             disabled=disabled,
             label=register_button_label,
             button_type=register_button_type,
