@@ -3,6 +3,7 @@ r"""The register-form component and its callback functions."""
 # Standard library
 import logging
 from datetime import timedelta
+from typing import Literal
 
 # Third party
 import streamlit as st
@@ -17,6 +18,96 @@ from streamlit_passwordless.web import get_origin_header
 from . import config, core, ids
 
 logger = logging.getLogger(__name__)
+
+
+USE_DEFAULT_HELP = '__default__'
+CREDENTIAL_NICKNAME_HELP = (
+    'A nickname for the passkey credential to make it easier to '
+    'identify which device it belongs to.'
+)
+DISCOVERABILITY_HELP = (
+    'A discoverable passkey allows you to sign in without entering your username '
+    'in contrast to a non-discoverable passkey. A non-discoverable does not consume '
+    'a passkey slot on a YubiKey, which is the case for a discoverable passkey.'
+)
+
+
+def _render_discoverability_widget(
+    label: str,
+    widget_type: Literal['toggle', 'radio'],
+    default: bool,
+    radio_button_option_names: tuple[str, str],
+    radio_button_horizontal: bool,
+    help_text: str | None,
+) -> bool:
+    r"""Render the discoverability widget for the register form.
+
+    The widget can be either a toggle switch or a radio button.
+
+    Parameters
+    ----------
+    label : str
+        The label of the discoverability widget.
+
+    widget_type : Literal['toggle', 'radio']
+        If the discoverability widget should be rendered as a toggle switch or a radio button.
+
+    default : bool
+        The default option of the discoverability widget. True means 'discoverable' and
+        False 'non-discoverable'.
+
+    radio_button_option_names : tuple[str, str]
+        The option names of the radio button if `discoverability_widget_type` is set to 'radio'.
+
+    radio_button_horizontal : bool
+       The radio button options are is rendered horizontally if True and vertically if False
+       if `discoverability_widget_type` is set to 'radio'.
+
+    help_text : str or None
+        The help text to display for the discoverability widget. If '__default__'
+        a sensible default help text is used and if None the help text is removed.
+
+    Returns
+    -------
+    discoverable : bool
+        The selected option for the discoverability, where True means 'discoverable'
+        and False 'non-discoverable'.
+
+    Raises
+    ------
+    exceptions.StreamlitPasswordlessError
+        If an invalid option for `widget_type` is specified.
+    """
+
+    _help = DISCOVERABILITY_HELP if help_text == USE_DEFAULT_HELP else help_text
+    if widget_type == 'toggle':
+        discoverable = st.toggle(
+            label=label,
+            value=default,
+            help=_help,
+            key=ids.BP_REGISTER_FORM_DISCOVERABILITY_TOGGLE_SWITCH,
+        )
+    elif widget_type == 'radio':
+        option_format_mapping = {
+            True: radio_button_option_names[0],
+            False: radio_button_option_names[1],
+        }
+        discoverable_radio = st.radio(  # May return none if index option is not specified.
+            label=label,
+            index=0 if default is True else 1,
+            options=(True, False),
+            format_func=lambda v: option_format_mapping[v],
+            horizontal=radio_button_horizontal,
+            help=_help,
+            key=ids.BP_REGISTER_FORM_DISCOVERABILITY_RADIO_BUTTON,
+        )
+        discoverable = True if discoverable_radio is None else discoverable_radio
+    else:
+        raise exceptions.StreamlitPasswordlessError(
+            f"Invalid value for {widget_type=}. Expected 'toggle' or 'radio'."
+        )
+
+    return discoverable
 
 
 @st.cache_data
@@ -74,7 +165,7 @@ def _create_user(
     hash_funcs={BitwardenPasswordlessClient: hash, models.User: hash},
 )
 def _create_register_token(
-    client: BitwardenPasswordlessClient, user: models.User
+    client: BitwardenPasswordlessClient, user: models.User, discoverable: bool | None = None
 ) -> tuple[str, str]:
     r"""Create a register token to register a new passkey with the user's device.
 
@@ -86,6 +177,10 @@ def _create_register_token(
 
     user : models.User
         The user to register.
+
+    discoverable : bool or None, default None
+        If True create a discoverable passkey and if False a non-discoverable passkey.
+        If None the setting for discoverability from `client.register_config` is used.
 
     Returns
     -------
@@ -100,7 +195,7 @@ def _create_register_token(
     error_msg = ''
 
     try:
-        register_token = client.create_register_token(user=user)
+        register_token = client.create_register_token(user=user, discoverable=discoverable)
     except exceptions.RegisterUserError as e:
         logger.error(e.detailed_message)
         error_msg = e.displayable_message
@@ -278,6 +373,8 @@ def bitwarden_register_form(
     is_admin: bool = False,
     pre_authorized: bool = False,
     with_displayname: bool = False,
+    with_credential_nickname: bool = True,
+    with_discoverability: bool = False,
     with_alias: bool = False,
     title: str = '#### Register a new passkey with your device',
     border: bool = True,
@@ -294,6 +391,16 @@ def bitwarden_register_form(
     displayname_max_length: int | None = 50,
     displayname_placeholder: str | None = 'John Doe',
     displayname_help: str | None = '__default__',
+    credential_nickname_label: str = 'Credential Nickname',
+    credential_nickname_max_length: int | None = 50,
+    credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
+    credential_nickname_help: str | None = '__default__',
+    discoverability_label: str = 'Discoverable Passkey',
+    discoverability_widget_type: Literal['toggle', 'radio'] = 'toggle',
+    discoverability_default_option: bool = True,
+    discoverability_radio_button_options: tuple[str, str] = ('Discoverable', 'Non-Discoverable'),
+    discoverability_radio_button_horizontal: bool = True,
+    discoverability_help: str | None = '__default__',
     alias_label: str = 'Alias',
     alias_max_length: int | None = 50,
     alias_placeholder: str | None = 'j;john;jd',
@@ -324,6 +431,21 @@ def bitwarden_register_form(
     with_displayname : bool, default False
         If True the displayname field will be added to the form allowing
         the user to fill out a displayname for the account.
+
+    with_credential_nickname : bool, default True
+        If True the credential_nickname field will be added to the form allowing the user to
+        specify a nickname for the passkey credential to create e.g. "YubiKey-5C-NFC".
+        If False the username will be used as the `credential_nickname`.
+
+    with_discoverability : bool, default False
+        If True the discoverability widget is added to the form allowing the user to toggle
+        between creating a *discoverable* or *non-discoverable* passkey. A discoverable passkey
+        allows the user to sign in without entering the username in contrast to a non-discoverable
+        passkey, which is traditionally used for a MFA setup. A discoverable passkey consumes a
+        passkey slot on a YubiKey, while a non-discoverable does not. In most cases you want to
+        create a discoverable passkey, which is also the default when the widget is not enabled.
+        The widget can be rendered as a toggle switch (default) or a radio button by specifying
+        the option `discoverability_widget_type`.
 
     with_alias : bool, default False
         If True the alias field will be added to the form allowing the user to fill
@@ -384,6 +506,41 @@ def bitwarden_register_form(
         The help text to display for the displayname field. If '__default__' a sensible default
         help text will be used and if None the help text is removed.
 
+    credential_nickname_label : str, default 'Credential Nickname'
+        The label of the credential_nickname field.
+
+    credential_nickname_max_length : int or None, default 50
+        The maximum allowed number of characters of the credential_nickname field.
+        If None the upper limit is removed.
+
+    credential_nickname_placeholder : str or None, default 'Bitwarden or YubiKey-5C-NFC'
+        The placeholder of the credential_nickname field. If None the placeholder is removed.
+
+    credential_nickname_help : str or None, default '__default__'
+        The help text to display for the credential_nickname field. If '__default__' a sensible
+        default help text is used and if None the help text is removed.
+
+    discoverability_label : str, default 'Discoverable Passkey'
+        The label of the discoverability widget.
+
+    discoverability_widget_type : Literal['toggle', 'radio'], default 'toggle'
+        If the discoverability widget should be rendered as a toggle switch or a radio button.
+
+    discoverability_default_option : bool, default True
+        The default option of the discoverability widget. True means 'discoverable' and
+        False 'non-discoverable'.
+
+    discoverability_radio_button_options : tuple[str, str], default ('Discoverable', 'Non-Discoverable')
+        The option names of the radio button if `discoverability_widget_type` is set to 'radio'.
+
+    discoverability_radio_button_horizontal : bool, default True
+       The radio button options are rendered horizontally if True and vertically if False
+       if `discoverability_widget_type` is set to 'radio'.
+
+    discoverability_help : str or None, default '__default__'
+        The help text to display for the discoverability widget. If '__default__' a sensible
+        default help text is used and if None the help text is removed.
+
     alias_label : str, default 'Alias'
         The label of the alias field.
 
@@ -441,6 +598,33 @@ def bitwarden_register_form(
                 )
             else:
                 displayname = None
+
+            if with_credential_nickname:
+                credential_nickname = st.text_input(
+                    label=credential_nickname_label,
+                    placeholder=credential_nickname_placeholder,
+                    max_chars=credential_nickname_max_length,
+                    help=(
+                        CREDENTIAL_NICKNAME_HELP
+                        if credential_nickname_help == USE_DEFAULT_HELP
+                        else credential_nickname_help
+                    ),
+                    key=ids.BP_REGISTER_FORM_CREDENTIAL_NICKNAME_TEXT_INPUT,
+                )
+            else:
+                credential_nickname = username
+
+            if with_discoverability:
+                discoverable = _render_discoverability_widget(
+                    label=discoverability_label,
+                    widget_type=discoverability_widget_type,
+                    default=discoverability_default_option,
+                    radio_button_option_names=discoverability_radio_button_options,
+                    radio_button_horizontal=discoverability_radio_button_horizontal,
+                    help_text=discoverability_help,
+                )
+            else:
+                discoverable = None
 
             if with_alias:
                 if alias_help == use_default_help:
@@ -500,12 +684,14 @@ def bitwarden_register_form(
                 aliases=aliases,
             )
             if user is not None:
-                register_token, error_msg = _create_register_token(client=client, user=user)
+                register_token, error_msg = _create_register_token(
+                    client=client, user=user, discoverable=discoverable
+                )
 
         token, error, clicked = register_button(
             register_token=register_token,
             public_key=client.public_key,
-            credential_nickname=username,
+            credential_nickname=credential_nickname,
             disabled=disabled,
             label=register_button_label,
             button_type=register_button_type,

@@ -112,13 +112,17 @@ class BitwardenPasswordlessClient(models.BaseModel):
     def __hash__(self) -> int:
         return hash(self.private_key + self.public_key)
 
-    def create_register_token(self, user: models.User) -> str:
+    def create_register_token(self, user: models.User, discoverable: bool | None = None) -> str:
         r"""Create a register token to use for registering a passkey with the user's device.
 
         Parameters
         ----------
         user : streamlit_passwordless.User
             The user to register.
+
+        discoverable : bool or None, default None
+            If True create a discoverable passkey and if False a non-discoverable passkey.
+            If None the setting for discoverability from `self.register_config` is used.
 
         Returns
         -------
@@ -139,7 +143,7 @@ class BitwardenPasswordlessClient(models.BaseModel):
             display_name=user.displayname,
             attestation=register_config.attestation,
             authenticator_type=register_config.authenticator_type,
-            discoverable=register_config.discoverable,
+            discoverable=register_config.discoverable if discoverable is None else discoverable,
             user_verification=register_config.user_verification,
             aliases=user.aliases,
             alias_hashing=register_config.alias_hashing,
