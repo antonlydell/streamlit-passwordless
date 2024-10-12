@@ -21,14 +21,26 @@ logger = logging.getLogger(__name__)
 
 
 USE_DEFAULT_HELP = '__default__'
+
+USERNAME_HELP = 'A unique identifier for the user.'
+
+DISPLAYNAME_HELP = 'A descriptive name of the user.'
+
 CREDENTIAL_NICKNAME_HELP = (
     'A nickname for the passkey credential to make it easier to '
     'identify which device it belongs to.'
 )
+
 DISCOVERABILITY_HELP = (
     'A discoverable passkey allows you to sign in without entering your username '
     'in contrast to a non-discoverable passkey. A non-discoverable does not consume '
     'a passkey slot on a YubiKey, which is the case for a discoverable passkey.'
+)
+
+ALIAS_HELP = (
+    'One or more aliases that can be used to sign in to the account. '
+    'Aliases are separated by semicolon (";"). The username is always '
+    'added as an alias. An alias must be unique across all users.'
 )
 
 
@@ -406,7 +418,7 @@ def bitwarden_register_form(
     clear_on_validate: bool = False,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
-    username_placeholder: str | None = 'john.doe@example.com',
+    username_placeholder: str | None = 'john.doe',
     username_help: str | None = '__default__',
     displayname_label: str = 'Displayname',
     displayname_max_length: int | None = 50,
@@ -585,36 +597,28 @@ def bitwarden_register_form(
 
     user = None
     error_msg = ''
-    use_default_help = '__default__'
-    _help: str | None = None
     banner_container = st.empty()
 
     with st.container(border=border):
         st.markdown(title)
         with st.form(key=ids.BP_REGISTER_FORM, clear_on_submit=clear_on_validate, border=False):
-            if username_help == use_default_help:
-                _help = 'A unique identifier for the account. E.g. an email address.'
-            else:
-                _help = username_help
-
             username = st.text_input(
                 label=username_label,
                 placeholder=username_placeholder,
                 max_chars=username_max_length,
-                help=_help,
+                help=USERNAME_HELP if username_help == USE_DEFAULT_HELP else username_help,
                 key=ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT,
             )
             if with_displayname:
-                if displayname_help == use_default_help:
-                    _help = 'A descriptive name of the user.'
-                else:
-                    _help = displayname_help
-
                 displayname = st.text_input(
                     label=displayname_label,
                     placeholder=displayname_placeholder,
                     max_chars=displayname_max_length,
-                    help=_help,
+                    help=(
+                        DISPLAYNAME_HELP
+                        if displayname_help == USE_DEFAULT_HELP
+                        else displayname_help
+                    ),
                     key=ids.BP_REGISTER_FORM_DISPLAYNAME_TEXT_INPUT,
                 )
             else:
@@ -650,20 +654,11 @@ def bitwarden_register_form(
                 discoverable = None
 
             if with_alias:
-                if alias_help == use_default_help:
-                    _help = (
-                        'One or more aliases that can be used to sign in to the account. '
-                        'Aliases are separated by semicolon (";"). The username is always '
-                        'added as an alias. An alias must be unique across all users.'
-                    )
-                else:
-                    _help = alias_help
-
                 aliases = st.text_input(
                     label=alias_label,
                     placeholder=alias_placeholder,
                     max_chars=alias_max_length,
-                    help=_help,
+                    help=ALIAS_HELP if alias_help == USE_DEFAULT_HELP else alias_help,
                     key=ids.BP_REGISTER_FORM_ALIASES_TEXT_INPUT,
                 )
             else:
