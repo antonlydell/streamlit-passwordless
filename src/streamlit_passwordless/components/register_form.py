@@ -44,9 +44,9 @@ ALIAS_HELP = (
 )
 
 
-def _render_discoverability_widget(
+def _render_discoverability_component(
     label: str,
-    widget_type: Literal['toggle', 'radio'],
+    component_type: Literal['toggle', 'radio'],
     default: bool,
     radio_button_option_names: tuple[str, str],
     radio_button_horizontal: bool,
@@ -54,42 +54,42 @@ def _render_discoverability_widget(
     form_type: Literal['new_user', 'existing_user'],
     disabled: bool,
 ) -> bool:
-    r"""Render the discoverability widget for the register form.
+    r"""Render the discoverability component for the register form.
 
-    The widget can be either a toggle switch or a radio button.
+    The component can be either a toggle switch or a radio button.
 
     Parameters
     ----------
     label : str
-        The label of the discoverability widget.
+        The label of the discoverability component.
 
-    widget_type : Literal['toggle', 'radio']
-        If the discoverability widget should be rendered as a toggle switch or a radio button.
+    component_type : Literal['toggle', 'radio']
+        If the discoverability component should be rendered as a toggle switch or a radio button.
 
     default : bool
-        The default option of the discoverability widget. True means 'discoverable' and
+        The default option of the discoverability component. True means 'discoverable' and
         False 'non-discoverable'.
 
     radio_button_option_names : tuple[str, str]
-        The option names of the radio button if `discoverability_widget_type` is set to 'radio'.
+        The option names of the radio button if `discoverability_component_type` is set to 'radio'.
 
     radio_button_horizontal : bool
        The radio button options are is rendered horizontally if True and vertically if False
-       if `discoverability_widget_type` is set to 'radio'.
+       if `discoverability_component_type` is set to 'radio'.
 
     help_text : str or None
-        The help text to display for the discoverability widget. If '__default__'
+        The help text to display for the discoverability component. If '__default__'
         a sensible default help text is used and if None the help text is removed.
 
     form_type : Literal['new_user', 'existing_user']
         The form (`bitwarden_register_form`, `bitwarden_register_form_existing_user`) in which
-        the widget is rendered. Used for setting the ID:s of the toggle switch or radio button.
+        the component is rendered. Used for setting the ID:s of the toggle switch or radio button.
         This is important to avoid the error `streamlit.DuplicateWidgetID` if both
         `bitwarden_register_form` and `bitwarden_register_form_existing_user` are rendered on
         the same page in an application.
 
     disabled : bool
-        True if the widget should be disabled and False for enabled.
+        True if the component should be disabled and False for enabled.
 
     Returns
     -------
@@ -100,7 +100,7 @@ def _render_discoverability_widget(
     Raises
     ------
     exceptions.StreamlitPasswordlessError
-        If invalid options for `widget_type` or `form_type` are specified.
+        If invalid options for `component_type` or `form_type` are specified.
     """
 
     if form_type == 'new_user':
@@ -115,11 +115,11 @@ def _render_discoverability_widget(
         )
 
     _help = DISCOVERABILITY_HELP if help_text == USE_DEFAULT_HELP else help_text
-    if widget_type == 'toggle':
+    if component_type == 'toggle':
         discoverable = st.toggle(
             label=label, value=default, help=_help, key=toggle_switch_id, disabled=disabled
         )
-    elif widget_type == 'radio':
+    elif component_type == 'radio':
         option_format_mapping = {
             True: radio_button_option_names[0],
             False: radio_button_option_names[1],
@@ -137,7 +137,7 @@ def _render_discoverability_widget(
         discoverable = True if discoverable_radio is None else discoverable_radio
     else:
         raise exceptions.StreamlitPasswordlessError(
-            f"Invalid value for {widget_type=}. Expected 'toggle' or 'radio'."
+            f"Invalid value for {component_type=}. Expected 'toggle' or 'radio'."
         )
 
     return discoverable
@@ -429,7 +429,7 @@ def bitwarden_register_form(
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
     credential_nickname_help: str | None = '__default__',
     discoverability_label: str = 'Discoverable Passkey',
-    discoverability_widget_type: Literal['toggle', 'radio'] = 'toggle',
+    discoverability_component_type: Literal['toggle', 'radio'] = 'toggle',
     discoverability_default_option: bool = True,
     discoverability_radio_button_options: tuple[str, str] = ('Discoverable', 'Non-Discoverable'),
     discoverability_radio_button_horizontal: bool = True,
@@ -471,14 +471,14 @@ def bitwarden_register_form(
         If False the username will be used as the `credential_nickname`.
 
     with_discoverability : bool, default False
-        If True the discoverability widget is added to the form allowing the user to toggle
+        If True the discoverability component is added to the form allowing the user to toggle
         between creating a *discoverable* or *non-discoverable* passkey. A discoverable passkey
         allows the user to sign in without entering the username in contrast to a non-discoverable
         passkey, which is traditionally used for a MFA setup. A discoverable passkey consumes a
         passkey slot on a YubiKey, while a non-discoverable does not. In most cases you want to
-        create a discoverable passkey, which is also the default when the widget is not enabled.
-        The widget can be rendered as a toggle switch (default) or a radio button by specifying
-        the option `discoverability_widget_type`.
+        create a discoverable passkey, which is also the default when the component is not enabled.
+        The component can be rendered as a toggle switch (default) or a radio button by specifying
+        the option `discoverability_component_type`.
 
     with_alias : bool, default False
         If True the alias field will be added to the form allowing the user to fill
@@ -554,24 +554,24 @@ def bitwarden_register_form(
         default help text is used and if None the help text is removed.
 
     discoverability_label : str, default 'Discoverable Passkey'
-        The label of the discoverability widget.
+        The label of the discoverability component.
 
-    discoverability_widget_type : Literal['toggle', 'radio'], default 'toggle'
-        If the discoverability widget should be rendered as a toggle switch or a radio button.
+    discoverability_component_type : Literal['toggle', 'radio'], default 'toggle'
+        If the discoverability component should be rendered as a toggle switch or a radio button.
 
     discoverability_default_option : bool, default True
-        The default option of the discoverability widget. True means 'discoverable' and
+        The default option of the discoverability component. True means 'discoverable' and
         False 'non-discoverable'.
 
     discoverability_radio_button_options : tuple[str, str], default ('Discoverable', 'Non-Discoverable')
-        The option names of the radio button if `discoverability_widget_type` is set to 'radio'.
+        The option names of the radio button if `discoverability_component_type` is set to 'radio'.
 
     discoverability_radio_button_horizontal : bool, default True
        The radio button options are rendered horizontally if True and vertically if False
-       if `discoverability_widget_type` is set to 'radio'.
+       if `discoverability_component_type` is set to 'radio'.
 
     discoverability_help : str or None, default '__default__'
-        The help text to display for the discoverability widget. If '__default__' a sensible
+        The help text to display for the discoverability component. If '__default__' a sensible
         default help text is used and if None the help text is removed.
 
     alias_label : str, default 'Alias'
@@ -640,9 +640,9 @@ def bitwarden_register_form(
                 credential_nickname = username
 
             if with_discoverability:
-                discoverable = _render_discoverability_widget(
+                discoverable = _render_discoverability_component(
                     label=discoverability_label,
-                    widget_type=discoverability_widget_type,
+                    component_type=discoverability_component_type,
                     default=discoverability_default_option,
                     radio_button_option_names=discoverability_radio_button_options,
                     radio_button_horizontal=discoverability_radio_button_horizontal,
@@ -808,7 +808,7 @@ def bitwarden_register_form_existing_user(
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
     credential_nickname_help: str | None = '__default__',
     discoverability_label: str = 'Discoverable Passkey',
-    discoverability_widget_type: Literal['toggle', 'radio'] = 'toggle',
+    discoverability_component_type: Literal['toggle', 'radio'] = 'toggle',
     discoverability_default_option: bool = True,
     discoverability_radio_button_options: tuple[str, str] = ('Discoverable', 'Non-Discoverable'),
     discoverability_radio_button_horizontal: bool = True,
@@ -841,14 +841,14 @@ def bitwarden_register_form_existing_user(
         If False the username will be used as the `credential_nickname`.
 
     with_discoverability : bool, default False
-        If True the discoverability widget is added to the form allowing the user to toggle
+        If True the discoverability component is added to the form allowing the user to toggle
         between creating a *discoverable* or *non-discoverable* passkey. A discoverable passkey
         allows the user to sign in without entering the username in contrast to a non-discoverable
         passkey, which is traditionally used for a MFA setup. A discoverable passkey consumes a
         passkey slot on a YubiKey, while a non-discoverable does not. In most cases you want to
-        create a discoverable passkey, which is also the default when the widget is not enabled.
-        The widget can be rendered as a toggle switch (default) or a radio button by specifying
-        the option `discoverability_widget_type`.
+        create a discoverable passkey, which is also the default when the component is not enabled.
+        The component can be rendered as a toggle switch (default) or a radio button by specifying
+        the option `discoverability_component_type`.
 
     title : str, default '#### Register a new passkey with your device'
         The title of the registration form. Markdown is supported.
@@ -880,24 +880,24 @@ def bitwarden_register_form_existing_user(
         default help text is used and if None the help text is removed.
 
     discoverability_label : str, default 'Discoverable Passkey'
-        The label of the discoverability widget.
+        The label of the discoverability component.
 
-    discoverability_widget_type : Literal['toggle', 'radio'], default 'toggle'
-        If the discoverability widget should be rendered as a toggle switch or a radio button.
+    discoverability_component_type : Literal['toggle', 'radio'], default 'toggle'
+        If the discoverability component should be rendered as a toggle switch or a radio button.
 
     discoverability_default_option : bool, default True
-        The default option of the discoverability widget. True means 'discoverable' and
+        The default option of the discoverability component. True means 'discoverable' and
         False 'non-discoverable'.
 
     discoverability_radio_button_options : tuple[str, str], default ('Discoverable', 'Non-Discoverable')
-        The option names of the radio button if `discoverability_widget_type` is set to 'radio'.
+        The option names of the radio button if `discoverability_component_type` is set to 'radio'.
 
     discoverability_radio_button_horizontal : bool, default True
        The radio button options are rendered horizontally if True and vertically if False
-       if `discoverability_widget_type` is set to 'radio'.
+       if `discoverability_component_type` is set to 'radio'.
 
     discoverability_help : str or None, default '__default__'
-        The help text to display for the discoverability widget. If '__default__' a sensible
+        The help text to display for the discoverability component. If '__default__' a sensible
         default help text is used and if None the help text is removed.
 
     Returns
@@ -914,7 +914,7 @@ def bitwarden_register_form_existing_user(
     error_msg = ''
     banner_container = st.empty()
     user = st.session_state.get(config.SK_USER) if user is None else user
-    username, widgets_disabled = ('', True) if user is None else (user.username, False)
+    username, components_disabled = ('', True) if user is None else (user.username, False)
 
     with st.container(border=border):
         st.markdown(title)
@@ -928,22 +928,22 @@ def bitwarden_register_form_existing_user(
                     if credential_nickname_help == USE_DEFAULT_HELP
                     else credential_nickname_help
                 ),
-                disabled=widgets_disabled,
+                disabled=components_disabled,
                 key=ids.BP_REGISTER_FORM_EXISTING_USER_CREDENTIAL_NICKNAME_TEXT_INPUT,
             )
         else:
             credential_nickname = username
 
         if with_discoverability:
-            discoverable = _render_discoverability_widget(
+            discoverable = _render_discoverability_component(
                 label=discoverability_label,
-                widget_type=discoverability_widget_type,
+                component_type=discoverability_component_type,
                 default=discoverability_default_option,
                 radio_button_option_names=discoverability_radio_button_options,
                 radio_button_horizontal=discoverability_radio_button_horizontal,
                 help_text=discoverability_help,
                 form_type='existing_user',
-                disabled=widgets_disabled,
+                disabled=components_disabled,
             )
         else:
             discoverable = None
