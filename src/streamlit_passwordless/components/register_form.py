@@ -796,3 +796,228 @@ def bitwarden_register_form(
         pass
 
     return user
+
+
+def bitwarden_register_form_existing_user(
+    client: BitwardenPasswordlessClient,
+    db_session: db.Session,
+    user: models.User | None = None,
+    with_credential_nickname: bool = True,
+    with_discoverability: bool = False,
+    title: str = '#### Register a new passkey with your device',
+    border: bool = True,
+    register_button_label: str = 'Register',
+    register_button_type: core.ButtonType = 'primary',
+    credential_nickname_label: str = 'Credential Nickname',
+    credential_nickname_max_length: int | None = 50,
+    credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
+    credential_nickname_help: str | None = '__default__',
+    discoverability_label: str = 'Discoverable Passkey',
+    discoverability_widget_type: Literal['toggle', 'radio'] = 'toggle',
+    discoverability_default_option: bool = True,
+    discoverability_radio_button_options: tuple[str, str] = ('Discoverable', 'Non-Discoverable'),
+    discoverability_radio_button_horizontal: bool = True,
+    discoverability_help: str | None = '__default__',
+) -> tuple[models.User | None, bool]:
+    r"""Render the Bitwarden Passwordless register form for an existing user.
+
+    Allows an existing user to register a new passkey credential with the application.
+    The register button is disabled if the user is not signed in.
+
+    Parameters
+    ----------
+    client : streamlit_passwordless.BitwardenPasswordlessClient
+        The Bitwarden Passwordless client to use for interacting with
+        the Bitwarden Passwordless backend API.
+
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    user : streamlit_passwordless.User or None, default None
+        The user for which to register a passkey credential. If None the user from the session
+        state `streamlit_passwordless.SK_USER` is used. If `user` is not signed in the
+        register button is disabled. `user.sign_in` is modified with the sign in entry with
+        the newly registered passkey after it has been created. The session state
+        `streamlit_passwordless.SK_USER` is updated with the modified `user`.
+
+    with_credential_nickname : bool, default True
+        If True the credential_nickname field will be added to the form allowing the user to
+        specify a nickname for the passkey credential to create e.g. "YubiKey-5C-NFC".
+        If False the username will be used as the `credential_nickname`.
+
+    with_discoverability : bool, default False
+        If True the discoverability widget is added to the form allowing the user to toggle
+        between creating a *discoverable* or *non-discoverable* passkey. A discoverable passkey
+        allows the user to sign in without entering the username in contrast to a non-discoverable
+        passkey, which is traditionally used for a MFA setup. A discoverable passkey consumes a
+        passkey slot on a YubiKey, while a non-discoverable does not. In most cases you want to
+        create a discoverable passkey, which is also the default when the widget is not enabled.
+        The widget can be rendered as a toggle switch (default) or a radio button by specifying
+        the option `discoverability_widget_type`.
+
+    title : str, default '#### Register a new passkey with your device'
+        The title of the registration form. Markdown is supported.
+
+    border : bool, default True
+        If True a border will be rendered around the form.
+
+    register_button_label : str, default 'Register'
+        The label of the register button to start the passkey registration with the
+        user's device. The button is enabled if `user` is signed in and disabled otherwise.
+
+    register_button_type : Literal['primary', 'secondary'], default 'primary'
+        The styling of the register button. Emulates the `type` parameter of :func:`streamlit.button`.
+
+    Other Parameters
+    ----------------
+    credential_nickname_label : str, default 'Credential Nickname'
+        The label of the credential_nickname field.
+
+    credential_nickname_max_length : int or None, default 50
+        The maximum allowed number of characters of the credential_nickname field.
+        If None the upper limit is removed.
+
+    credential_nickname_placeholder : str or None, default 'Bitwarden or YubiKey-5C-NFC'
+        The placeholder of the credential_nickname field. If None the placeholder is removed.
+
+    credential_nickname_help : str or None, default '__default__'
+        The help text to display for the credential_nickname field. If '__default__' a sensible
+        default help text is used and if None the help text is removed.
+
+    discoverability_label : str, default 'Discoverable Passkey'
+        The label of the discoverability widget.
+
+    discoverability_widget_type : Literal['toggle', 'radio'], default 'toggle'
+        If the discoverability widget should be rendered as a toggle switch or a radio button.
+
+    discoverability_default_option : bool, default True
+        The default option of the discoverability widget. True means 'discoverable' and
+        False 'non-discoverable'.
+
+    discoverability_radio_button_options : tuple[str, str], default ('Discoverable', 'Non-Discoverable')
+        The option names of the radio button if `discoverability_widget_type` is set to 'radio'.
+
+    discoverability_radio_button_horizontal : bool, default True
+       The radio button options are rendered horizontally if True and vertically if False
+       if `discoverability_widget_type` is set to 'radio'.
+
+    discoverability_help : str or None, default '__default__'
+        The help text to display for the discoverability widget. If '__default__' a sensible
+        default help text is used and if None the help text is removed.
+
+    Returns
+    -------
+    user_sign_in : streamlit_passwordless.UserSignIn or None
+        The `user` modified with the `user.sign_in` entry with the newly registered passkey
+        credential. None is returned if the user has not registered a passkey yet or if the
+        registration failed.
+
+    bool
+        True if `user` has registered a passkey and False otherwise.
+    """
+
+    error_msg = ''
+    banner_container = st.empty()
+    user = st.session_state.get(config.SK_USER) if user is None else user
+    username, widgets_disabled = ('', True) if user is None else (user.username, False)
+
+    with st.container(border=border):
+        st.markdown(title)
+        if with_credential_nickname:
+            credential_nickname = st.text_input(
+                label=credential_nickname_label,
+                placeholder=credential_nickname_placeholder,
+                max_chars=credential_nickname_max_length,
+                help=(
+                    CREDENTIAL_NICKNAME_HELP
+                    if credential_nickname_help == USE_DEFAULT_HELP
+                    else credential_nickname_help
+                ),
+                disabled=widgets_disabled,
+                key=ids.BP_REGISTER_FORM_EXISTING_USER_CREDENTIAL_NICKNAME_TEXT_INPUT,
+            )
+        else:
+            credential_nickname = username
+
+        if with_discoverability:
+            discoverable = _render_discoverability_widget(
+                label=discoverability_label,
+                widget_type=discoverability_widget_type,
+                default=discoverability_default_option,
+                radio_button_option_names=discoverability_radio_button_options,
+                radio_button_horizontal=discoverability_radio_button_horizontal,
+                help_text=discoverability_help,
+                form_type='existing_user',
+                disabled=widgets_disabled,
+            )
+        else:
+            discoverable = None
+
+        if user is not None and user.is_authenticated:
+            disabled = False
+            register_token, error_msg = _create_register_token(
+                client=client, user=user, discoverable=discoverable
+            )
+        else:
+            disabled = True
+            register_token = ''
+
+        token, error, clicked = register_button(
+            register_token=register_token,
+            public_key=client.public_key,
+            credential_nickname=credential_nickname,
+            disabled=disabled,
+            label=register_button_label,
+            button_type=register_button_type,
+            key=ids.BP_REGISTER_FORM_EXISTING_USER_SUBMIT_BUTTON,
+        )
+
+    if disabled or not clicked or user is None:
+        return user, False
+
+    if not token and error:
+        error_msg = f'Error creating passkey for user "{username}"!\nerror : {error}'
+        logger.error(error_msg)
+    elif not token:
+        error_msg = 'Unexpected error for missing token!'
+        logger.error(error_msg)
+
+    if error_msg:
+        with banner_container:
+            st.error(error_msg, icon=config.ICON_ERROR)
+        return user, False
+
+    # The passkey is still registered even though the sign in may fail!
+    user_sign_in, _ = core.verify_sign_in(client=client, token=token)
+    user.sign_in = user_sign_in
+    st.session_state[config.SK_USER] = user
+
+    final_error_msg = ''
+    sign_in_failed_error_msg = (
+        f'Passkey "{credential_nickname}" was registered, '
+        'but the sign in attempt with registered passkey failed!'
+    )
+    if user_sign_in is None:
+        final_error_msg = sign_in_failed_error_msg
+        save_user_sign_in_to_db_ok = False
+    else:
+        if not user_sign_in.success:
+            final_error_msg = sign_in_failed_error_msg
+
+        save_user_sign_in_to_db_ok, error_msg = _save_user_sign_in_to_database(
+            session=db_session, user_sign_in=user_sign_in
+        )
+        if not save_user_sign_in_to_db_ok:
+            final_error_msg = f'{final_error_msg}\n{error_msg}'
+
+    if save_user_sign_in_to_db_ok:
+        msg = f'Successfully registered passkey "{credential_nickname}" for user "{username}"!'
+        logger.info(msg)
+        with banner_container:
+            st.success(msg, icon=config.ICON_SUCCESS)
+    else:
+        with banner_container:
+            logger.warning(final_error_msg)
+            st.warning(final_error_msg, icon=config.ICON_WARNING)
+
+    return user, True

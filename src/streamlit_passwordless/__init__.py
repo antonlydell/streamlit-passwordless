@@ -22,6 +22,7 @@ from streamlit_passwordless.components import (
     ICON_SUCCESS,
     ICON_WARNING,
     bitwarden_register_form,
+    bitwarden_register_form_existing_user,
     bitwarden_sign_in_form,
     init_session_state,
 )
@@ -67,6 +68,7 @@ __all__ = [
     'ICON_SUCCESS',
     'ICON_WARNING',
     'bitwarden_register_form',
+    'bitwarden_register_form_existing_user',
     'bitwarden_sign_in_form',
     'init_session_state',
     # database
