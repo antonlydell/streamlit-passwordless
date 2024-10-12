@@ -39,6 +39,8 @@ def _render_discoverability_widget(
     radio_button_option_names: tuple[str, str],
     radio_button_horizontal: bool,
     help_text: str | None,
+    form_type: Literal['new_user', 'existing_user'],
+    disabled: bool,
 ) -> bool:
     r"""Render the discoverability widget for the register form.
 
@@ -67,6 +69,16 @@ def _render_discoverability_widget(
         The help text to display for the discoverability widget. If '__default__'
         a sensible default help text is used and if None the help text is removed.
 
+    form_type : Literal['new_user', 'existing_user']
+        The form (`bitwarden_register_form`, `bitwarden_register_form_existing_user`) in which
+        the widget is rendered. Used for setting the ID:s of the toggle switch or radio button.
+        This is important to avoid the error `streamlit.DuplicateWidgetID` if both
+        `bitwarden_register_form` and `bitwarden_register_form_existing_user` are rendered on
+        the same page in an application.
+
+    disabled : bool
+        True if the widget should be disabled and False for enabled.
+
     Returns
     -------
     discoverable : bool
@@ -76,16 +88,24 @@ def _render_discoverability_widget(
     Raises
     ------
     exceptions.StreamlitPasswordlessError
-        If an invalid option for `widget_type` is specified.
+        If invalid options for `widget_type` or `form_type` are specified.
     """
+
+    if form_type == 'new_user':
+        toggle_switch_id = ids.BP_REGISTER_FORM_DISCOVERABILITY_TOGGLE_SWITCH
+        radio_button_id = ids.BP_REGISTER_FORM_DISCOVERABILITY_RADIO_BUTTON
+    elif form_type == 'existing_user':
+        toggle_switch_id = ids.BP_REGISTER_FORM_EXISTING_USER_DISCOVERABILITY_TOGGLE_SWITCH
+        radio_button_id = ids.BP_REGISTER_FORM_EXISTING_USER_DISCOVERABILITY_RADIO_BUTTON
+    else:
+        raise exceptions.StreamlitPasswordlessError(
+            f"Invalid value for {form_type=}. Expected 'new_user' or 'existing_user'."
+        )
 
     _help = DISCOVERABILITY_HELP if help_text == USE_DEFAULT_HELP else help_text
     if widget_type == 'toggle':
         discoverable = st.toggle(
-            label=label,
-            value=default,
-            help=_help,
-            key=ids.BP_REGISTER_FORM_DISCOVERABILITY_TOGGLE_SWITCH,
+            label=label, value=default, help=_help, key=toggle_switch_id, disabled=disabled
         )
     elif widget_type == 'radio':
         option_format_mapping = {
@@ -99,7 +119,8 @@ def _render_discoverability_widget(
             format_func=lambda v: option_format_mapping[v],
             horizontal=radio_button_horizontal,
             help=_help,
-            key=ids.BP_REGISTER_FORM_DISCOVERABILITY_RADIO_BUTTON,
+            key=radio_button_id,
+            disabled=disabled,
         )
         discoverable = True if discoverable_radio is None else discoverable_radio
     else:
@@ -453,7 +474,7 @@ def bitwarden_register_form(
         by semicolon (";"). An alias must be unique across all users.
 
     title : str, default '#### Register a new passkey with your device'
-        The title of the registration from. Markdown is supported.
+        The title of the registration form. Markdown is supported.
 
     border : bool, default True
         If True a border will be rendered around the form.
@@ -622,6 +643,8 @@ def bitwarden_register_form(
                     radio_button_option_names=discoverability_radio_button_options,
                     radio_button_horizontal=discoverability_radio_button_horizontal,
                     help_text=discoverability_help,
+                    form_type='new_user',
+                    disabled=False,
                 )
             else:
                 discoverable = None
