@@ -38,6 +38,70 @@ def mocked_session_state(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     return session_state
 
 
+@pytest.fixture()
+def mocked__bitwarden_passwordless_func_return_tuple(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[Mock, tuple[str, None, int]]:
+    r"""Mock the function `_bitwarden_passwordless_func` to return a tuple.
+
+    Returns
+    -------
+    m : Mock
+        The mock for `_bitwarden_passwordless_func`.
+
+    return_value : tuple[str, None, bool]
+        The return value from `_bitwarden_passwordless_func`.
+    """
+
+    return_value = ('token', None, 1)  # (token, error, nr_clicks)
+
+    m = Mock(
+        spec_set=_bitwarden_passwordless_func,
+        return_value=return_value,
+        name='mocked_javascript_func',
+    )
+
+    monkeypatch.setattr(
+        streamlit_passwordless.bitwarden_passwordless.frontend,
+        '_bitwarden_passwordless_func',
+        m,
+    )
+
+    return m, return_value
+
+
+@pytest.fixture()
+def mocked__bitwarden_passwordless_func_return_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[Mock, tuple[str, None, bool]]:
+    r"""Mock the function `_bitwarden_passwordless_func` to return None.
+
+    Returns
+    -------
+    m : Mock
+        The mock for `_bitwarden_passwordless_func`.
+
+    return_value : tuple[str, None, bool]
+        The expected return value from `sign_in_button` or `register_button`.
+    """
+
+    return_value = ('', None, False)  # (token, error, clicked)
+
+    m = Mock(
+        spec_set=_bitwarden_passwordless_func,
+        return_value=None,
+        name='mocked_javascript_func',
+    )
+
+    monkeypatch.setattr(
+        streamlit_passwordless.bitwarden_passwordless.frontend,
+        '_bitwarden_passwordless_func',
+        m,
+    )
+
+    return m, return_value
+
+
 # =============================================================================================
 # Tests
 # =============================================================================================
@@ -55,7 +119,7 @@ class TestRegisterButton:
         session_state_nr_clicks: int,
         is_clicked_exp: bool,
         mocked_session_state: dict[str, Any],
-        monkeypatch: pytest.MonkeyPatch,
+        mocked__bitwarden_passwordless_func_return_tuple: tuple[Mock, tuple[str, None, int]],
     ) -> None:
         r"""Test clicking the `register_button`.
 
@@ -82,19 +146,7 @@ class TestRegisterButton:
         session_state_key = f'_{key}-nr-clicks'
         mocked_session_state[session_state_key] = session_state_nr_clicks
 
-        return_value = ('token', None, 1)  # (token, error, nr_clicks)
-
-        m = Mock(
-            spec_set=_bitwarden_passwordless_func,
-            return_value=return_value,
-            name='mocked_javascript_func',
-        )
-
-        monkeypatch.setattr(
-            streamlit_passwordless.bitwarden_passwordless.frontend,
-            '_bitwarden_passwordless_func',
-            m,
-        )
+        m, return_value = mocked__bitwarden_passwordless_func_return_tuple
 
         # Exercise
         # ===========================================================
@@ -127,6 +179,57 @@ class TestRegisterButton:
         # Clean up - None
         # ===========================================================
 
+    def test_return_none(
+        self,
+        mocked_session_state: dict[str, Any],
+        mocked__bitwarden_passwordless_func_return_none: tuple[Mock, tuple[str, None, bool]],
+    ) -> None:
+        r"""Test the return value when `_bitwarden_passwordless_func` returns None.
+
+        ('', None, False) is expected to be returned from `register_button`.
+        """
+
+        # Setup
+        # ===========================================================
+        register_token = 'register_token'
+        public_key = 'public_key'
+        credential_nickname = 'credential_nickname'
+        disabled = True
+        label = 'Register Button'
+        key = 'key'
+
+        m, exp_result = mocked__bitwarden_passwordless_func_return_none
+
+        # Exercise
+        # ===========================================================
+        result = register_button(
+            register_token=register_token,
+            public_key=public_key,
+            credential_nickname=credential_nickname,
+            disabled=disabled,
+            label=label,
+            button_type='secondary',
+            key=key,
+        )
+
+        # Verify
+        # ===========================================================
+        m.assert_called_once_with(
+            action='register',
+            register_token=register_token,
+            public_key=public_key,
+            credential_nickname=credential_nickname,
+            disabled=disabled,
+            label=label,
+            button_type='secondary',
+            key=key,
+        )
+        assert result == exp_result, 'result is incorrect!'
+        assert mocked_session_state == {}, 'The session state has been modified!'
+
+        # Clean up - None
+        # ===========================================================
+
 
 class TestSignInButton:
     r"""Tests for the function `sign_in_button`."""
@@ -140,7 +243,7 @@ class TestSignInButton:
         session_state_nr_clicks: int,
         is_clicked_exp: bool,
         mocked_session_state: dict[str, Any],
-        monkeypatch: pytest.MonkeyPatch,
+        mocked__bitwarden_passwordless_func_return_tuple: tuple[Mock, tuple[str, None, int]],
     ) -> None:
         r"""Test clicking the `sign_in_button`.
 
@@ -168,19 +271,7 @@ class TestSignInButton:
         session_state_key = f'_{key}-nr-clicks'
         mocked_session_state[session_state_key] = session_state_nr_clicks
 
-        return_value = ('token', None, 1)  # (token, error, nr_clicks)
-
-        m = Mock(
-            spec_set=_bitwarden_passwordless_func,
-            return_value=return_value,
-            name='mocked_javascript_func',
-        )
-
-        monkeypatch.setattr(
-            streamlit_passwordless.bitwarden_passwordless.frontend,
-            '_bitwarden_passwordless_func',
-            m,
-        )
+        m, return_value = mocked__bitwarden_passwordless_func_return_tuple
 
         # Exercise
         # ===========================================================
@@ -211,6 +302,57 @@ class TestSignInButton:
         assert token == return_value[0], 'token is incorrect!'
         assert error is return_value[1], 'error is incorrect!'
         assert clicked is is_clicked_exp, 'clicked is incorrect!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_return_none(
+        self,
+        mocked_session_state: dict[str, Any],
+        mocked__bitwarden_passwordless_func_return_none: tuple[Mock, tuple[str, None, bool]],
+    ) -> None:
+        r"""Test the return value when `_bitwarden_passwordless_func` returns None.
+
+        ('', None, False) is expected to be returned from `sign_in_button`.
+        """
+
+        # Setup
+        # ===========================================================
+        register_token = 'register_token'
+        public_key = 'public_key'
+        credential_nickname = 'credential_nickname'
+        disabled = True
+        label = 'Sign In Button'
+        key = 'key'
+
+        m, exp_result = mocked__bitwarden_passwordless_func_return_none
+
+        # Exercise
+        # ===========================================================
+        result = register_button(
+            register_token=register_token,
+            public_key=public_key,
+            credential_nickname=credential_nickname,
+            disabled=disabled,
+            label=label,
+            button_type='primary',
+            key=key,
+        )
+
+        # Verify
+        # ===========================================================
+        m.assert_called_once_with(
+            action='register',
+            register_token=register_token,
+            public_key=public_key,
+            credential_nickname=credential_nickname,
+            disabled=disabled,
+            label=label,
+            button_type='primary',
+            key=key,
+        )
+        assert result == exp_result, 'result is incorrect!'
+        assert mocked_session_state == {}, 'The session state has been modified!'
 
         # Clean up - None
         # ===========================================================
