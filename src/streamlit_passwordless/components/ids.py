@@ -12,6 +12,16 @@ BP_REGISTER_FORM_DISCOVERABILITY_RADIO_BUTTON = 'bp-register-form-discoverabilit
 BP_REGISTER_FORM_DISCOVERABILITY_TOGGLE_SWITCH = 'bp-register-form-discoverability-toggle-switch'
 BP_REGISTER_FORM_ALIASES_TEXT_INPUT = 'bp-register-form-aliases-text-input'
 BP_REGISTER_FORM_SUBMIT_BUTTON = 'bp-register-form-submit-button'
+BP_REGISTER_FORM_EXISTING_USER_CREDENTIAL_NICKNAME_TEXT_INPUT = (
+    'bp-register-form-existing-user-credential-nickname-text-input'
+)
+BP_REGISTER_FORM_EXISTING_USER_DISCOVERABILITY_RADIO_BUTTON = (
+    'bp-register-form-existing-user-discoverability-radio-button'
+)
+BP_REGISTER_FORM_EXISTING_USER_DISCOVERABILITY_TOGGLE_SWITCH = (
+    'bp-register-form-existing-user-discoverability-toggle-switch'
+)
+BP_REGISTER_FORM_EXISTING_USER_SUBMIT_BUTTON = 'bp-register-form-existing-user-submit-button'
 
 # =====================================================================================
 # Sign in form
