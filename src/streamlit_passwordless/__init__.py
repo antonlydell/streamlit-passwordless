@@ -41,16 +41,16 @@ from streamlit_passwordless.exceptions import (
 )
 from streamlit_passwordless.models import Email, User, UserSignIn
 
-__versiontuple__ = (0, 8, 0)
+__versiontuple__ = (0, 9, 0)
 r"""The version of streamlit-passwordless in a comparable form.
 Adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_
 (MAJOR.MINOR.PATCH).
 """
 
-__version__ = '0.8.0'
+__version__ = '0.9.0'
 r"""The streamlit-passwordless version string."""
 
-__releasedate__ = date(2024, 10, 5)
+__releasedate__ = date(2024, 10, 12)
 r"""The release date of the version specified in :data:`__versiontuple__`."""
 
 

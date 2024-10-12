@@ -15,6 +15,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.9.0] - 2024-10-12
+
+Improved register form!
+
+`streamlit_passwordless.bitwarden_register_form` may now be configured to let the user set a nickname
+for the passkey credential to register and to toggle between a *discoverable* or *non-discoverable*
+passkey. A discoverable passkey allows the user to sign in without entering the username in contrast
+to a non-discoverable passkey, which is traditionally used for a MFA setup. A discoverable passkey
+consumes a passkey slot on a YubiKey, while a non-discoverable does not. In most cases you want to
+create a discoverable passkey, which is also the default. The credential nickname field is rendered
+by default in the form.
+
+
+### Added
+
+- `streamlit_passwordless.bitwarden_register_form_existing_user` : Renders the Bitwarden Passwordless register
+  form that lets an existing user register additional passkey credentials. It accepts an optional
+  `streamlit_passwordless.User` for which to create a passkey credential. If not specified the user from the
+  session state key `streamlit_passwordless.SK_USER` is used.
+
+
+### Changed
+
+- `streamlit_passwordless.bitwarden_register_form` : Added configuration parameters to set a credential nickname
+  and to choose between a *discoverable* or *non-discoverable* passkey.
+
+
 ## [0.8.0] - 2024-10-05
 
 Revamped user model!
@@ -348,7 +375,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.9.0
 [0.8.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.8.0
 [0.7.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.7.0
 [0.6.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.6.1
