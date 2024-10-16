@@ -61,6 +61,52 @@ class Base(DeclarativeBase):
         )
 
 
+class Role(Base):
+    r"""The role of a user.
+
+    A :class:`User` is associated with a role to manage its privileges within an application.
+    The available roles are predefined by streamlit-passwordless, but can be extended if needed.
+
+    Parameters
+    ----------
+    role_id : int
+        The primary key of the table.
+
+    name : str
+        The name of the role. Must be unique.
+
+    rank : int
+        The rank of the role. A role with a higher rank has more privileges. Used
+        for comparing roles against one another. Two roles may have the same rank.
+
+    description : str or None, default None
+        A description of the role.
+
+    users : list[User]
+        The users that have the role assigned.
+    """
+
+    __tablename__ = 'stp_role'
+
+    role_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(unique=True)
+    rank: Mapped[int]
+    description: Mapped[str | None]
+    users: Mapped[list['User']] = relationship(back_populates='role')
+
+    def __repr__(self) -> str:
+        return (
+            f'{self.__class__.__name__}(\n'
+            f'    role_id={self.role_id!r},\n'
+            f'    name={self.name!r},\n'
+            f'    rank={self.rank!r},\n'
+            f'    description={self.description!r},\n'
+            f'{self.modified_at_created_at_as_str}\n)'
+        )
+
+
+Index(f'{Role.__tablename__}_name_ix', Role.name)
+
 
 class User(Base):
     r"""The user table.
