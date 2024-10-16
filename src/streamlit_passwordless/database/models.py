@@ -13,6 +13,15 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 SCHEMA: str | None = None
 
 
+def _timestamp_col_to_str(col: datetime | None) -> str | None:
+    r"""Convert an optional datetime column to an iso-formatted string.
+
+    To be used for the `__repr__` methods of the models.
+    """
+
+    return col if col is None else col.isoformat()
+
+
 class Base(DeclarativeBase):
     r"""The base model all database models will inherit from.
 
@@ -38,6 +47,19 @@ class Base(DeclarativeBase):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(), server_default=func.current_timestamp()
     )
+
+    @property
+    def modified_at_created_at_as_str(self) -> str:
+        r"""Stringify the timestamp columns modified_at and created_at.
+
+        To be used in the `__repr__` methods of the models.
+        """
+
+        return (
+            f'    modified_at={_timestamp_col_to_str(self.modified_at)},\n'
+            f'    created_at={_timestamp_col_to_str(self.created_at)},'
+        )
+
 
 
 class User(Base):
