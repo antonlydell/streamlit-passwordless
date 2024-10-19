@@ -5,8 +5,14 @@ from datetime import datetime
 from typing import Optional
 
 # Third party
-from sqlalchemy import TIMESTAMP, ForeignKey, Index, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import TIMESTAMP, Column, ForeignKey, Index, Table, func
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    attribute_keyed_dict,
+    mapped_column,
+    relationship,
+)
 
 # Local
 
@@ -108,6 +114,57 @@ class Role(Base):
 Index(f'{Role.__tablename__}_name_ix', Role.name)
 
 
+class CustomRole(Base):
+    r"""The custom roles of a user.
+
+    Custom roles can be defined specifically for each application.
+    A user may have none or multiple custom roles, which may grant
+    application specific privileges or hide/expose specific pages.
+
+    Parameters
+    ----------
+    role_id : int
+        The primary key of the table.
+
+    name : str
+        The name of the role.
+
+    rank : int
+        The rank of the role. A role with a higher rank has more privileges. Used
+        for comparing roles against one another. Two roles may have the same rank.
+
+    description : str or None, default None
+        A description of the role.
+
+    users : dict[str, User]
+        A mapping of the users that have the custom role assigned.
+        The key is the username of the user.
+    """
+
+    __tablename__ = 'stp_custom_role'
+
+    role_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(unique=True)
+    rank: Mapped[int]
+    description: Mapped[Optional[str]]
+    users: Mapped[dict[str, 'User']] = relationship(
+        secondary='stp_user_custom_role_link',
+        back_populates='custom_roles',
+        collection_class=attribute_keyed_dict('username'),
+    )
+
+
+Index(f'{CustomRole.__tablename__}_name_ix', CustomRole.name)
+
+# Association table for the many-to-many relationship between User and CustomRole.
+user_custom_role_link = Table(
+    'stp_user_custom_role_link',
+    Base.metadata,
+    Column('user_id', ForeignKey('stp_user.user_id', ondelete='CASCADE')),
+    Column('role_id', ForeignKey('stp_custom_role.role_id')),
+)
+
+
 class User(Base):
     r"""The user table.
 
@@ -125,6 +182,9 @@ class User(Base):
     displayname : Optional[str]
         A descriptive name of the user that is easy to understand for a human.
 
+    role_id : int
+        The unique id of the role associated with the user.
+
     verified_at : Optional[datetime]
         The timestamp in UTC when the user was verified. A user is verified, when
         at least one verified email address is associated with the user.
@@ -135,6 +195,12 @@ class User(Base):
 
     disabled_timestamp : Optional[datetime]
         The timestamp in UTC when the user was disabled.
+
+    role : Role
+        The role of the user.
+
+    custom_roles : dict[str, CustomRole]
+        The custom roles of the user. The role name is mapped to the :class:`CustomRole` model.
 
     emails : list[Email]
         The email addresses associated with the user.
@@ -149,10 +215,18 @@ class User(Base):
     username: Mapped[str] = mapped_column(unique=True)
     ad_username: Mapped[Optional[str]]
     displayname: Mapped[Optional[str]]
+    role_id: Mapped[int] = mapped_column(ForeignKey(Role.role_id))
     verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
     disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     emails: Mapped[list['Email']] = relationship(back_populates='user')
+    role: Mapped[Role] = relationship(back_populates='users')
+    custom_roles: Mapped[dict[str, CustomRole] | None] = relationship(
+        secondary='stp_user_custom_role_link',
+        collection_class=attribute_keyed_dict('name'),
+        back_populates='users',
+        passive_deletes=True,
+    )
     sign_ins: Mapped[list['UserSignIn']] = relationship(back_populates='user')
 
     def __repr__(self) -> str:
