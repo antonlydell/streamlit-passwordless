@@ -3,6 +3,7 @@ r"""The data models of streamlit-passwordless."""
 # Standard library
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 # Third party
 from pydantic import AliasChoices
@@ -11,6 +12,36 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 # Local
 from . import exceptions
+
+
+class UserRoleName(StrEnum):
+    r"""The predefined user role names of streamlit-passwordless.
+
+    These roles are created in the database when the database is initialized.
+    The default role of a new user is :attr:`UserRoleName.USER`.
+
+    Members
+    -------
+    VIEWER
+        A user that can only view data within an application.
+
+    USER
+        The standard user with normal privileges. When a user is created it is
+        assigned this role by default.
+
+    SUPERUSER
+        A user with higher privileges that can perform certain
+        operations that a normal `USER` can not.
+
+    ADMIN
+        An admin has full access to everything. Only admin users may sign in to the admin page
+        and manage the users of the application. An application should have at least one admin.
+    """
+
+    VIEWER = 'Viewer'
+    USER = 'User'
+    SUPERUSER = 'SuperUser'
+    ADMIN = 'Admin'
 
 
 class BaseModel(PydanticBaseModel):
