@@ -22,6 +22,153 @@ from .config import TZ_UTC, ModelData
 
 
 @pytest.fixture(scope='session')
+def viewer_role() -> tuple[models.Role, db_models.Role, ModelData]:
+    r"""The VIEWER role.
+
+    Returns
+    -------
+    model : streamlit_passwordless.models.Role
+        The model of the VIEWER role.
+
+    db_model : streamlit_passwordless.database.models.Role
+        The database model of the VIEWER role.
+
+    data : ModelData
+        The input data that created `model`.
+    """
+
+    data = {
+        'role_id': None,
+        'name': models.UserRoleName.VIEWER,
+        'rank': 1,
+        'description': 'A user that can only view data within an application.',
+    }
+    model = models.Role.model_validate(data)
+    db_model = db_models.Role(**data)
+
+    return model, db_model, data
+
+
+@pytest.fixture(scope='session')
+def user_role() -> tuple[models.Role, db_models.Role, ModelData]:
+    r"""The USER role.
+
+    Returns
+    -------
+    model : streamlit_passwordless.models.Role
+        The model of the USER role.
+
+    db_model : streamlit_passwordless.database.models.Role
+        The database model of the USER role.
+
+    data : ModelData
+        The input data that created `model`.
+    """
+
+    data = {
+        'role_id': None,
+        'name': models.UserRoleName.USER,
+        'rank': 2,
+        'description': 'The standard user with normal privileges. The default role for a new user.',
+    }
+    model = models.Role.model_validate(data)
+    db_model = db_models.Role(**data)
+
+    return model, db_model, data
+
+
+@pytest.fixture(scope='session')
+def superuser_role() -> tuple[models.Role, db_models.Role, ModelData]:
+    r"""The SUPERUSER role.
+
+    Returns
+    -------
+    model : streamlit_passwordless.models.Role
+        The model of the SUPERUSER role.
+
+    db_model : streamlit_passwordless.database.models.Role
+        The database model of the SUPERUSER role.
+
+    data : ModelData
+        The input data that created `model`.
+    """
+
+    data = {
+        'role_id': None,
+        'name': models.UserRoleName.SUPERUSER,
+        'rank': 3,
+        'description': (
+            'A user with higher privileges that can perform certain '
+            'operations that a normal `USER` can not.'
+        ),
+    }
+    model = models.Role.model_validate(data)
+    db_model = db_models.Role(**data)
+
+    return model, db_model, data
+
+
+@pytest.fixture(scope='session')
+def admin_role() -> tuple[models.Role, db_models.Role, ModelData]:
+    r"""The ADMIN role.
+
+    Returns
+    -------
+    model : streamlit_passwordless.models.Role
+        The model of the ADMIN role.
+
+    db_model : streamlit_passwordless.database.models.Role
+        The database model of the ADMIN role.
+
+    data : ModelData
+        The input data that created `model`.
+    """
+
+    data = {
+        'role_id': None,
+        'name': models.UserRoleName.ADMIN,
+        'rank': 4,
+        'description': (
+            'An admin has full access to everything. Only admin users may sign '
+            'in to the admin page and manage the users of the application. '
+            'An application should have at least one admin.'
+        ),
+    }
+    model = models.Role.model_validate(data)
+    db_model = db_models.Role(**data)
+
+    return model, db_model, data
+
+
+@pytest.fixture(scope='session')
+def drummer_custom_role() -> tuple[models.CustomRole, db_models.CustomRole, ModelData]:
+    r"""The role of a user that is a drummer.
+
+    Returns
+    -------
+    model : streamlit_passwordless.models.Role
+        The model of the drummer role.
+
+    db_model : streamlit_passwordless.database.models.Role
+        The database model of the drummer role.
+
+    data : ModelData
+        The input data that created `model`.
+    """
+
+    data = {
+        'role_id': 1,
+        'name': 'Drummer',
+        'rank': 4,
+        'description': 'An epic drummer worthy of playing Beast and the Harlot super drum solo.',
+    }
+    model = models.CustomRole.model_validate(data)
+    db_model = db_models.CustomRole(**data)
+
+    return model, db_model, data
+
+
+@pytest.fixture(scope='session')
 def user_1_user_id() -> str:
     r"""The user ID for test user 1 of the test suite."""
 
@@ -184,7 +331,11 @@ def user_1_sign_in_unsuccessful(
 
 
 @pytest.fixture(scope='session')
-def user_1(user_1_user_id: str) -> tuple[models.User, db_models.User, ModelData]:
+def user_1(
+    user_1_user_id: str,
+    superuser_role: tuple[models.Role, db_models.Role, ModelData],
+    drummer_custom_role: tuple[models.CustomRole, db_models.CustomRole, ModelData],
+) -> tuple[models.User, db_models.User, ModelData]:
     r"""Test user 1 without emails and no passkey sign in.
 
     Returns
@@ -199,6 +350,8 @@ def user_1(user_1_user_id: str) -> tuple[models.User, db_models.User, ModelData]
         The input data that created `model`.
     """
 
+    _, db_superuser_role_model, role_data = superuser_role
+    _, db_drummer_custom_role_model, custom_role_data = drummer_custom_role
     user_id = user_1_user_id
     username = 'rev'
     ad_username = 'the.rev'
@@ -215,6 +368,8 @@ def user_1(user_1_user_id: str) -> tuple[models.User, db_models.User, ModelData]
         'verified_at': verified_at,
         'disabled': disabled,
         'disabled_timestamp': disabled_timestamp,
+        'role': role_data,
+        'custom_roles': {'Drummer': custom_role_data},
         'emails': None,
         'sign_in': None,
         'aliases': None,
@@ -226,9 +381,12 @@ def user_1(user_1_user_id: str) -> tuple[models.User, db_models.User, ModelData]
         username=username,
         ad_username=ad_username,
         displayname=displayname,
+        role_id=db_superuser_role_model.role_id,
         verified_at=verified_at,
         disabled=disabled,
         disabled_timestamp=disabled_timestamp,
+        role=db_superuser_role_model,
+        custom_roles={db_drummer_custom_role_model.name: db_drummer_custom_role_model},
     )
 
     return model, db_model, data
