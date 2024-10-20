@@ -4,6 +4,7 @@ r"""The data models of streamlit-passwordless."""
 import uuid
 from datetime import datetime
 from enum import StrEnum
+from typing import Self
 
 # Third party
 from pydantic import AliasChoices
@@ -54,6 +55,114 @@ class BaseModel(PydanticBaseModel):
             super().__init__(**kwargs)
         except ValidationError as e:
             raise exceptions.StreamlitPasswordlessError(str(e)) from None
+
+
+class BaseRole(BaseModel):
+    r"""The base model for the models :class:`Role` and :class:`CustomRole`.
+
+    :class:`BaseRole` should be subclassed and not used on its own.
+    """
+
+    role_id: int | None = None
+    name: str
+    rank: int
+    description: str | None = None
+
+
+class Role(BaseRole):
+    r"""The role of a user.
+
+    A :class:`User` is associated with a role to manage its privileges within an application.
+
+    Parameters
+    ----------
+    role_id : int or None, default None
+        The unique identifier of the role and the primary key in the database.
+        If None the role is not persisted in the database.
+
+    name : str
+        The name of the role. Must be unique.
+
+    rank : int
+        The rank of the role. A role with a higher rank has more privileges. Used
+        for comparing roles against one another. Two roles may have the same rank.
+
+    description : str or None, default None
+        A description of the role.
+    """
+
+    @classmethod
+    def create_viewer(cls) -> Self:
+        r"""Create the VIEWER role."""
+
+        return cls(
+            name=UserRoleName.VIEWER,
+            rank=1,
+            description='A user that can only view data within an application.',
+        )
+
+    @classmethod
+    def create_user(cls) -> Self:
+        r"""Create the USER role, which is the default for a new user."""
+
+        return cls(
+            name=UserRoleName.USER,
+            rank=2,
+            description=(
+                'The standard user with normal privileges. The default role for a new user.'
+            ),
+        )
+
+    @classmethod
+    def create_superuser(cls) -> Self:
+        r"""Create the SUPERUSER role."""
+
+        return cls(
+            name=UserRoleName.SUPERUSER,
+            rank=3,
+            description=(
+                'A user with higher privileges that can perform certain '
+                'operations that a normal `USER` can not.'
+            ),
+        )
+
+    @classmethod
+    def create_admin(cls) -> Self:
+        r"""Create the ADMIN role."""
+
+        return cls(
+            name=UserRoleName.ADMIN,
+            rank=4,
+            description=(
+                'An admin has full access to everything. Only admin users may sign '
+                'in to the admin page and manage the users of the application. '
+                'An application should have at least one admin.'
+            ),
+        )
+
+
+class CustomRole(BaseRole):
+    r"""A custom role for a user.
+
+    A :class:`User` may have none or multiple custom roles
+    that are defined specifically for each application.
+
+    Parameters
+    ----------
+    role_id : int or None, default None
+        The unique identifier of the role and the primary key in the database.
+        If None the role is not persisted in the database.
+
+    name : str
+        The name of the role. Must be unique.
+
+    rank : int
+        The rank of the role. A role with a higher rank has more privileges. Used
+        for comparing roles against one another. Two roles may have the same rank.
+
+    description : str or None, default None
+        A description of the role.
+    """
 
 
 class Email(BaseModel):
@@ -181,6 +290,14 @@ class User(BaseModel):
     disabled_timestamp : datetime or None, default None
         The timestamp in UTC when the user was disabled.
 
+    role : Role, default `Role(name=UserRoleName.USER)`
+        The role of the user. If not specified the default
+        :attr:`UserRoleName.USER` role is assigned.
+
+    custom_roles : dict[str, CustomRole] or None, default None
+        The custom roles of the user. The role name is mapped to the :class:`CustomRole` model.
+        A user may have none or many custom roles.
+
     emails : list[Email] or None, default None
         The email addresses associated with the user.
 
@@ -200,6 +317,8 @@ class User(BaseModel):
     verified_at: datetime | None = None
     disabled: bool = False
     disabled_timestamp: datetime | None = None
+    role: Role = Field(default_factory=Role.create_user)
+    custom_roles: dict[str, CustomRole] | None = None
     emails: list[Email] | None = None
     sign_in: UserSignIn | None = None
     aliases: tuple[str, ...] | str | None = Field(default=None, validate_default=True)
