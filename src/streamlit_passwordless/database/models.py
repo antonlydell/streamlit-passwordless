@@ -2,7 +2,7 @@ r"""The models that represent tables in the database."""
 
 # Standard library
 from datetime import datetime
-from typing import Optional
+from typing import ClassVar, Optional
 
 # Third party
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, Index, Table, func
@@ -34,6 +34,16 @@ class Base(DeclarativeBase):
     It defines the schema/user where the tables will be created in the
     database and the columns, which are common for all tables.
 
+    Class variables
+    ---------------
+    _columns__repr__: ClassVar[tuple[str, ...]], default tuple()
+        The names of the columns that should be part of the `__repr__` method output.
+        Each model should define this variable. The columns defined on `Base` should
+        not be part of `_columns__repr__`.
+
+    _indent_space__repr__ : ClassVar[str], default ' ' * 4
+        The indentation space used for each column in the `__repr__` method.
+
     Parameters
     ----------
     modified_at : datetime
@@ -42,6 +52,9 @@ class Base(DeclarativeBase):
     created_at : datetime
         The timestamp at which the table record was created (UTC).
     """
+
+    _columns__repr__: ClassVar[tuple[str, ...]] = tuple()
+    _indent_space__repr__: ClassVar[str] = ' ' * 4
 
     __table_args__ = {'schema': SCHEMA}
 
@@ -55,16 +68,32 @@ class Base(DeclarativeBase):
     )
 
     @property
-    def modified_at_created_at_as_str(self) -> str:
+    def _modified_at_created_at_as_str(self) -> str:
         r"""Stringify the timestamp columns modified_at and created_at.
 
         To be used in the `__repr__` methods of the models.
         """
 
+        indent = self._indent_space__repr__
         return (
-            f'    modified_at={_timestamp_col_to_str(self.modified_at)},\n'
-            f'    created_at={_timestamp_col_to_str(self.created_at)},'
+            f'{indent}modified_at={_timestamp_col_to_str(self.modified_at)},\n'
+            f'{indent}created_at={_timestamp_col_to_str(self.created_at)},'
         )
+
+    def __repr__(self) -> str:
+        r"""A string representation of the model."""
+
+        indent = self._indent_space__repr__
+        output = f'{self.__class__.__name__}(\n'
+
+        for col in self._columns__repr__:
+            value = getattr(self, col)
+            value = _timestamp_col_to_str(value) if isinstance(value, datetime) else repr(value)
+            output += f'{indent}{col}={value},\n'
+
+        output += f'{self._modified_at_created_at_as_str}\n)'
+
+        return output
 
 
 class Role(Base):
