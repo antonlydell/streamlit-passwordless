@@ -197,7 +197,7 @@ class TestEmail:
         input_data = {
             'user_id': 'user_id',
             'email': 'm.shadows@ax7.com',
-            'is_primary': True,
+            'rank': 1,
             'disabled': False,
         }
 
@@ -226,7 +226,7 @@ class TestEmail:
             'email_id': 1,
             'user_id': 'user_id',
             'email': 'test@email.com',
-            'is_primary': False,
+            'rank': 3,
             'verified_at': '2024-09-17T21:04:05',
             'disabled': True,
             'disabled_timestamp': datetime(2024, 9, 9, 13, 37, 37),

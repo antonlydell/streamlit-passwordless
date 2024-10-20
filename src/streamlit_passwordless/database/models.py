@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import ClassVar, Optional
 
 # Third party
-from sqlalchemy import TIMESTAMP, Column, ForeignKey, Index, Table, func
+from sqlalchemy import TIMESTAMP, Column, ForeignKey, Index, MetaData, Table, UniqueConstraint, func
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -285,9 +285,9 @@ class Email(Base):
     email : str
         An email address of a user. Must be unique.
 
-    is_primary : bool
-        True if the email address is the primary email address of the user
-        and False otherwise. A user can only have one primary email address.
+    rank : int
+        The rank of the email, where 1 defines the primary email, 2 the secondary
+        and 3 the tertiary etc ... A user can only have one email of each rank.
 
     verified_at : Optional[datetime]
         The timestamp in UTC when the email address was verified by the user.
@@ -306,18 +306,19 @@ class Email(Base):
         'email_id',
         'user_id',
         'email',
-        'is_primary',
+        'rank',
         'verified_at',
         'disabled',
         'disabled_timestamp',
     )
 
     __tablename__ = 'stp_email'
+    __table_args__ = (UniqueConstraint('email', 'rank', name=f'{__tablename__}_email_rank_iu'),)
 
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     email: Mapped[str] = mapped_column(unique=True)
-    is_primary: Mapped[bool]
+    rank: Mapped[int]
     verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
     disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())

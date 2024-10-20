@@ -180,9 +180,9 @@ class Email(BaseModel):
     email : str
         An email address of a user. Must be unique across all users.
 
-    is_primary : bool
-        True if the email address is the primary email address of the user
-        and False otherwise. A user can only have one primary email address.
+    rank : int
+        The rank of the email, where 1 defines the primary email, 2 the secondary
+        and 3 the tertiary etc ... A user can only have one email of each rank.
 
     verified_at : datetime or None, default None
         The timestamp in UTC when the email address was verified by the user.
@@ -197,7 +197,7 @@ class Email(BaseModel):
     email_id: int | None = None
     user_id: str
     email: str
-    is_primary: bool
+    rank: int
     verified_at: datetime | None = None
     disabled: bool = False
     disabled_timestamp: datetime | None = None

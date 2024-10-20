@@ -269,7 +269,7 @@ class TestEmail:
     email_id=None,
     user_id='user_id',
     email='test@example.com',
-    is_primary=True,
+    rank=1,
     verified_at=None,
     disabled=None,
     disabled_timestamp=None,
@@ -278,7 +278,7 @@ class TestEmail:
 )"""
 
         email = db_models.Email(
-            user_id='user_id', email='test@example.com', is_primary=True, created_at=created_at
+            user_id='user_id', email='test@example.com', rank=1, created_at=created_at
         )
 
         # Exercise
