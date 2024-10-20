@@ -10,9 +10,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The admin console to manage users and credentials.
 
-- Roles and custom roles of the user database model.
 
 - Verifying user email addresses.
+
+
+## [0.10.0] - 2024-10-xx
+
+Introducing user roles!
+
+A user can be now be associated with a role to manage its privileges within an application.
+The available roles are predefined by streamlit-passwordless, but can be extended if needed.
+A new user is by default given the "regular user" role. A `User` may also have None or many
+custom roles , which are defined for each application and may grant application specific
+privileges or hide/expose specific pages.
+
+Added ability to specify the schema to use for the database through the environment variable
+*STP_DB_SCHEMA*. If not specified no schema is used.
+
+
+### Added
+
+- `streamlit_passwordless.UserRoleName` : The predefined user role names of streamlit-passwordless.
+
+  - `VIEWER`
+      - A user that can only view data within an application.
+
+  - `USER`
+      - The standard user with normal privileges. When a user is created it is
+        assigned this role by default.
+
+  - `SUPERUSER`
+      - A user with higher privileges that can perform certain
+        operations that a normal `USER` can not.
+
+  - `ADMIN`
+      - An admin has full access to everything. Only admin users may sign in to the admin page
+        and manage the users of the application. An application should have at least one admin.
+
+- `streamlit_passwordless.Role` : The role of a user.
+
+- `streamlit_passwordless.CustomRole` : A custom role for a user.
+
+- `streamlit_passwordless.db.models` :
+
+  - `Role` : The role of a user.
+
+  - `CustomRole` : The custom roles of a user.
+
+
+### Changed
+
+- `streamlit_passwordless.Email` : Renamed parameter `is_primary` to `rank`. `rank` is an integer, where
+   1 defines the primary email and 2 the secondary etc ...
+
+- `streamlit_passwordless.db.models` : Improved `__repr__` methods of all database models.
+
+- `streamlit_passwordless.bitwarden_register_form` : Added the parameter `role`, which allows
+  to set role of a user when a new user is created. It defaults to `UserRoleName.USER`.
 
 
 ## [0.9.0] - 2024-10-12
@@ -375,7 +429,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.10.0
 [0.9.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.9.0
 [0.8.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.8.0
 [0.7.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.7.0
