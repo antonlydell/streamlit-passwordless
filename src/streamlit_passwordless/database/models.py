@@ -253,13 +253,15 @@ class User(Base):
     verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
     disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
-    emails: Mapped[list['Email']] = relationship(back_populates='user')
     role: Mapped[Role] = relationship(back_populates='users')
     custom_roles: Mapped[dict[str, CustomRole] | None] = relationship(
         secondary='stp_user_custom_role_link',
         collection_class=attribute_keyed_dict('name'),
         back_populates='users',
         passive_deletes=True,
+    )
+    emails: Mapped[list['Email']] = relationship(
+        back_populates='user', cascade='delete, delete-orphan'
     )
     sign_ins: Mapped[list['UserSignIn']] = relationship(back_populates='user')
 
@@ -313,7 +315,7 @@ class Email(Base):
     __tablename__ = 'stp_email'
 
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id))
+    user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     email: Mapped[str] = mapped_column(unique=True)
     is_primary: Mapped[bool]
     verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
