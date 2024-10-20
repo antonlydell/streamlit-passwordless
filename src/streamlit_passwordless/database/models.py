@@ -121,6 +121,8 @@ class Role(Base):
         The users that have the role assigned.
     """
 
+    _columns__repr__: ClassVar[tuple[str, ...]] = ('role_id', 'name', 'rank', 'description')
+
     __tablename__ = 'stp_role'
 
     role_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -128,16 +130,6 @@ class Role(Base):
     rank: Mapped[int]
     description: Mapped[str | None]
     users: Mapped[list['User']] = relationship(back_populates='role')
-
-    def __repr__(self) -> str:
-        return (
-            f'{self.__class__.__name__}(\n'
-            f'    role_id={self.role_id!r},\n'
-            f'    name={self.name!r},\n'
-            f'    rank={self.rank!r},\n'
-            f'    description={self.description!r},\n'
-            f'{self.modified_at_created_at_as_str}\n)'
-        )
 
 
 Index(f'{Role.__tablename__}_name_ix', Role.name)
@@ -169,6 +161,8 @@ class CustomRole(Base):
         A mapping of the users that have the custom role assigned.
         The key is the username of the user.
     """
+
+    _columns__repr__: ClassVar[tuple[str, ...]] = ('role_id', 'name', 'rank', 'description')
 
     __tablename__ = 'stp_custom_role'
 
@@ -238,6 +232,17 @@ class User(Base):
         Info about when the user has signed in to the application.
     """
 
+    _columns__repr__: ClassVar[tuple[str, ...]] = (
+        'user_id',
+        'username',
+        'ad_username',
+        'displayname',
+        'role_id',
+        'verified_at',
+        'disabled',
+        'disabled_timestamp',
+    )
+
     __tablename__ = 'stp_user'
 
     user_id: Mapped[str] = mapped_column(primary_key=True)
@@ -257,18 +262,6 @@ class User(Base):
         passive_deletes=True,
     )
     sign_ins: Mapped[list['UserSignIn']] = relationship(back_populates='user')
-
-    def __repr__(self) -> str:
-        return (
-            f'{self.__class__.__name__}(\n'
-            f'    user_id={self.user_id},\n'
-            f'    username={self.username},\n'
-            f'    ad_username={self.username},\n'
-            f'    displayname={self.displayname},\n'
-            f'    verified_at={self.verified_at},\n'
-            f'    disabled={self.disabled},\n'
-            f'    disabled_timestamp={self.disabled_timestamp},\n)'
-        )
 
 
 Index(f'{User.__tablename__}_username_ix', User.username)
@@ -307,6 +300,16 @@ class Email(Base):
         The user object the email address belongs to.
     """
 
+    _columns__repr__: ClassVar[tuple[str, ...]] = (
+        'email_id',
+        'user_id',
+        'email',
+        'is_primary',
+        'verified_at',
+        'disabled',
+        'disabled_timestamp',
+    )
+
     __tablename__ = 'stp_email'
 
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -317,18 +320,6 @@ class Email(Base):
     disabled: Mapped[bool] = mapped_column(default=False)
     disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     user: Mapped['User'] = relationship(back_populates='emails')
-
-    def __repr__(self) -> str:
-        return (
-            f'{self.__class__.__name__}(\n'
-            f'    email_id={self.email_id},\n'
-            f'    user_id={self.user_id},\n'
-            f'    email={self.email},\n'
-            f'    is_primary={self.is_primary},\n'
-            f'    verified_at={self.verified_at},\n'
-            f'    disabled={self.disabled},\n'
-            f'    disabled_timestamp={self.disabled_timestamp},\n)'
-        )
 
 
 Index(f'{Email.__tablename__}_email_ix', Email.email)
@@ -378,6 +369,20 @@ class UserSignIn(Base):
         The user object the sign in entry belongs to.
     """
 
+    _columns__repr__: ClassVar[tuple[str, ...]] = (
+        'user_sign_in_id',
+        'user_id',
+        'sign_in_timestamp',
+        'success',
+        'origin',
+        'device',
+        'country',
+        'credential_nickname',
+        'credential_id',
+        'sign_in_type',
+        'rp_id',
+    )
+
     __tablename__ = 'stp_user_sign_in'
 
     user_sign_in_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -392,22 +397,6 @@ class UserSignIn(Base):
     sign_in_type: Mapped[str]
     rp_id: Mapped[Optional[str]]
     user: Mapped['User'] = relationship(back_populates='sign_ins')
-
-    def __repr__(self) -> str:
-        return (
-            f'{self.__class__.__name__}(\n'
-            f'    user_sign_in_id={self.user_sign_in_id},\n'
-            f'    user_id={self.user_id},\n'
-            f'    sign_in_timestamp={self.sign_in_timestamp},\n'
-            f'    success={self.success},\n'
-            f'    origin={self.origin},\n'
-            f'    device={self.device},\n'
-            f'    country={self.country},\n'
-            f'    credential_nickname={self.credential_nickname},\n'
-            f'    credential_id={self.credential_id},\n'
-            f'    sign_in_type={self.sign_in_type},\n'
-            f'    rp_id={self.rp_id},\n)'
-        )
 
 
 Index(f'{UserSignIn.__tablename__}_ix1', UserSignIn.user_id, UserSignIn.sign_in_timestamp)

@@ -161,3 +161,192 @@ class TestRole:
 
         # Clean up - None
         # ===========================================================
+
+
+class TestCustomRole:
+    r"""Tests for the model `CustomRole`."""
+
+    def test__repr__(self) -> None:
+        r"""Test the `__repr__` method."""
+
+        # Setup
+        # ===========================================================
+        role_id = 2
+        name = 'CUSTOM'
+        rank = 2
+
+        repr_str_exp = f"""CustomRole(
+    role_id={role_id},
+    name='{name}',
+    rank={rank},
+    description=None,
+    modified_at=None,
+    created_at=None,
+)"""
+
+        custom_role = db_models.CustomRole(role_id=role_id, name=name, rank=rank)
+
+        # Exercise
+        # ===========================================================
+        result = repr(custom_role)
+
+        # Verify
+        # ===========================================================
+        print(f'Result:\n{result}\n')
+        print(f'Expected Result:\n{repr_str_exp}')
+
+        assert result == repr_str_exp
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestUser:
+    r"""Tests for the model `User`."""
+
+    def test__repr__(
+        self, created_at_column: tuple[datetime, str], modified_at_column: tuple[datetime, str]
+    ) -> None:
+        r"""Test the `__repr__` method."""
+
+        # Setup
+        # ===========================================================
+        modified_at, modified_at_str = modified_at_column
+        created_at, created_at_str = created_at_column
+
+        repr_str_exp = f"""User(
+    user_id='user_id',
+    username='username',
+    ad_username='ad_username',
+    displayname='displayname',
+    role_id=1,
+    verified_at=2024-10-19T13:56:56,
+    disabled=True,
+    disabled_timestamp=2024-10-19T13:59:00,
+    modified_at={modified_at_str},
+    created_at={created_at_str},
+)"""
+
+        user = db_models.User(
+            user_id='user_id',
+            username='username',
+            ad_username='ad_username',
+            displayname='displayname',
+            role_id=1,
+            verified_at=datetime(2024, 10, 19, 13, 56, 56),
+            disabled=True,
+            disabled_timestamp=datetime(2024, 10, 19, 13, 59, 0),
+            modified_at=modified_at,
+            created_at=created_at,
+        )
+
+        # Exercise
+        # ===========================================================
+        result = repr(user)
+
+        # Verify
+        # ===========================================================
+        print(f'Result:\n{result}\n')
+        print(f'Expected Result:\n{repr_str_exp}')
+
+        assert result == repr_str_exp
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestEmail:
+    r"""Tests for the model `Email`."""
+
+    def test__repr__(self, created_at_column: tuple[datetime, str]) -> None:
+        r"""Test the `__repr__` method."""
+
+        # Setup
+        # ===========================================================
+        created_at, created_at_str = created_at_column
+
+        repr_str_exp = f"""Email(
+    email_id=None,
+    user_id='user_id',
+    email='test@example.com',
+    is_primary=True,
+    verified_at=None,
+    disabled=None,
+    disabled_timestamp=None,
+    modified_at=None,
+    created_at={created_at_str},
+)"""
+
+        email = db_models.Email(
+            user_id='user_id', email='test@example.com', is_primary=True, created_at=created_at
+        )
+
+        # Exercise
+        # ===========================================================
+        result = repr(email)
+
+        # Verify
+        # ===========================================================
+        print(f'Result:\n{result}\n')
+        print(f'Expected Result:\n{repr_str_exp}')
+
+        assert result == repr_str_exp
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestUserSignIn:
+    r"""Tests for the model `UserSignIn`."""
+
+    def test__repr__(self, modified_at_column: tuple[datetime, str]) -> None:
+        r"""Test the `__repr__` method."""
+
+        # Setup
+        # ===========================================================
+        modified_at, modified_at_str = modified_at_column
+
+        repr_str_exp = f"""UserSignIn(
+    user_sign_in_id=1,
+    user_id='user_id',
+    sign_in_timestamp=2024-10-20T18:15:00,
+    success=True,
+    origin='origin',
+    device='device',
+    country='country',
+    credential_nickname='credential_nickname',
+    credential_id='credential_id',
+    sign_in_type='passkey_signin',
+    rp_id='rp_id',
+    modified_at={modified_at_str},
+    created_at=None,
+)"""
+
+        user_sign_in = db_models.UserSignIn(
+            user_sign_in_id=1,
+            user_id='user_id',
+            sign_in_timestamp=datetime(2024, 10, 20, 18, 15, 0),
+            success=True,
+            origin='origin',
+            device='device',
+            country='country',
+            credential_nickname='credential_nickname',
+            credential_id='credential_id',
+            sign_in_type='passkey_signin',
+            rp_id='rp_id',
+            modified_at=modified_at,
+        )
+
+        # Exercise
+        # ===========================================================
+        result = repr(user_sign_in)
+
+        # Verify
+        # ===========================================================
+        print(f'Result:\n{result}\n')
+        print(f'Expected Result:\n{repr_str_exp}')
+
+        assert result == repr_str_exp
+
+        # Clean up - None
+        # ===========================================================
