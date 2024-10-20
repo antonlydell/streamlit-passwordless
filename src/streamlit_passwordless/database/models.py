@@ -388,7 +388,7 @@ class UserSignIn(Base):
     __tablename__ = 'stp_user_sign_in'
 
     user_sign_in_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id))
+    user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     sign_in_timestamp: Mapped[datetime] = mapped_column(TIMESTAMP())
     success: Mapped[bool]
     origin: Mapped[str]
