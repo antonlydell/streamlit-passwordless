@@ -183,8 +183,8 @@ Index(f'{CustomRole.__tablename__}_name_ix', CustomRole.name)
 user_custom_role_link = Table(
     'stp_user_custom_role_link',
     Base.metadata,
-    Column('user_id', ForeignKey('stp_user.user_id', ondelete='CASCADE')),
-    Column('role_id', ForeignKey('stp_custom_role.role_id')),
+    Column('user_id', ForeignKey('stp_user.user_id', ondelete='CASCADE'), primary_key=True),
+    Column('role_id', ForeignKey('stp_custom_role.role_id'), primary_key=True),
 )
 
 
