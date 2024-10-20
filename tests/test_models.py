@@ -1,6 +1,7 @@
 r"""Unit tests for the models' module."""
 
 # Standard library
+from copy import deepcopy
 from datetime import datetime
 from typing import Sequence
 
@@ -17,6 +18,172 @@ from .config import ModelData
 # =============================================================================================
 # Tests
 # =============================================================================================
+
+
+class TestBaseRole:
+    r"""Tests for the model `BaseRole`."""
+
+    def test_init_with_defaults(self) -> None:
+        r"""Test to initialize the model with required parameters only."""
+
+        # Setup
+        # ===========================================================
+        input_data = {'name': 'USER', 'rank': 2}
+
+        data_exp = deepcopy(input_data)
+        data_exp['role_id'] = None
+        data_exp['description'] = None
+
+        # Exercise
+        # ===========================================================
+        role = models.Role.model_validate(input_data)
+
+        # Verify
+        # ===========================================================
+        assert role.model_dump() == data_exp
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_init_with_all_parameters(self) -> None:
+        r"""Test to supply values for all parameters."""
+
+        # Setup
+        # ===========================================================
+        input_data = {'role_id': 1, 'name': 'USER', 'rank': 2, 'description': 'description'}
+
+        # Exercise
+        # ===========================================================
+        role = models.Role.model_validate(input_data)
+
+        # Verify
+        # ===========================================================
+        assert role.model_dump() == input_data
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestRole:
+    r"""Tests for the model `Role`."""
+
+    def test_from_db_role(self, user_role: tuple[models.Role, db_models.Role, ModelData]) -> None:
+        r"""Test to initialize the model from an instance of `database.models.Role`."""
+
+        # Setup
+        # ===========================================================
+        _, db_role, role_data = user_role
+
+        # Exercise
+        # ===========================================================
+        role = models.Role.model_validate(db_role)
+
+        # Verify
+        # ===========================================================
+        assert role.model_dump() == role_data
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_create_viewer(
+        self, viewer_role: tuple[models.Role, db_models.Role, ModelData]
+    ) -> None:
+        r"""Test to create a VIEWER role."""
+
+        # Setup
+        # ===========================================================
+        _, _, role_data = viewer_role
+
+        # Exercise
+        # ===========================================================
+        role = models.Role.create_viewer()
+
+        # Verify
+        # ===========================================================
+        assert role.model_dump() == role_data
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_create_user(self, user_role: tuple[models.Role, db_models.Role, ModelData]) -> None:
+        r"""Test to create a USER role."""
+
+        # Setup
+        # ===========================================================
+        _, _, role_data = user_role
+
+        # Exercise
+        # ===========================================================
+        role = models.Role.create_user()
+
+        # Verify
+        # ===========================================================
+        assert role.model_dump() == role_data
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_create_superuser(
+        self, superuser_role: tuple[models.Role, db_models.Role, ModelData]
+    ) -> None:
+        r"""Test to create a SUPERUSER role."""
+
+        # Setup
+        # ===========================================================
+        _, _, role_data = superuser_role
+
+        # Exercise
+        # ===========================================================
+        role = models.Role.create_superuser()
+
+        # Verify
+        # ===========================================================
+        assert role.model_dump() == role_data
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_create_admin(self, admin_role: tuple[models.Role, db_models.Role, ModelData]) -> None:
+        r"""Test to create an ADMIN role."""
+
+        # Setup
+        # ===========================================================
+        _, _, role_data = admin_role
+
+        # Exercise
+        # ===========================================================
+        role = models.Role.create_admin()
+
+        # Verify
+        # ===========================================================
+        assert role.model_dump() == role_data
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestCustomRole:
+    r"""Tests for the model `CustomRole`."""
+
+    def test_from_db_custom_role(
+        self, drummer_custom_role: tuple[models.CustomRole, db_models.CustomRole, ModelData]
+    ) -> None:
+        r"""Test to initialize the model from an instance of `database.models.CustomRole`."""
+
+        # Setup
+        # ===========================================================
+        _, db_custom_role, custom_role_data = drummer_custom_role
+
+        # Exercise
+        # ===========================================================
+        custom_role = models.CustomRole.model_validate(db_custom_role)
+
+        # Verify
+        # ===========================================================
+        assert custom_role.model_dump() == custom_role_data
+
+        # Clean up - None
+        # ===========================================================
 
 
 class TestEmail:
@@ -251,11 +418,18 @@ class TestUserSignIn:
 class TestUser:
     r"""Tests for the model `User`."""
 
-    def test_init_with_defaults(self, mocked_user_id: str) -> None:
-        r"""Test to initialize the model with required parameters only."""
+    def test_init_with_defaults(
+        self, mocked_user_id: str, user_role: tuple[models.Role, db_models.Role, ModelData]
+    ) -> None:
+        r"""Test to initialize the model with required parameters only.
+
+        By default a user is created with the `models.UserNameRole.USER` role.
+        """
 
         # Setup
         # ===========================================================
+        _, _, role_data = user_role
+
         username = 'm.shadows'
         data_exp = {
             'user_id': mocked_user_id,
@@ -265,6 +439,8 @@ class TestUser:
             'verified_at': None,
             'disabled': False,
             'disabled_timestamp': None,
+            'role': role_data,
+            'custom_roles': None,
             'emails': None,
             'sign_in': None,
             'aliases': None,
@@ -303,12 +479,21 @@ class TestUser:
             'verified_at': '2024-09-17T20:48:16',
             'disabled': True,
             'disabled_timestamp': '2024-09-18T21:48:16',
+            'role': {'role_id': 1, 'name': 'role', 'rank': 1, 'description': None},
+            'custom_roles': {
+                'custom_role_1': {
+                    'role_id': 1,
+                    'name': 'custom_role',
+                    'rank': 1,
+                    'description': 'description',
+                },
+            },
             'emails': [email_primary_data, email_secondary_data],
             'sign_in': sign_in_data,
             'aliases': 'Matt;Shadows',
         }
 
-        data_exp = input_data.copy()
+        data_exp = deepcopy(input_data)
         data_exp['verified_at'] = datetime(2024, 9, 17, 20, 48, 16)
         data_exp['disabled_timestamp'] = datetime(2024, 9, 18, 21, 48, 16)
         data_exp['aliases'] = ('Matt', 'Shadows')
@@ -331,7 +516,7 @@ class TestUser:
         # ===========================================================
         _, db_user, user_data = user_1
 
-        data_exp = user_data.copy()
+        data_exp = deepcopy(user_data)
         data_exp['emails'] = []
 
         # Exercise
