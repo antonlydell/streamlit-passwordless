@@ -1,6 +1,7 @@
 r"""The models that represent tables in the database."""
 
 # Standard library
+import os
 from datetime import datetime
 from typing import ClassVar, Optional
 
@@ -16,7 +17,8 @@ from sqlalchemy.orm import (
 
 # Local
 
-SCHEMA: str | None = None
+SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
+metadata_obj = MetaData(schema=SCHEMA)
 
 
 def _timestamp_col_to_str(col: datetime | None) -> str | None:
@@ -56,7 +58,7 @@ class Base(DeclarativeBase):
     _columns__repr__: ClassVar[tuple[str, ...]] = tuple()
     _indent_space__repr__: ClassVar[str] = ' ' * 4
 
-    __table_args__ = {'schema': SCHEMA}
+    metadata = metadata_obj
 
     modified_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(),
