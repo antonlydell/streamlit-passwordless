@@ -44,6 +44,10 @@ class UserCreate(UserBase):
     displayname : str or None, default None
         A descriptive name of the user that is easy to understand for a human.
 
+    role_id : int
+        The foreign key reference to the :attr:`streamlit_passwordless.db.models.Role.role_id`
+        of the role to assign to the user.
+
     disabled : bool, default False
         If False the user is enabled and if True the user is disabled.
         A disabled user is not able to register credentials or sign in.
@@ -55,5 +59,6 @@ class UserCreate(UserBase):
     username: str
     ad_username: str | None = None
     displayname: str | None = None
+    role_id: int
     disabled: bool = False
     disabled_timestamp: datetime | None = None
