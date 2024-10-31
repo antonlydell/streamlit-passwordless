@@ -340,13 +340,30 @@ def _create_user_in_database(session: db.Session, user: models.User) -> tuple[bo
     error_msg : str
         An error message to display to the user if there was an issue with creating the user
         in the database. If no error occurred an empty string is returned.
+
+    Raises
+    ------
+    streamlit_passwordless.DatabaseCreateUserError
+        If a role matching :attr:`streamlit_passwordless.User.role.name`
+        was not found in the database.
     """
 
-    user_create = db.UserCreate(
-        user_id=user.user_id, username=user.username, displayname=user.displayname
-    )
-
     try:
+        if (role_id := user.role.role_id) is None:
+            db_role = db.get_role_by_name(session=session, name=user.role.name)
+            if db_role is None:
+                raise exceptions.DatabaseCreateUserError(
+                    f'Cannot create user "{user.username}" because role '
+                    f'with name "{user.role.name}" does not exist in the database!'
+                ) from None
+            role_id = db_role.role_id
+
+        user_create = db.UserCreate(
+            user_id=user.user_id,
+            username=user.username,
+            displayname=user.displayname,
+            role_id=role_id,
+        )
         db.create_user(session=session, user=user_create, commit=True)
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
