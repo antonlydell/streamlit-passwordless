@@ -417,7 +417,7 @@ def _save_user_sign_in_to_database(
 def bitwarden_register_form(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
-    is_admin: bool = False,
+    role: models.Role | None = None,
     pre_authorized: bool = False,
     with_displayname: bool = False,
     with_credential_nickname: bool = True,
@@ -467,9 +467,10 @@ def bitwarden_register_form(
     db_session : streamlit_passwordless.db.Session
         An active database session.
 
-    is_admin : bool, default False
-        True means that the user will be registered as an admin.
-        Not implemented yet.
+    role : streamlit_passwordless.Role or None, default None
+        The role to assign to the user. If None the user will be assigned the default
+        user role of :class:`streamlit_passwordless.User` i.e. a role with name
+        :attr:`streamlit_passwordless.UserRoleName.USER`.
 
     pre_authorized : bool, default False
         If True require a user with the input username to exist in the database to allow
