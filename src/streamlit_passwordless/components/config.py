@@ -16,6 +16,8 @@ SK_USER = 'stp-user'
 SK_USER_SIGN_IN = 'stp-user-sign-in'
 SK_DB_USER = 'stp-db-user'
 SK_REGISTER_FORM_IS_VALID = 'stp-register-form-is-valid'
+SK_ROLES = 'stp-roles'
+SK_CUSTOM_ROLES = 'stp-custom-roles'
 
 # =====================================================================================
 # Icons
@@ -50,6 +52,12 @@ def init_session_state() -> None:
 
     SK_REGISTER_FORM_IS_VALID : bool, default False
         True if the input to register form is valid and False otherwise.
+
+    SK_ROLES : dict[str, streamlit_passwordless.Role]
+        The available roles for a user.
+
+    SK_CUSTOM_ROLES : dict[str, streamlit_passwordless.CustomRole]
+        The available custom roles for a user.
     """
 
     none_keys = (SK_USER, SK_USER_SIGN_IN, SK_DB_USER)
@@ -57,3 +65,5 @@ def init_session_state() -> None:
         st.session_state[key] = None
 
     st.session_state[SK_REGISTER_FORM_IS_VALID] = False
+    st.session_state[SK_ROLES] = {}
+    st.session_state[SK_CUSTOM_ROLES] = {}
