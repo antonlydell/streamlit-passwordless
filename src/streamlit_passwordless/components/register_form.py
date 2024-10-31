@@ -143,13 +143,13 @@ def _render_discoverability_component(
     return discoverable
 
 
-@st.cache_data
+@st.cache_data(hash_funcs={models.Role: lambda r: r.name})
 def _create_user(
     username: str,
-    user_id: str | None = None,
     displayname: str | None = None,
     aliases: str | None = None,
-) -> tuple[models.User | None, str]:
+    role: models.Role | None = None,
+) -> models.User:
     r"""Create a new user to register.
 
     Parameters
@@ -157,39 +157,36 @@ def _create_user(
     username : str
         The username.
 
-    user_id : str or None, default None
-        The unique ID of the user, which serves as the primary key in the database.
-        If None it will be generated as a uuid.
-
     displayname : str or None, default None
         The optional displayname of the user.
 
     aliases : str or None, default None
         The optional aliases of the user as a semicolon separated string.
 
+    role : models.Role or None, default None
+        The role to assign to the user. If None the default role of
+        :class:`streamlit_passwordless.User` is assigned.
+
     Returns
     -------
-    user : models.User or None
-        The user to create. None is returned if an error occurred while creating the user.
-
-    error_msg : str
-        The error message if a user could not be created successfully. If no errors an empty
-        string is returned.
+    user : models.User
+        The user to create.
     """
 
-    error_msg = ''
-    try:
-        user = models.User(
-            username=username, user_id=user_id, displayname=displayname, aliases=aliases
-        )
-    except exceptions.StreamlitPasswordlessError as e:
-        logger.error(e.detailed_message)
-        error_msg = e.displayable_message
-        user = None
-    else:
-        logger.debug(f'Successfully created user: {user}')
+    if role is None:
+        role = st.session_state.get(config.SK_ROLES, {}).get(models.UserRoleName.USER)
 
-    return user, error_msg
+    if role is None:
+        user = models.User(
+            username=username, user_id=None, displayname=displayname, aliases=aliases
+        )
+    else:
+        user = models.User(
+            username=username, user_id=None, displayname=displayname, aliases=aliases, role=role
+        )
+    logger.debug(f'Successfully created user: {user}')
+
+    return user
 
 
 @st.cache_data(
@@ -695,16 +692,18 @@ def bitwarden_register_form(
         register_token = ''
 
         if form_is_valid:
-            user, error_msg = _create_user(
-                username=username,
-                user_id=db_user.user_id if db_user else None,
-                displayname=displayname,
-                aliases=aliases,
-            )
-            if user is not None:
-                register_token, error_msg = _create_register_token(
-                    client=client, user=user, discoverable=discoverable
+            if db_user:
+                user = models.User.model_validate(db_user)
+            else:
+                user = _create_user(
+                    username=username,
+                    displayname=displayname,
+                    aliases=aliases,
+                    role=role,
                 )
+            register_token, error_msg = _create_register_token(
+                client=client, user=user, discoverable=discoverable
+            )
 
         token, error, clicked = register_button(
             register_token=register_token,
