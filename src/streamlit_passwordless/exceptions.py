@@ -176,3 +176,13 @@ class DatabaseStatementError(DatabaseError):
             f'Params : {self.params}\n'
             f'Parent Exception Message : {self.parent_message}'
         )
+
+
+class DatabaseCreateUserError(DatabaseError):
+    r"""Raised for errors related to creating a new user in the database.
+
+    Parameters
+    ----------
+    message : str
+        The error message.
+    """
