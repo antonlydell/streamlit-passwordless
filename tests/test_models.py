@@ -8,6 +8,7 @@ from typing import Sequence
 # Third party
 import pytest
 from passwordless import VerifiedUser
+from pydantic import ValidationError
 
 # Local
 from streamlit_passwordless import exceptions, models
@@ -157,6 +158,21 @@ class TestRole:
         # Verify
         # ===========================================================
         assert role.model_dump() == role_data
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_is_immutable(self) -> None:
+        r"""Test that the model is immutable."""
+
+        # Setup
+        # ===========================================================
+        role = models.Role(name='Immutable', rank=1)
+
+        # Exercise & Verify
+        # ===========================================================
+        with pytest.raises(ValidationError):
+            role.name = 'Mutable'  # type: ignore
 
         # Clean up - None
         # ===========================================================
