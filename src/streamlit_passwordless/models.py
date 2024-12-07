@@ -63,6 +63,8 @@ class BaseRole(BaseModel):
     :class:`BaseRole` should be subclassed and not used on its own.
     """
 
+    model_config = ConfigDict(frozen=True)
+
     role_id: int | None = None
     name: str
     rank: int

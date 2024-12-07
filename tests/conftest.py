@@ -2,12 +2,15 @@ r"""Fixtures for testing streamlit-passwordless."""
 
 # Standard library
 from datetime import datetime
+from typing import Generator
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
 
 # Third party
 import pytest
 from passwordless import VerifiedUser
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session, sessionmaker
 
 # Local
 import streamlit_passwordless.bitwarden_passwordless.backend
@@ -527,3 +530,33 @@ def mocked_get_current_datetime(monkeypatch: pytest.MonkeyPatch) -> datetime:
     )
 
     return now
+
+
+# =============================================================================================
+# Database
+# =============================================================================================
+
+
+@pytest.fixture()
+def empty_sqlite_in_memory_database() -> Generator[tuple[Session, sessionmaker], None, None]:
+    r"""An empty in-memory SQLite database.
+
+    The database has all tables created and foreign key constraints enabled.
+
+    Yields
+    ------
+    session : sqlalchemy.orm.Session
+        An open session to the database.
+
+    session_factory : sqlalchemy.orm.sessionmaker
+        The session factory that can produce new database sessions.
+    """
+
+    engine = create_engine(url='sqlite://', echo=True)
+    session_factory = sessionmaker(bind=engine)
+    db_models.Base.metadata.create_all(bind=engine)
+
+    with session_factory() as session:
+        session.execute(text('PRAGMA foreign_keys=ON'))
+        session.commit()
+        yield session, session_factory

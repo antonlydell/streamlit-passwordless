@@ -3,7 +3,7 @@ r"""The models that represent tables in the database."""
 # Standard library
 import os
 from datetime import datetime
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Self
 
 # Third party
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, Index, MetaData, Table, UniqueConstraint, func
@@ -16,6 +16,7 @@ from sqlalchemy.orm import (
 )
 
 # Local
+from streamlit_passwordless.models import UserRoleName
 
 SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
 metadata_obj = MetaData(schema=SCHEMA)
@@ -132,6 +133,55 @@ class Role(Base):
     rank: Mapped[int]
     description: Mapped[str | None]
     users: Mapped[list['User']] = relationship(back_populates='role')
+
+    @classmethod
+    def create_viewer(cls) -> Self:
+        r"""Create the VIEWER role."""
+
+        return cls(
+            name=UserRoleName.VIEWER,
+            rank=1,
+            description='A user that can only view data within an application.',
+        )
+
+    @classmethod
+    def create_user(cls) -> Self:
+        r"""Create the USER role, which is the default for a new user."""
+
+        return cls(
+            name=UserRoleName.USER,
+            rank=2,
+            description=(
+                'The standard user with normal privileges. The default role for a new user.'
+            ),
+        )
+
+    @classmethod
+    def create_superuser(cls) -> Self:
+        r"""Create the SUPERUSER role."""
+
+        return cls(
+            name=UserRoleName.SUPERUSER,
+            rank=3,
+            description=(
+                'A user with higher privileges that can perform certain '
+                'operations that a normal `USER` can not.'
+            ),
+        )
+
+    @classmethod
+    def create_admin(cls) -> Self:
+        r"""Create the ADMIN role."""
+
+        return cls(
+            name=UserRoleName.ADMIN,
+            rank=4,
+            description=(
+                'An admin has full access to everything. Only admin users may sign '
+                'in to the admin page and manage the users of the application. '
+                'An application should have at least one admin.'
+            ),
+        )
 
 
 Index(f'{Role.__tablename__}_name_ix', Role.name)
