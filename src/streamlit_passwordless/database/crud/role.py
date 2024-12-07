@@ -156,3 +156,42 @@ def create_role(session: Session, role: RoleCreate, commit: bool = False) -> Rol
         db_commit(session=session, error_msg=error_msg)
 
     return db_role
+
+
+def create_default_roles(session: Session, commit: bool = False) -> tuple[Role, ...]:
+    r"""Create the default roles in the database.
+
+    Parameters
+    ----------
+    session : Session
+        An active database session.
+
+    commit : bool, default False
+        if True the default roles are committed to the database after being added
+        to the session. If False (the default) they are only added to the session.
+
+    Returns
+    -------
+    roles : tuple[streamlit_passwordless.db.models.Role, ...]
+        The created default roles.
+
+    Raises
+    ------
+    streamlit_passwordless.DatabaseError
+        If an error occurs while saving the roles to the database.
+
+    streamlit_passwordless.DatabaseStatementError
+        If there is an error with the executed SQL statement.
+    """
+
+    roles = (Role.create_viewer(), Role.create_user(), Role.create_superuser(), Role.create_admin())
+    session.add_all(roles)
+
+    if commit:
+        error_msg = (
+            f'Unable to save default roles: {", ".join(r.name for r in roles)} to the database!\n'
+            'Check the logs for more details.'
+        )
+        db_commit(session=session, error_msg=error_msg)
+
+    return roles
