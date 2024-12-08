@@ -92,7 +92,9 @@ def get_role_by_name(session: Session, name: str) -> Role | None:
     try:
         return session.scalars(query).one_or_none()
     except SQLAlchemyError as e:
-        raise exceptions.DatabaseError(f'Error loading role {name=} from database!', e=e) from None
+        raise exceptions.DatabaseError(
+            f'Error loading role by {name=} from database!', e=e
+        ) from None
 
 
 def get_role_by_role_id(session: Session, role_id: int) -> Role | None:
@@ -121,9 +123,7 @@ def get_role_by_role_id(session: Session, role_id: int) -> Role | None:
     try:
         return session.scalars(query).one_or_none()
     except SQLAlchemyError as e:
-        raise exceptions.DatabaseError(
-            f'Error loading role {role_id=} from database!', e=e
-        ) from None
+        raise exceptions.DatabaseError('Error loading role from database!', e=e) from None
 
 
 def create_role(session: Session, role: RoleCreate, commit: bool = False) -> Role:
