@@ -48,14 +48,22 @@ def get_all_roles(
     -------
     pandas.DataFrame or Sequence[streamlit_passwordless.db.models.Role]
         The roles from the database.
+
+    Raises
+    ------
+    streamlit_passwordless.DatabaseError
+        If an error occurs while loading the roles from the database.
     """
 
     query = select(Role).order_by(Role.rank).offset(skip).limit(limit)
 
-    if as_df:
-        return pd.read_sql_query(sql=query, con=session.bind, index_col=index_col)  # type: ignore
-    else:
-        return session.scalars(query).all()
+    try:
+        if as_df:
+            return pd.read_sql_query(sql=query, con=session.bind, index_col=index_col)  # type: ignore
+        else:
+            return session.scalars(query).all()
+    except SQLAlchemyError as e:
+        raise exceptions.DatabaseError('Error loading roles from database!', e=e) from None
 
 
 def get_role_by_name(session: Session, name: str) -> Role | None:
