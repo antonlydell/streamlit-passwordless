@@ -39,7 +39,7 @@ from streamlit_passwordless.exceptions import (
     SignInTokenVerificationError,
     StreamlitPasswordlessError,
 )
-from streamlit_passwordless.models import Email, User, UserSignIn
+from streamlit_passwordless.models import CustomRole, Email, Role, User, UserRoleName, UserSignIn
 
 __versiontuple__ = (0, 9, 0)
 r"""The version of streamlit-passwordless in a comparable form.
@@ -76,12 +76,15 @@ __all__ = [
     # exceptions
     'DatabaseError',
     'DatabaseStatementError',
-    'RegisterUserError,',
+    'RegisterUserError',
     'SignInTokenVerificationError',
     'StreamlitPasswordlessError',
     # models
+    'CustomRole',
     'Email',
+    'Role',
     'User',
+    'UserRoleName',
     'UserSignIn',
     # session state
     'SK_DB_USER',
