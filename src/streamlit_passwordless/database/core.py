@@ -55,12 +55,12 @@ def create_session_factory(
 
     Returns
     -------
-    session_factory : sqlalchemy.orm.Session
+    session_factory : streamlit_passwordless.db.SessionFactory
         The session factory that can produce new database sessions.
 
-    engine : sqlalchemy.Engine
+    engine : streamlit_passwordless.db.Engine
         The database engine that manages the database connections and is bound
-        to `SessionFactory`.
+        to `session_factory`.
     """
 
     engine = create_engine(url=url, **engine_config)

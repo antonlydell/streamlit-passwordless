@@ -43,7 +43,7 @@ def create_session_factory(
 
     Returns
     -------
-    session_factory : sqlalchemy.orm.Session
+    session_factory : streamlit_passwordless.db.SessionFactory
         The session factory that can produce new database sessions.
     """
 
