@@ -1,12 +1,14 @@
 r"""The core database functionality."""
 
 # Standard library
+import logging
+import sqlite3
 from typing import TypeAlias
 
 # Third party
 from sqlalchemy import URL as _URL
 from sqlalchemy import Engine as _Engine
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.exc import SQLAlchemyError, StatementError
 from sqlalchemy.orm import Session as _Session
 from sqlalchemy.orm import sessionmaker
@@ -20,6 +22,30 @@ Engine: TypeAlias = _Engine
 Session: TypeAlias = _Session
 SessionFactory: TypeAlias = sessionmaker[_Session]
 URL: TypeAlias = str | _URL
+
+logger = logging.getLogger(__name__)
+
+
+@event.listens_for(_Engine, "connect")
+def enable_sqlite_foreign_keys(dbapi_connection, connection_record) -> None:
+    r"""Enable foreign key constraints in SQLite when a new connection is established."""
+
+    if dbapi_connection.__module__ != 'sqlite3':
+        return
+
+    cursor = dbapi_connection.cursor()
+    try:
+        cursor.execute("PRAGMA foreign_keys=ON")
+    except sqlite3.Error as e:
+        error_msg = (
+            'Error enabling foreign keys for SQLite!\n'
+            'Is your version of SQLite < v3.6.19 or compiled with the SQLITE_OMIT_FOREIGN_KEY '
+            'or SQLITE_OMIT_TRIGGER symbols enabled?\n'
+            f'{e.__module__}.{e.__class__.__name__}({e.args[0]})'
+        )
+        logger.error(error_msg)
+
+    cursor.close()
 
 
 def create_session_factory(
