@@ -1,7 +1,7 @@
 r"""The database functionality of streamlit-passwordless."""
 
 from . import models
-from .cache import create_session_factory
+from .cache import create_session_factory, init
 from .core import Session, SessionFactory, commit
 from .crud.role import (
     create_default_roles,

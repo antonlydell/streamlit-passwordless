@@ -1,12 +1,19 @@
 r"""The database functions that are cached by Streamlit."""
 
 # Standard library
+import logging
+from typing import Literal
 
 # Third party
 import streamlit as st
 
 # Local
+from streamlit_passwordless import exceptions
+
 from . import core
+from .crud.role import create_default_roles
+
+logger = logging.getLogger(__name__)
 
 
 @st.cache_resource()
@@ -56,3 +63,29 @@ def create_session_factory(
     )
 
     return session_factory
+
+
+@st.cache_resource()
+def init(_session: core.Session, if_exists: Literal['ignore', 'error'] = 'ignore') -> None:
+    r"""Initialize a database with the required data.
+
+    The default roles of Streamlit Passwordless are created in the database.
+
+    Parameters
+    ----------
+    _session : streamlit_passwordless.db.Session
+        An active database session.
+
+    if_exists : Literal['ignore', 'error'], default 'ignore'
+        Raise :exc:`streamlit_passwordless.DatabaseError` ('error') if the default roles
+        already exist in the database or log a warning message about the default roles
+        already existing in the database ('ignore').
+    """
+
+    try:
+        create_default_roles(session=_session, commit=True)
+    except exceptions.DatabaseError as e:
+        if if_exists != 'ignore':
+            logger.error(e.detailed_message)
+            raise e from None
+        logger.warning(e.detailed_message)
