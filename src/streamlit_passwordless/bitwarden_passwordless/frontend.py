@@ -90,14 +90,14 @@ def register_button(
     )
 
     if value is None:
-        return '', None, False
+        token, error, clicked = '', None, False
     else:
-        token, error, nr_clicks = value
-        session_state_key = f'_{key}-nr-clicks'
-        clicked = False if st.session_state.get(session_state_key, 0) == nr_clicks else True
-        st.session_state[session_state_key] = nr_clicks
+        token, error = value
+        session_state_key = f'_{key}-previous-token'
+        clicked = st.session_state.get(session_state_key) != token
+        st.session_state[session_state_key] = token
 
-        return token, error, clicked
+    return token, error, clicked
 
 
 def sign_in_button(
@@ -179,11 +179,11 @@ def sign_in_button(
     )
 
     if value is None:
-        return '', None, False
+        token, error, clicked = '', None, False
     else:
-        token, error, nr_clicks = value
-        session_state_key = f'_{key}-nr-clicks'
-        clicked = False if st.session_state.get(session_state_key, 0) == nr_clicks else True
-        st.session_state[session_state_key] = nr_clicks
+        token, error = value
+        session_state_key = f'_{key}-previous-token'
+        clicked = st.session_state.get(session_state_key) != token
+        st.session_state[session_state_key] = token
 
-        return token, error, clicked
+    return token, error, clicked
