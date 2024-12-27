@@ -31,12 +31,15 @@ keywords = ["Bitwarden", "FIDO2", "Passkey", "Passwordless", "Streamlit", "Web",
 dynamic = ["version"]
 
 dependencies = [
+    "click >= 8.0",
     "streamlit >= 1.24",
     "passwordless >= 0.1",
     "pydantic >= 2.0",
     "sqlalchemy >= 2.0",
 ]
 
+[project.scripts]
+stp = "streamlit_passwordless.cli.main:main"
 
 [project.urls]
 "Bug Tracker" = "https://github.com/antonlydell/streamlit-passwordless/issues"
