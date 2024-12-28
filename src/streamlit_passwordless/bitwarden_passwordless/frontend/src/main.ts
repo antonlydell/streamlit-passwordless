@@ -130,8 +130,6 @@ function onRender(event: Event): void {
   const button_label: string = data.args['label'];
 
   passwordlessClient = new Client({apiKey: apiKey});
-  console.log('passwordlessClient', passwordlessClient);
-  console.log('isSecureContext', window.isSecureContext);
 
   button.disabled = disabled;
   button.className = button_type === 'primary' ? 'primary' : 'secondary';
@@ -139,22 +137,18 @@ function onRender(event: Event): void {
 
   switch (action) {
     case 'register':
-      console.log('register');
       registerToken = data.args['register_token'];
       credentialNickname = data.args['credential_nickname'];
 
       button.onclick = registerOnClick;
-      console.log('button', button)
 
       break;
     case 'sign_in':
-      console.log('sign_in');
       alias = data.args['alias'];
       withDiscoverable = data.args['with_discoverable'];
       withAutofill = data.args['with_autofill'];
 
       button.onclick = signInOnClick;
-      console.log('button', button);
 
       break;
       default:
