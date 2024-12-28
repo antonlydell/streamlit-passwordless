@@ -8,7 +8,6 @@ const button = document.body.appendChild(document.createElement("button"));
 
 // common
 let passwordlessClient: Client;
-let buttonNrClicks: number = 0;
 
 // register
 let registerToken: string;
@@ -19,24 +18,6 @@ let alias: string;
 let withDiscoverable: boolean;
 let withAutofill: boolean;
 
-
-/**
- * Initialize an instance of the Bitwarden Passwordless frontend client.
- *
- * @param {string} apiKey - The public key of the Bitwarden Passwordless application.
- *
- * @returns {Client} - The Bitwarden Passwordless frontend client.
- */
-function createPasswordlessClient(apiKey: string): Client {
-
-  if (passwordlessClient === undefined) {
-    passwordlessClient = new Client({apiKey: apiKey});
-    console.log('Initialized client', passwordlessClient)
-    return passwordlessClient
-  }
-
-  return passwordlessClient
-}
 
 /**
  * Register a new user by creating and registring a passkey with the user's device.
@@ -104,15 +85,14 @@ async function sign_in(client: Client, alias: string, withDiscoverable: boolean,
  */
 function registerOnClick () {
 
-  buttonNrClicks += 1;
   register(passwordlessClient, registerToken, credentialNickname).then(
     ([token, error])=>{
-      Streamlit.setComponentValue([token, error, buttonNrClicks]);
+      Streamlit.setComponentValue([token, error]);
     }
   ).catch(
     (error)=>{
       console.log('Error registring passkey credential', error);
-      Streamlit.setComponentValue([undefined, error, buttonNrClicks]);
+      Streamlit.setComponentValue([undefined, error]);
     }
   )
 }
@@ -122,15 +102,14 @@ function registerOnClick () {
  */
 function signInOnClick() {
 
-  buttonNrClicks += 1;
   sign_in(passwordlessClient, alias, withDiscoverable, withAutofill).then(
     ([token, error])=>{
-      Streamlit.setComponentValue([token, error, buttonNrClicks]);
+      Streamlit.setComponentValue([token, error]);
     }
   ).catch(
     (error)=>{
       console.log('Error signing in', error);
-      Streamlit.setComponentValue([undefined, error, buttonNrClicks]);
+      Streamlit.setComponentValue([undefined, error]);
     }
   )
 }
@@ -150,9 +129,7 @@ function onRender(event: Event): void {
   const button_type: string = data.args['button_type'];
   const button_label: string = data.args['label'];
 
-  createPasswordlessClient(apiKey);
-  console.log('passwordlessClient', passwordlessClient);
-  console.log('isSecureContext', window.isSecureContext);
+  passwordlessClient = new Client({apiKey: apiKey});
 
   button.disabled = disabled;
   button.className = button_type === 'primary' ? 'primary' : 'secondary';
@@ -160,22 +137,18 @@ function onRender(event: Event): void {
 
   switch (action) {
     case 'register':
-      console.log('register');
       registerToken = data.args['register_token'];
       credentialNickname = data.args['credential_nickname'];
 
       button.onclick = registerOnClick;
-      console.log('button', button)
 
       break;
     case 'sign_in':
-      console.log('sign_in');
       alias = data.args['alias'];
       withDiscoverable = data.args['with_discoverable'];
       withAutofill = data.args['with_autofill'];
 
       button.onclick = signInOnClick;
-      console.log('button', button);
 
       break;
       default:
@@ -188,7 +161,7 @@ function onRender(event: Event): void {
          'from': 'client',
        };
         console.log('Error : Invalid action', error);
-        Streamlit.setComponentValue([undefined, error, -1]);
+        Streamlit.setComponentValue([undefined, error]);
   }
 
   // We tell Streamlit to update our frameHeight after each render event, in

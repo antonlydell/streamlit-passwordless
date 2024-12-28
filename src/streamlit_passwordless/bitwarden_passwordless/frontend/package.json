@@ -1,11 +1,11 @@
 {
   "name": "bitwarden_passwordless",
-  "version": "0.5.1",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@passwordlessdev/passwordless-client": ">=1.1.2",
-    "streamlit-component-lib": ">=2.0.0"
+    "@passwordlessdev/passwordless-client": "1.1.2",
+    "streamlit-component-lib": "2.0.0"
   },
   "scripts": {
     "dev": "vite",
@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/antonlydell/streamlit-passwordless",
   "devDependencies": {
-    "typescript": ">=5.2.2",
-    "vite": ">=5.2.14"
+    "typescript": "5.7.2",
+    "vite": "6.0.6"
   }
 }
