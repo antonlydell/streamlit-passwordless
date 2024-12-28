@@ -94,7 +94,7 @@ def register_button(
     else:
         token, error = value
         session_state_key = f'_{key}-previous-token'
-        clicked = st.session_state.get(session_state_key) != token
+        clicked = st.session_state.get(session_state_key) != token or error
         st.session_state[session_state_key] = token
 
     return token, error, clicked
@@ -183,7 +183,7 @@ def sign_in_button(
     else:
         token, error = value
         session_state_key = f'_{key}-previous-token'
-        clicked = st.session_state.get(session_state_key) != token
+        clicked = st.session_state.get(session_state_key) != token or error
         st.session_state[session_state_key] = token
 
     return token, error, clicked
