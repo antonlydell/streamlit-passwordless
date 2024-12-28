@@ -452,7 +452,7 @@ def bitwarden_register_form(
     alias_max_length: int | None = 50,
     alias_placeholder: str | None = 'j;john;jd',
     alias_help: str | None = '__default__',
-) -> models.User | None:
+) -> tuple[models.User | None, bool]:
     r"""Render the Bitwarden Passwordless register form.
 
     Allows the user to register an account with the application by creating
@@ -608,6 +608,9 @@ def bitwarden_register_form(
     user : streamlit_passwordless.User or None
         The user object of the user that registered a passkey credential. None is returned if a user
         has not registered yet or if the registration failed and a user object could not be retrieved.
+
+    bool
+        True if the created user has registered a passkey and False otherwise.
     """
 
     user = None
@@ -734,12 +737,12 @@ def bitwarden_register_form(
         )
 
     if disabled or not clicked:
-        return None
+        return user, False
 
     if user is None:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
-        return None
+        return user, False
 
     if not token and error:
         error_msg = f'Error creating passkey for user ({username})!\nerror : {error}'
@@ -751,7 +754,7 @@ def bitwarden_register_form(
     if error_msg:
         with banner_container:
             st.error(error_msg, icon=config.ICON_ERROR)
-        return None
+        return user, False
 
     final_error_msg = ''
     if not db_user:
@@ -807,7 +810,7 @@ def bitwarden_register_form(
     else:
         pass
 
-    return user
+    return user, True
 
 
 def bitwarden_register_form_existing_user(
