@@ -11,9 +11,11 @@ from datetime import date
 # Local
 import streamlit_passwordless.database as db
 from streamlit_passwordless.bitwarden_passwordless import (
+    BITWARDEN_PASSWORDLESS_API_URL,
     BitwardenPasswordlessClient,
     BitwardenRegisterConfig,
     PasskeyCredential,
+    create_bitwarden_passwordless_client,
     register_button,
     sign_in_button,
 )
@@ -59,8 +61,10 @@ r"""The release date of the version specified in :data:`__versiontuple__`."""
 
 __all__ = [
     # bitwarden_passwordless
+    'BITWARDEN_PASSWORDLESS_API_URL',
     'BitwardenPasswordlessClient',
     'BitwardenRegisterConfig',
+    'create_bitwarden_passwordless_client',
     'PasskeyCredential',
     'register_button',
     'sign_in_button',
