@@ -8,15 +8,14 @@ from typing import TypeAlias
 # Third party
 from sqlalchemy import URL as _URL
 from sqlalchemy import Engine as _Engine
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, make_url
 from sqlalchemy.exc import SQLAlchemyError, StatementError
 from sqlalchemy.orm import Session as _Session
 from sqlalchemy.orm import sessionmaker
 
 # Local
 from streamlit_passwordless import exceptions
-
-from .models import Base
+from streamlit_passwordless.database.models import Base
 
 Engine: TypeAlias = _Engine
 Session: TypeAlias = _Session
@@ -128,3 +127,29 @@ def commit(session: Session, error_msg: str = 'Error committing transaction!') -
         raise exceptions.DatabaseStatementError(message=error_msg, e=e) from None
     except SQLAlchemyError as e:
         raise exceptions.DatabaseError(message=error_msg, e=e) from None
+
+
+def create_db_url(url: str | URL) -> URL:
+    r"""Create and validate the database url.
+
+    Parameters
+    ----------
+    url : str or sqlalchemy.URL
+        The SQLAlchemy database url. If `url` is of type
+        :class:`sqlalchemy.URL` it will be returned as is.
+
+    Returns
+    -------
+    sqlalchemy.URL
+        The converted SQLAlchemy database url.
+
+    Raises
+    ------
+    streamlit_passwordless.DatabaseInvalidUrlError
+        If `url` is invalid.
+    """
+
+    try:
+        return make_url(url)
+    except SQLAlchemyError as e:
+        raise exceptions.DatabaseInvalidUrlError(message=str(e), url=url, e=e)  # type: ignore

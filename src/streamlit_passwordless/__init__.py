@@ -34,6 +34,7 @@ from streamlit_passwordless.components.config import (
 )
 from streamlit_passwordless.exceptions import (
     DatabaseError,
+    DatabaseInvalidUrlError,
     DatabaseStatementError,
     RegisterUserError,
     SignInTokenVerificationError,
@@ -75,6 +76,7 @@ __all__ = [
     'db',
     # exceptions
     'DatabaseError',
+    'DatabaseInvalidUrlError',
     'DatabaseStatementError',
     'RegisterUserError',
     'SignInTokenVerificationError',
