@@ -5,7 +5,6 @@ import streamlit as st
 
 # Local
 import streamlit_passwordless.database as db
-from streamlit_passwordless import exceptions
 from streamlit_passwordless.components.config import ICON_SUCCESS, ICON_WARNING
 
 
@@ -31,10 +30,9 @@ def initialize(db_session: db.Session, db_url: db.URL) -> None:
         The database url of the database being initialized.
     """
 
-    try:
-        db.init(_session=db_session, if_exists='error')
-    except exceptions.DatabaseError as e:
-        message = f'Database "{db_url}" already initialized! {e.displayable_message}'
+    error, error_msg = db.init(_session=db_session)
+    if error:
+        message = f'Database "{db_url}" already initialized! {error_msg}'
         st.warning(message, icon=ICON_WARNING)
     else:
         st.success(f'Successfully initialized database : "{db_url}"!', icon=ICON_SUCCESS)

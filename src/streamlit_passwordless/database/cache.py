@@ -66,7 +66,7 @@ def create_session_factory(
 
 
 @st.cache_resource()
-def init(_session: core.Session, if_exists: Literal['ignore', 'error'] = 'ignore') -> None:
+def init(_session: core.Session) -> tuple[bool, str]:
     r"""Initialize a database with the required data.
 
     The default roles of Streamlit Passwordless are created in the database.
@@ -76,16 +76,24 @@ def init(_session: core.Session, if_exists: Literal['ignore', 'error'] = 'ignore
     _session : streamlit_passwordless.db.Session
         An active database session.
 
-    if_exists : Literal['ignore', 'error'], default 'ignore'
-        Raise :exc:`streamlit_passwordless.DatabaseError` ('error') if the default roles
-        already exist in the database or log a warning message about the default roles
-        already existing in the database ('ignore').
+    Returns
+    -------
+    error : bool
+        True if a :exc:`streamlit_passwordless.DatabaseError` occurred and the database
+        could not be initialized correctly and False for no error.
+
+    error_msg : str
+        An error message that is safe to display to the user. An empty
+        string is returned if `error` is False.
     """
 
+    error = False
+    error_msg = ''
     try:
         create_default_roles(session=_session, commit=True)
     except exceptions.DatabaseError as e:
-        if if_exists != 'ignore':
-            logger.error(e.detailed_message)
-            raise e from None
+        error = True
+        error_msg = e.displayable_message
         logger.warning(e.detailed_message)
+
+    return error, error_msg
