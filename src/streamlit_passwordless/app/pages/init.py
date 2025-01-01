@@ -11,9 +11,9 @@ from streamlit_passwordless.app.config import (
     APP_HOME_PAGE_URL,
     APP_ISSUES_PAGE_URL,
     MAINTAINER_INFO,
+    setup,
 )
 from streamlit_passwordless.app.controllers.init import controller
-from streamlit_passwordless.components.config import init_session_state
 
 INIT_PATH = Path(__file__)
 
@@ -36,11 +36,10 @@ def init_page() -> None:
             'About': ABOUT,
         },
     )
+    cm, session_factory, client = setup(create_database=True)
 
-    if not st.session_state:
-        init_session_state()
-
-    controller()
+    with session_factory() as session:
+        controller(cm=cm, db_session=session, client=client)
 
 
 if __name__ == '__main__' or __name__ == '__page__':
