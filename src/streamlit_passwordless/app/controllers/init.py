@@ -3,7 +3,7 @@ r"""The controller of the init page."""
 # Local
 import streamlit_passwordless.database as db
 from streamlit_passwordless.app.config import ConfigManager
-from streamlit_passwordless.app.views.init import initialize, title
+from streamlit_passwordless.app.views.init import create_admin_user, initialize, title
 from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
 
 
@@ -27,3 +27,4 @@ def controller(
 
     title()
     initialize(db_session=db_session, db_url=cm.db_url)
+    create_admin_user(db_session=db_session, client=client)
