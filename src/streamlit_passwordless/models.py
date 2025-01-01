@@ -48,7 +48,7 @@ class UserRoleName(StrEnum):
 class BaseModel(PydanticBaseModel):
     r"""The BaseModel that all models inherit from."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
     def __init__(self, **kwargs) -> None:
         try:

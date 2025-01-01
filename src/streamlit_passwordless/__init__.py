@@ -34,6 +34,14 @@ from streamlit_passwordless.components.config import (
     SK_USER,
     SK_USER_SIGN_IN,
 )
+from streamlit_passwordless.config import (
+    STP_BWP_PRIVATE_KEY,
+    STP_BWP_PUBLIC_KEY,
+    STP_BWP_URL,
+    STP_DB_URL,
+    STP_SECRETS_SECTION,
+    ConfigManager,
+)
 from streamlit_passwordless.exceptions import (
     DatabaseError,
     DatabaseInvalidUrlError,
@@ -76,6 +84,13 @@ __all__ = [
     'bitwarden_register_form_existing_user',
     'bitwarden_sign_in_form',
     'init_session_state',
+    # config
+    'STP_BWP_PRIVATE_KEY',
+    'STP_BWP_PUBLIC_KEY',
+    'STP_BWP_URL',
+    'STP_DB_URL',
+    'STP_SECRETS_SECTION',
+    'ConfigManager',
     # database
     'db',
     # exceptions
