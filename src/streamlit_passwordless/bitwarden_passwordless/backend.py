@@ -22,6 +22,9 @@ from streamlit_passwordless import common, exceptions, models
 
 BackendClient: TypeAlias = PasswordlessClient
 PasskeyCredential: TypeAlias = Credential
+
+BITWARDEN_PASSWORDLESS_API_URL: AnyHttpUrl = AnyHttpUrl('https://v4.passwordless.dev')  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
@@ -95,7 +98,7 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
     public_key: str
     private_key: str
-    url: AnyHttpUrl = AnyHttpUrl('https://v4.passwordless.dev')
+    url: AnyHttpUrl = BITWARDEN_PASSWORDLESS_API_URL
     register_config: BitwardenRegisterConfig = Field(default_factory=BitwardenRegisterConfig)
     _backend_client: BackendClient = PrivateAttr()
 

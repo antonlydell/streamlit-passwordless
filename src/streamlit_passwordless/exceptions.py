@@ -186,3 +186,20 @@ class DatabaseCreateUserError(DatabaseError):
     message : str
         The error message.
     """
+
+
+class DatabaseInvalidUrlError(DatabaseError):
+    r"""Raised for invalid SQLAlchemy database url:s.
+
+    Parameters
+    ----------
+    message : str
+        The error message.
+
+    url : str
+        The invalid database url that caused the error.
+    """
+
+    def __init__(self, message: str, url: str, e: Exception | None) -> None:
+        self.url = url
+        super().__init__(message, e=e)

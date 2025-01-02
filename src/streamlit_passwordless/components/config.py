@@ -18,6 +18,7 @@ SK_DB_USER = 'stp-db-user'
 SK_REGISTER_FORM_IS_VALID = 'stp-register-form-is-valid'
 SK_ROLES = 'stp-roles'
 SK_CUSTOM_ROLES = 'stp-custom-roles'
+SK_SESSION_STATE_INITIALIZED = 'stp-session-state-initialized'
 
 # =====================================================================================
 # Icons
@@ -38,6 +39,10 @@ def init_session_state() -> None:
 
     Session state keys
     ------------------
+    SK_SESSION_STATE_INITIALIZED : bool
+        If True the session state has been initialized
+        and the function does not need to run again.
+
     SK_USER : streamlit_passwordless.User or None, default None
         The current user of the application. If None a user has not signed
         in or registered yet.
@@ -59,6 +64,11 @@ def init_session_state() -> None:
     SK_CUSTOM_ROLES : dict[str, streamlit_passwordless.CustomRole]
         The available custom roles for a user.
     """
+
+    if st.session_state.get(SK_SESSION_STATE_INITIALIZED, False):
+        return
+
+    st.session_state[SK_SESSION_STATE_INITIALIZED] = True
 
     none_keys = (SK_USER, SK_USER_SIGN_IN, SK_DB_USER)
     for key in none_keys:

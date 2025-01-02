@@ -11,9 +11,11 @@ from datetime import date
 # Local
 import streamlit_passwordless.database as db
 from streamlit_passwordless.bitwarden_passwordless import (
+    BITWARDEN_PASSWORDLESS_API_URL,
     BitwardenPasswordlessClient,
     BitwardenRegisterConfig,
     PasskeyCredential,
+    create_bitwarden_passwordless_client,
     register_button,
     sign_in_button,
 )
@@ -32,8 +34,17 @@ from streamlit_passwordless.components.config import (
     SK_USER,
     SK_USER_SIGN_IN,
 )
+from streamlit_passwordless.config import (
+    STP_BWP_PRIVATE_KEY,
+    STP_BWP_PUBLIC_KEY,
+    STP_BWP_URL,
+    STP_DB_URL,
+    STP_SECRETS_SECTION,
+    ConfigManager,
+)
 from streamlit_passwordless.exceptions import (
     DatabaseError,
+    DatabaseInvalidUrlError,
     DatabaseStatementError,
     RegisterUserError,
     SignInTokenVerificationError,
@@ -58,8 +69,10 @@ r"""The release date of the version specified in :data:`__versiontuple__`."""
 
 __all__ = [
     # bitwarden_passwordless
+    'BITWARDEN_PASSWORDLESS_API_URL',
     'BitwardenPasswordlessClient',
     'BitwardenRegisterConfig',
+    'create_bitwarden_passwordless_client',
     'PasskeyCredential',
     'register_button',
     'sign_in_button',
@@ -71,10 +84,18 @@ __all__ = [
     'bitwarden_register_form_existing_user',
     'bitwarden_sign_in_form',
     'init_session_state',
+    # config
+    'STP_BWP_PRIVATE_KEY',
+    'STP_BWP_PUBLIC_KEY',
+    'STP_BWP_URL',
+    'STP_DB_URL',
+    'STP_SECRETS_SECTION',
+    'ConfigManager',
     # database
     'db',
     # exceptions
     'DatabaseError',
+    'DatabaseInvalidUrlError',
     'DatabaseStatementError',
     'RegisterUserError',
     'SignInTokenVerificationError',
