@@ -7,6 +7,7 @@ using the passkey FIDO2 and WebAuthn protocols.
 
 # Local
 import streamlit_passwordless.database as db
+from streamlit_passwordless.app import init_page, setup
 from streamlit_passwordless.bitwarden_passwordless import (
     BITWARDEN_PASSWORDLESS_API_URL,
     BitwardenPasswordlessClient,
@@ -20,16 +21,17 @@ from streamlit_passwordless.components import (
     ICON_ERROR,
     ICON_SUCCESS,
     ICON_WARNING,
+    SK_CUSTOM_ROLES,
+    SK_DB_USER,
+    SK_REGISTER_FORM_IS_VALID,
+    SK_ROLES,
+    SK_SESSION_STATE_INITIALIZED,
+    SK_USER,
+    SK_USER_SIGN_IN,
     bitwarden_register_form,
     bitwarden_register_form_existing_user,
     bitwarden_sign_in_form,
     init_session_state,
-)
-from streamlit_passwordless.components.config import (
-    SK_DB_USER,
-    SK_REGISTER_FORM_IS_VALID,
-    SK_USER,
-    SK_USER_SIGN_IN,
 )
 from streamlit_passwordless.config import (
     STP_BWP_PRIVATE_KEY,
@@ -40,6 +42,7 @@ from streamlit_passwordless.config import (
     ConfigManager,
 )
 from streamlit_passwordless.exceptions import (
+    DatabaseCreateUserError,
     DatabaseError,
     DatabaseInvalidUrlError,
     DatabaseStatementError,
@@ -51,8 +54,10 @@ from streamlit_passwordless.metadata import __releasedate__, __version__, __vers
 from streamlit_passwordless.models import CustomRole, Email, Role, User, UserRoleName, UserSignIn
 
 # The Public API
-
 __all__ = [
+    # app
+    'init_page',
+    'setup',
     # bitwarden_passwordless
     'BITWARDEN_PASSWORDLESS_API_URL',
     'BitwardenPasswordlessClient',
@@ -65,6 +70,13 @@ __all__ = [
     'ICON_ERROR',
     'ICON_SUCCESS',
     'ICON_WARNING',
+    'SK_CUSTOM_ROLES',
+    'SK_DB_USER',
+    'SK_REGISTER_FORM_IS_VALID',
+    'SK_ROLES',
+    'SK_SESSION_STATE_INITIALIZED',
+    'SK_USER',
+    'SK_USER_SIGN_IN',
     'bitwarden_register_form',
     'bitwarden_register_form_existing_user',
     'bitwarden_sign_in_form',
@@ -80,6 +92,7 @@ __all__ = [
     'db',
     # exceptions
     'DatabaseError',
+    'DatabaseCreateUserError',
     'DatabaseInvalidUrlError',
     'DatabaseStatementError',
     'RegisterUserError',
@@ -96,9 +109,4 @@ __all__ = [
     'User',
     'UserRoleName',
     'UserSignIn',
-    # session state
-    'SK_DB_USER',
-    'SK_REGISTER_FORM_IS_VALID',
-    'SK_USER',
-    'SK_USER_SIGN_IN',
 ]

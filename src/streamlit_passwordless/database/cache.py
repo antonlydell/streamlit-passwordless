@@ -2,7 +2,6 @@ r"""The database functions that are cached by Streamlit."""
 
 # Standard library
 import logging
-from typing import Literal
 
 # Third party
 import streamlit as st
@@ -54,7 +53,7 @@ def create_session_factory(
         The session factory that can produce new database sessions.
     """
 
-    session_factory, engine = core.create_session_factory(
+    session_factory, _ = core.create_session_factory(
         url=url,
         autoflush=autoflush,
         expire_on_commit=expire_on_commit,
