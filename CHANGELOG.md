@@ -13,6 +13,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.11.0] - 2025-01-02
+
+Introducing the Streamlit Passwordless CLI (`stp`) and the init page!
+
+The CLI (`stp`) can be used for managing the user database and running the admin web app.
+This version of the CLI can launch the initialization page through the command: `stp run init`,
+which initializes the database and enables creating an admin account.
+The CLI is built with [click](https://click.palletsprojects.com/en/stable/).
+
+
+### Added
+
+- `stp` : The Streamlit Passwordless CLI.
+
+- Enabling foreign key constraints on connect to a SQLite database.
+
+- `streamlit_passwordless.BITWARDEN_PASSWORDLESS_API_URL` : The default url of the Bitwarden Passwordless backend API.
+
+- `streamlit_passwordless.ConfigManager` : The configuration for running Streamlit Passwordless web apps.
+
+- `streamlit_passwordless.create_bitwarden_passwordless_client` : Create the client to communicate with Bitwarden Passwordless.
+
+- `streamlit_passwordless.DatabaseInvalidUrlError` : Raised for invalid SQLAlchemy database url:s.
+
+- `streamlit_passwordless.init_page` : Initialize the database of Streamlit Passwordless and create an admin account.
+
+- `streamlit_passwordless.setup` : Setup the resources needed to run a Streamlit Passwordless application.
+
+- `streamlit_passwordless.db` :
+
+  - `create_db_url` : Create and validate the database url.
+
+  - `init` : Initialize a database with the required data.
+    The default roles of Streamlit Passwordless are created in the database.
+
+
+### Changed
+
+- `streamlit_passwordless.bitwarden_register_form` : Added returning True or False if a passkey
+   was registered or not in addition the user object. This aligns its return value with
+   `streamlit_passwordless.bitwarden_register_form_existing_user`.
+
+
+### Fixed
+
+- `streamlit_passwordless.register_button` and `streamlit_passwordless.sign_in_button` would
+   occasionally not execute the registration or sign-in process correctly. This was due to the
+   Bitwarden Passwordless custom Streamlit component getting re-initialized when another widget
+   on a page got clicked. This resulted in a fresh reload of all JavaScript defined in the component
+   and the global state variables would go back to their default values and the buttons would not
+   get recognized as clicked although they were clicked. This is now fixed by handling the state
+   if the buttons were clicked or not completely on the Python side.
+
+- Bottom border cropping of `streamlit_passwordless.register_button` and `streamlit_passwordless.sign_in_button`.
+  The buttons would sometimes get their bottom border cropped by the iframe surrounding the button.
+  Added extra bottom margin to the buttons to resolve this issue.
+
+
 ## [0.10.0] - 2024-12-18
 
 Introducing user roles!
@@ -209,9 +267,9 @@ using the register form and an entry about the registration sign in is also logg
 
 ### Changed
 
-- `streamlit_passwordless.register_form` : Added support to save user sign in data to the database.
+- `streamlit_passwordless.bitwarden_register_form` : Added support to save user sign in data to the database.
 
-- `streamlit_passwordless.sign_in_form` : Added support to save user sign in data to the database.
+- `streamlit_passwordless.bitwarden_sign_in_form` : Added support to save user sign in data to the database.
 
 - `streamlit_passwordless.db.create_user` : Added the parameter `commit` to select if the created user
    should be committed to the database after it has been added to the session. The default is to not commit.
@@ -234,13 +292,13 @@ Fix retrieving http headers from websocket connection for Streamlit >= v1.37.
 - `streamlit_passwordless.db.create_session_factory` : Changed to only return the session_factory
   and not the engine that is bound to the session_factory. The engine will rarely be of use to the user.
 
-- `streamlit_passwordless.register_form` : Changed the default value from True to False for parameter
+- `streamlit_passwordless.bitwarden_register_form` : Changed the default value from True to False for parameter
   `pre_authorized` since it is a more sensible default value.
 
 
 ### Fixed
 
-- `streamlit_passwordless.register_form` : Properly extracting the http headers from the websocket
+- `streamlit_passwordless.bitwarden_register_form` : Properly extracting the http headers from the websocket
   connection using `st.context.headers` for Streamlit >= v1.37. This removes the deprecation warning
   banner.
 
@@ -281,7 +339,7 @@ is used to manage the database interactions and has been added as project depend
 
 ### Changed
 
-- `streamlit_passwordless.register_form` : Added support for saving registered users to the database
+- `streamlit_passwordless.bitwarden_register_form` : Added support for saving registered users to the database
    and several other improvements. Some of the highlights are:
 
   - The *Register* button has been replaced with a *Validate* and a *Register* button to be able
@@ -325,7 +383,7 @@ styling respects the Streamlit system theme.
   allow to set the label and styling of the buttons. The `button_type` can be either "primary" or
   "secondary" and emulates the `type` parameter of `streamlit.button`.
 
-- `register_form` and `sign_in_form` : Activated the use of the parameters `submit_button_label`
+- `bitwarden_register_form` and `bitwarden_sign_in_form` : Activated the use of the parameters `submit_button_label`
   and `button_type`, which are linked to the `label` and `button_type` parameters of `register_button`
   and `sign_in_button` respectively.
 
@@ -352,11 +410,11 @@ is hopefully resolved with the added register and sign in buttons.
 
 ### Changed
 
-- `streamlit_passwordless.register_form` : The form now uses the new
+- `streamlit_passwordless.bitwarden_register_form` : The form now uses the new
   `streamlit_passwordless.register_button` and has received parameters to customize the username,
   displayname and alias fields.
 
-- `streamlit_passwordless.sign_in_form` : The form now uses the new
+- `streamlit_passwordless.bitwarden_sign_in_form` : The form now uses the new
   `streamlit_passwordless.sign_in_button` and has received the parameter `alias_help` to customize
   the help text of the alias field.
 
@@ -448,7 +506,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.11.0
 [0.10.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.10.0
 [0.9.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.9.0
 [0.8.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.8.0
