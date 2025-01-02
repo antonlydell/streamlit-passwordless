@@ -48,7 +48,7 @@ stp = "streamlit_passwordless.cli.main:main"
 
 
 [tool.setuptools.dynamic]
-version = {attr = "streamlit_passwordless.__version__"}
+version = {attr = "streamlit_passwordless.metadata.__version__"}
 
 
 [tool.black]

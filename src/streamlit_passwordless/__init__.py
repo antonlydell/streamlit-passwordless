@@ -5,9 +5,6 @@ passwordless technology. It allows users to securely authenticate with a Streaml
 using the passkey FIDO2 and WebAuthn protocols.
 """
 
-# Standard library
-from datetime import date
-
 # Local
 import streamlit_passwordless.database as db
 from streamlit_passwordless.bitwarden_passwordless import (
@@ -50,20 +47,8 @@ from streamlit_passwordless.exceptions import (
     SignInTokenVerificationError,
     StreamlitPasswordlessError,
 )
+from streamlit_passwordless.metadata import __releasedate__, __version__, __versiontuple__
 from streamlit_passwordless.models import CustomRole, Email, Role, User, UserRoleName, UserSignIn
-
-__versiontuple__ = (0, 10, 0)
-r"""The version of streamlit-passwordless in a comparable form.
-Adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_
-(MAJOR.MINOR.PATCH).
-"""
-
-__version__ = '0.10.0'
-r"""The streamlit-passwordless version string."""
-
-__releasedate__ = date(2024, 12, 18)
-r"""The release date of the version specified in :data:`__versiontuple__`."""
-
 
 # The Public API
 
@@ -100,6 +85,10 @@ __all__ = [
     'RegisterUserError',
     'SignInTokenVerificationError',
     'StreamlitPasswordlessError',
+    # metadata
+    '__releasedate__',
+    '__version__',
+    '__versiontuple__',
     # models
     'CustomRole',
     'Email',
@@ -112,8 +101,4 @@ __all__ = [
     'SK_REGISTER_FORM_IS_VALID',
     'SK_USER',
     'SK_USER_SIGN_IN',
-    # attributes
-    '__versiontuple__',
-    '__version__',
-    '__releasedate__',
 ]

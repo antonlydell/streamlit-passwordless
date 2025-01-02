@@ -1,7 +1,6 @@
 r"""The configuration of the Streamlit Passwordless web app."""
 
 # Local
-from streamlit_passwordless import __releasedate__, __version__
 from streamlit_passwordless.bitwarden_passwordless import (
     BitwardenPasswordlessClient,
     create_bitwarden_passwordless_client,
@@ -9,6 +8,7 @@ from streamlit_passwordless.bitwarden_passwordless import (
 from streamlit_passwordless.components.config import init_session_state
 from streamlit_passwordless.config import ConfigManager
 from streamlit_passwordless.database import SessionFactory, create_session_factory
+from streamlit_passwordless.metadata import __releasedate__, __version__
 
 MAINTAINER_INFO = f"""\
 - Maintainer   : [*Anton Lydell*](https://github.com/antonlydell)

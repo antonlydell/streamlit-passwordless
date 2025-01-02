@@ -4,8 +4,8 @@ r"""The entry point of the Streamlit passwordless CLI."""
 import click
 
 # Local
-from streamlit_passwordless import __releasedate__
 from streamlit_passwordless.cli.commands.run import run
+from streamlit_passwordless.metadata import __releasedate__
 
 COMMANDS = (run,)
 
