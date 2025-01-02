@@ -4,8 +4,7 @@ Run the Streamlit Passwordless web apps.
 """
 
 # Standard library
-import runpy
-import sys
+import subprocess
 from pathlib import Path
 from typing import Iterable
 
@@ -30,14 +29,11 @@ def run_streamlit_app(path: Path | str, streamlit_args: Iterable[str]) -> None:
         Additional arguments to pass along to Streamlit.
     """
 
-    # Prepare sys.argv for Streamlit
-    run_cmd = ['streamlit', 'run', str(path) if isinstance(path, Path) else path]
+    run_cmd = ['python', '-m', 'streamlit', 'run', str(path) if isinstance(path, Path) else path]
     run_cmd.extend(streamlit_args)
-    sys.argv = run_cmd
 
-    # Run Streamlit
     click.echo('Launching Streamlit ...')
-    runpy.run_module(mod_name='streamlit', run_name='__main__')
+    subprocess.run(run_cmd)
 
 
 @click.group()
