@@ -21,7 +21,7 @@ APP_ISSUES_PAGE_URL = 'https://github.com/antonlydell/streamlit-passwordless/iss
 
 def setup(
     create_database: bool = False,
-) -> tuple[ConfigManager, SessionFactory, BitwardenPasswordlessClient]:
+) -> tuple[BitwardenPasswordlessClient, SessionFactory, ConfigManager]:
     r"""Setup the resources needed to run a Streamlit Passwordless application.
 
     Parameters
@@ -31,22 +31,22 @@ def setup(
 
     Returns
     -------
-    cm : streamlit_passwordless.ConfigManager
-        The loaded configuration of the application.
+    client : streamlit_passwordless.BitwardenPasswordlessClient
+        An instance of the Bitwarden Passwordless client to
+        communicate with the backend API.
 
     session_factory : streamlit_passwordless.db.SessionFactory
         The session factory that can produce new database sessions.
 
-    client : streamlit_passwordless.BitwardenPasswordlessClient
-        An instance of the Bitwarden Passwordless client to
-        communicate with the backend API.
+    cm : streamlit_passwordless.ConfigManager
+        The loaded configuration of the application.
     """
 
     init_session_state()
     cm = ConfigManager.load()
-    session_factory = create_session_factory(url=cm.db_url, create_database=create_database)
     client = create_bitwarden_passwordless_client(
         public_key=cm.bwp_public_key, private_key=cm.bwp_private_key, _url=cm.bwp_url
     )
+    session_factory = create_session_factory(url=cm.db_url, create_database=create_database)
 
-    return cm, session_factory, client
+    return client, session_factory, cm

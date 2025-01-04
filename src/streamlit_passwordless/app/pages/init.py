@@ -36,7 +36,7 @@ def init_page() -> None:
             'About': ABOUT,
         },
     )
-    cm, session_factory, client = setup(create_database=True)
+    client, session_factory, cm = setup(create_database=True)
 
     with session_factory() as session:
         controller(cm=cm, db_session=session, client=client)
