@@ -1,5 +1,8 @@
 r"""The configuration of the Streamlit Passwordless web app."""
 
+# Standard library
+from enum import StrEnum
+
 # Local
 from streamlit_passwordless.bitwarden_passwordless import (
     BitwardenPasswordlessClient,
@@ -17,6 +20,14 @@ MAINTAINER_INFO = f"""\
 
 APP_HOME_PAGE_URL = 'https://github.com/antonlydell/streamlit-passwordless'
 APP_ISSUES_PAGE_URL = 'https://github.com/antonlydell/streamlit-passwordless/issues'
+
+
+class Pages(StrEnum):
+    r"""The pages of the application."""
+
+    ADMIN = 'pages/admin.py'
+    INIT = 'pages/init.py'
+    SIGN_IN = 'pages/sign_in.py'
 
 
 def setup(
