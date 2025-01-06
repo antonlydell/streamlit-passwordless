@@ -89,6 +89,12 @@ class Role(BaseRole):
         return cls.model_validate(DBRole.create_admin())
 
 
+ViewerRole = Role.create_viewer()
+UserRole = Role.create_user()
+SuperUserRole = Role.create_superuser()
+AdminRole = Role.create_admin()
+
+
 class CustomRole(BaseRole):
     r"""A custom role for a user.
 
@@ -238,9 +244,9 @@ class User(BaseModel):
     disabled_timestamp : datetime or None, default None
         The timestamp in UTC when the user was disabled.
 
-    role : Role, default `Role(name=UserRoleName.USER)`
-        The role of the user. If not specified the default
-        :attr:`UserRoleName.USER` role is assigned.
+    role : Role, default `streamlit_passwordless.UserRole`
+        The role of the user. The role is used for check if the user is authorized
+        to access certain pages within an application.
 
     custom_roles : dict[str, CustomRole] or None, default None
         The custom roles of the user. The role name is mapped to the :class:`CustomRole` model.
@@ -265,7 +271,7 @@ class User(BaseModel):
     verified_at: datetime | None = None
     disabled: bool = False
     disabled_timestamp: datetime | None = None
-    role: Role = Field(default_factory=Role.create_user)
+    role: Role = UserRole
     custom_roles: dict[str, CustomRole] | None = None
     emails: list[Email] | None = None
     sign_in: UserSignIn | None = None
