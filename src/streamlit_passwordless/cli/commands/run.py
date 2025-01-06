@@ -12,6 +12,7 @@ from typing import Iterable
 import click
 
 # Local
+from streamlit_passwordless.app.main import APP_PATH
 from streamlit_passwordless.app.pages.init import INIT_PATH
 
 streamlit_args_argument = click.argument('streamlit_args', nargs=-1, type=click.UNPROCESSED)
@@ -72,3 +73,11 @@ def init(streamlit_args: tuple[str, ...]) -> None:
     """Initialize the Streamlit Passwordless user database."""
 
     run_streamlit_app(path=INIT_PATH, streamlit_args=streamlit_args)
+
+
+@run.command(context_settings={'ignore_unknown_options': True})
+@streamlit_args_argument
+def admin(streamlit_args: tuple[str, ...]) -> None:
+    """Run the Streamlit Passwordless admin web app."""
+
+    run_streamlit_app(path=APP_PATH, streamlit_args=streamlit_args)
