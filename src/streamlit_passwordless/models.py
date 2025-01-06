@@ -3,7 +3,6 @@ r"""The data models of streamlit-passwordless."""
 # Standard library
 import uuid
 from datetime import datetime
-from enum import StrEnum
 from typing import Self
 
 # Third party
@@ -12,37 +11,9 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 # Local
+from streamlit_passwordless.database.models import Role as DBRole
+
 from . import exceptions
-
-
-class UserRoleName(StrEnum):
-    r"""The predefined user role names of streamlit-passwordless.
-
-    These roles are created in the database when the database is initialized.
-    The default role of a new user is :attr:`UserRoleName.USER`.
-
-    Members
-    -------
-    VIEWER
-        A user that can only view data within an application.
-
-    USER
-        The standard user with normal privileges. When a user is created it is
-        assigned this role by default.
-
-    SUPERUSER
-        A user with higher privileges that can perform certain
-        operations that a normal `USER` can not.
-
-    ADMIN
-        An admin has full access to everything. Only admin users may sign in to the admin page
-        and manage the users of the application. An application should have at least one admin.
-    """
-
-    VIEWER = 'Viewer'
-    USER = 'User'
-    SUPERUSER = 'SuperUser'
-    ADMIN = 'Admin'
 
 
 class BaseModel(PydanticBaseModel):
@@ -97,50 +68,25 @@ class Role(BaseRole):
     def create_viewer(cls) -> Self:
         r"""Create the VIEWER role."""
 
-        return cls(
-            name=UserRoleName.VIEWER,
-            rank=1,
-            description='A user that can only view data within an application.',
-        )
+        return cls.model_validate(DBRole.create_viewer())
 
     @classmethod
     def create_user(cls) -> Self:
         r"""Create the USER role, which is the default for a new user."""
 
-        return cls(
-            name=UserRoleName.USER,
-            rank=2,
-            description=(
-                'The standard user with normal privileges. The default role for a new user.'
-            ),
-        )
+        return cls.model_validate(DBRole.create_user())
 
     @classmethod
     def create_superuser(cls) -> Self:
         r"""Create the SUPERUSER role."""
 
-        return cls(
-            name=UserRoleName.SUPERUSER,
-            rank=3,
-            description=(
-                'A user with higher privileges that can perform certain '
-                'operations that a normal `USER` can not.'
-            ),
-        )
+        return cls.model_validate(DBRole.create_superuser())
 
     @classmethod
     def create_admin(cls) -> Self:
         r"""Create the ADMIN role."""
 
-        return cls(
-            name=UserRoleName.ADMIN,
-            rank=4,
-            description=(
-                'An admin has full access to everything. Only admin users may sign '
-                'in to the admin page and manage the users of the application. '
-                'An application should have at least one admin.'
-            ),
-        )
+        return cls.model_validate(DBRole.create_admin())
 
 
 class CustomRole(BaseRole):
