@@ -852,3 +852,151 @@ class TestUser:
 
         # Clean up - None
         # ===========================================================
+
+
+class TestUserIsAuthorized:
+    r"""Tests for the method `User.is_authorized`."""
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_authenticated_and_authorized_superuser_against_user(
+        self,
+        role_as_int: bool,
+        user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+        user_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that an authenticated superuser is authorized against a user role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_2_emails_and_successful_signin
+        authorized_role, _, _ = user_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is True
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_authenticated_and_authorized_superuser_against_superuser(
+        self,
+        role_as_int: bool,
+        user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+        superuser_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that an authenticated superuser is authorized against a superuser role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_2_emails_and_successful_signin
+        authorized_role, _, _ = superuser_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is True
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_authenticated_and_not_authorized_superuser_against_admin(
+        self,
+        role_as_int: bool,
+        user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+        admin_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that an authenticated superuser is not authorized against an admin role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_2_emails_and_successful_signin
+        authorized_role, _, _ = admin_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is False
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_not_authenticated_and_authorized_superuser_against_user(
+        self,
+        role_as_int: bool,
+        user_1_with_unsuccessful_signin: tuple[models.User, db_models.User, ModelData],
+        user_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that a non-authenticated superuser is not authorized against a user role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_unsuccessful_signin
+        authorized_role, _, _ = user_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is False
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_not_authenticated_and_authorized_superuser_against_superuser(
+        self,
+        role_as_int: bool,
+        user_1_with_unsuccessful_signin: tuple[models.User, db_models.User, ModelData],
+        superuser_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that a non-authenticated superuser is not authorized against a superuser role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_unsuccessful_signin
+        authorized_role, _, _ = superuser_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is False
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_not_authenticated_and_not_authorized_superuser_against_admin(
+        self,
+        role_as_int: bool,
+        user_1_with_unsuccessful_signin: tuple[models.User, db_models.User, ModelData],
+        admin_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that a non-authenticated superuser is not authorized against an admin role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_unsuccessful_signin
+        authorized_role, _, _ = admin_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is False
+
+        # Clean up - None
+        # ===========================================================
