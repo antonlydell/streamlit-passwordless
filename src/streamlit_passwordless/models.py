@@ -41,6 +41,54 @@ class BaseRole(BaseModel):
     rank: int
     description: str | None = None
 
+    def __eq__(self, other: object) -> bool:  # ==
+        if isinstance(other, BaseRole):
+            return self.rank == other.rank
+        elif isinstance(other, int):
+            return self.rank == other
+        else:
+            return NotImplemented
+
+    def __nq__(self, other: object) -> bool:  # !=
+        if isinstance(other, BaseRole):
+            return self.rank != other.rank
+        elif isinstance(other, int):
+            return self.rank != other
+        else:
+            return NotImplemented
+
+    def __lt__(self, other: object) -> bool:  # <
+        if isinstance(other, BaseRole):
+            return self.rank < other.rank
+        elif isinstance(other, int):
+            return self.rank < other
+        else:
+            return NotImplemented
+
+    def __le__(self, other: object) -> bool:  # <=
+        if isinstance(other, BaseRole):
+            return self.rank <= other.rank
+        elif isinstance(other, int):
+            return self.rank <= other
+        else:
+            return NotImplemented
+
+    def __gt__(self, other: object) -> bool:  # >
+        if isinstance(other, BaseRole):
+            return self.rank > other.rank
+        elif isinstance(other, int):
+            return self.rank > other
+        else:
+            return NotImplemented
+
+    def __ge__(self, other: object) -> bool:  # >=
+        if isinstance(other, BaseRole):
+            return self.rank >= other.rank
+        elif isinstance(other, int):
+            return self.rank >= other
+        else:
+            return NotImplemented
+
 
 class Role(BaseRole):
     r"""The role of a user.
