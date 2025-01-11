@@ -8,9 +8,12 @@ from streamlit_passwordless.app.config import (
     APP_HOME_PAGE_URL,
     APP_ISSUES_PAGE_URL,
     MAINTAINER_INFO,
+    Pages,
     setup,
 )
 from streamlit_passwordless.app.controllers.admin import controller
+from streamlit_passwordless.authorization import authorized
+from streamlit_passwordless.models import AdminRole
 
 ABOUT = f"""\
 The Streamlit Passwordless admin web app.
@@ -40,5 +43,7 @@ def admin_page() -> None:
         controller(client=client, db_session=session)
 
 
+admin_page_authorized = authorized(redirect=Pages.SIGN_IN, role=AdminRole)(admin_page)
+
 if __name__ == '__main__' or __name__ == '__page__':
-    admin_page()
+    admin_page_authorized()
