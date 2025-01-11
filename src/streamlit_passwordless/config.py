@@ -8,7 +8,7 @@ from typing import Self
 
 # Third party
 import streamlit as st
-from pydantic import AliasChoices, AnyHttpUrl, Field, field_validator
+from pydantic import AliasChoices, AnyHttpUrl, ConfigDict, Field, field_validator
 
 # Local
 import streamlit_passwordless.database as db
@@ -44,6 +44,8 @@ class ConfigManager(BaseModel):
     db_url : str or sqlalchemy.URL, default 'sqlite:///streamlit_passwordless.db'
         The SQLAlchemy database url of the Streamlit Passwordless user database.
     """
+
+    model_config = ConfigDict(frozen=True)
 
     bwp_public_key: str = Field(validation_alias=AliasChoices('bwp_public_key', STP_BWP_PUBLIC_KEY))
     bwp_private_key: str = Field(

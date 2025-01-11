@@ -5,7 +5,7 @@ from typing import ClassVar
 
 # Third party
 import pytest
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, ValidationError
 from sqlalchemy import URL, make_url
 
 # Local
@@ -245,6 +245,33 @@ class TestConfigManagerInit:
         # Clean up - None
         # ===========================================================
 
+    @pytest.mark.raises
+    def test_is_immutable(self) -> None:
+        r"""Test that `ConfigManager` is immutable.
+
+        `pydantic.ValidationError` is expected to be raised when an attribute
+        of `ConfigManager` is trying to be changed after the instance is created.
+        """
+
+        # Setup
+        # ===========================================================
+        cm = ConfigManager(bwp_public_key=self.bwp_public_key, bwp_private_key=self.bwp_private_key)
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(ValidationError) as exc_info:
+            cm.bwp_public_key = ''  # type: ignore
+
+        # Verify
+        # ===========================================================
+        error_msg = exc_info.exconly()
+        print(error_msg)
+
+        assert 'bwp_public_key' in error_msg, 'bwp_public_key not in error_msg!'
+
+        # Clean up - None
+        # ===========================================================
+
 
 class TestConfigManagerLoad:
     r"""Tests for the classmethod `ConfigManager.load`."""
@@ -282,7 +309,12 @@ class TestConfigManagerLoad:
         # ===========================================================
         private_key_env_var = 'private_key_env_var'
         monkeypatch.setenv(STP_BWP_PRIVATE_KEY, private_key_env_var)
-        mocked_streamlit_secrets.bwp_private_key = private_key_env_var
+        cm_exp = ConfigManager(
+            bwp_public_key=mocked_streamlit_secrets.bwp_public_key,
+            bwp_private_key=private_key_env_var,
+            bwp_url=mocked_streamlit_secrets.bwp_url,
+            db_url=mocked_streamlit_secrets.db_url,
+        )
 
         # Exercise
         # ===========================================================
@@ -290,7 +322,7 @@ class TestConfigManagerLoad:
 
         # Verify
         # ===========================================================
-        assert cm == mocked_streamlit_secrets
+        assert cm == cm_exp
 
         # Clean up - None
         # ===========================================================
