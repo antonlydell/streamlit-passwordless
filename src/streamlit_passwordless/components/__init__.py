@@ -16,6 +16,7 @@ from .config import (
 )
 from .register_form import bitwarden_register_form, bitwarden_register_form_existing_user
 from .sign_in_form import bitwarden_sign_in_form
+from .sign_out import sign_out_button
 
 # The Public API
 __all__ = [
@@ -36,4 +37,6 @@ __all__ = [
     'bitwarden_register_form_existing_user',
     # sign_in_form
     'bitwarden_sign_in_form',
+    # sign_out
+    'sign_out_button',
 ]

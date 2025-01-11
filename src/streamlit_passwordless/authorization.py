@@ -9,7 +9,7 @@ import streamlit as st
 from streamlit.navigation.page import StreamlitPage
 
 # Local
-from streamlit_passwordless import SK_USER
+from streamlit_passwordless.components.config import SK_USER, SK_USER_SIGN_IN
 from streamlit_passwordless.models import Role, User
 
 P = ParamSpec('P')
@@ -63,3 +63,21 @@ def authorized(
         return wrapper
 
     return decorator
+
+
+def sign_out(user: User | None) -> None:
+    r"""Sign out a signed in user.
+
+    Parameters
+    ----------
+    user : User or None, default None
+        The user to sign out. If None the user to sign out is loaded from the
+        session state using key :attr:`streamlit_passwordless.SK_USER`.
+    """
+
+    user = st.session_state.get(SK_USER) if user is None else user
+
+    if user is not None:
+        user.sign_in = None
+
+    st.session_state[SK_USER_SIGN_IN] = None
