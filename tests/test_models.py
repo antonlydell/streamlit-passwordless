@@ -1000,3 +1000,36 @@ class TestUserIsAuthorized:
 
         # Clean up - None
         # ===========================================================
+
+    def test_authenticated_and_role_is_none(
+        self,
+        user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+    ) -> None:
+        r"""Test that an authenticated user is authorized when `role` parameter is None."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_2_emails_and_successful_signin
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=None) is True
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_not_authenticated_and_role_is_none(
+        self, user_1_with_unsuccessful_signin: tuple[models.User, db_models.User, ModelData]
+    ) -> None:
+        r"""Test that a non-authenticated user is not authorized when `role` parameter is None."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_unsuccessful_signin
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=None) is False
+
+        # Clean up - None
+        # ===========================================================
