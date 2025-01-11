@@ -9,7 +9,7 @@ from streamlit_passwordless.bitwarden_passwordless import (
     create_bitwarden_passwordless_client,
 )
 from streamlit_passwordless.components.config import init_session_state
-from streamlit_passwordless.config import ConfigManager
+from streamlit_passwordless.config import ConfigManager, load_config
 from streamlit_passwordless.database import SessionFactory, create_session_factory
 from streamlit_passwordless.metadata import __releasedate__, __version__
 
@@ -54,7 +54,7 @@ def setup(
     """
 
     init_session_state()
-    cm = ConfigManager.load()
+    cm = load_config()
     client = create_bitwarden_passwordless_client(
         public_key=cm.bwp_public_key, private_key=cm.bwp_private_key, _url=cm.bwp_url
     )

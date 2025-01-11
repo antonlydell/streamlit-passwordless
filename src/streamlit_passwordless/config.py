@@ -3,6 +3,7 @@ r"""The configuration of Streamlit Passwordless."""
 # Standard library
 import logging
 import os
+from datetime import timedelta
 from typing import Self
 
 # Third party
@@ -104,3 +105,28 @@ class ConfigManager(BaseModel):
         }
 
         return cls.model_validate(config_dict)
+
+
+@st.cache_resource(ttl=timedelta(hours=6))
+def load_config() -> ConfigManager:
+    r"""Load the configuration for a Streamlit Passwordless application.
+
+    The configuration can be loaded from environment variables or Streamlit secrets.
+    Values from environment variables will override Streamlit secrets. The Streamlit
+    secrets can be defined in "~/.streamlit/secrets.toml" or "./.streamlit/secrets.toml",
+    where config keys in the second file will take precedence over the first.
+
+    The loaded configuration is a cached resource for 6 hours.
+
+    Returns
+    -------
+    streamlit_passwordless.ConfigManager
+        The loaded configuration.
+
+    Raises
+    ------
+    streamlit_passwordless.StreamlitPasswordlessError
+        If the required configuration could not be found or was invalid.
+    """
+
+    return ConfigManager.load()
