@@ -352,16 +352,17 @@ class User(BaseModel):
         else:
             return sign_in.user_id == self.user_id and sign_in.success
 
-    def is_authorized(self, role: Role | int) -> bool:
-        r"""Check if the user is authorized to access parts of an application.
+    def is_authorized(self, role: Role | int | None = None) -> bool:
+        r"""Check if the user is authorized to access content of specified `role`.
 
         Parameters
         ----------
-        role : streamlit_passwordless.Role or int
-            The role to authorize the user against. If the rank of `role` is less than or
-            equal to the rank of the role of the user the user is authorized. If an integer
-            is supplied it is assumed to be the rank of the role to authorize the user against.
-            The user must also be authenticated to be authorized.
+        role : streamlit_passwordless.Role or int or None, default None
+            The role to authorize the user against. If the rank of the role of the user is
+            greater than or equal to the rank of `role` the user is authorized. If an
+            integer is supplied it is assumed to be the rank of the role to authorize the
+            user against. If None (the default) the user is authorized regardless of its role.
+            The user must always be authenticated to be authorized.
 
         Returns
         -------
@@ -369,4 +370,7 @@ class User(BaseModel):
             True if the user is authorized and False otherwise.
         """
 
-        return self.role >= role if self.is_authenticated else False
+        if role is None:
+            return self.is_authenticated
+        else:
+            return self.role >= role if self.is_authenticated else False
