@@ -3,7 +3,7 @@ r"""Unit tests for the models' module."""
 # Standard library
 from copy import deepcopy
 from datetime import datetime
-from typing import Sequence
+from typing import ClassVar, Sequence
 
 # Third party
 import pytest
@@ -23,6 +23,9 @@ from .config import ModelData
 
 class TestBaseRole:
     r"""Tests for the model `BaseRole`."""
+
+    user_role: ClassVar[models.BaseRole] = models.BaseRole(name='User', rank=1)
+    admin_role: ClassVar[models.BaseRole] = models.BaseRole(name='Admin', rank=4)
 
     def test_init_with_defaults(self) -> None:
         r"""Test to initialize the model with required parameters only."""
@@ -60,6 +63,178 @@ class TestBaseRole:
         # Verify
         # ===========================================================
         assert role.model_dump() == input_data
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_left, role_right, exp_result',
+        (
+            pytest.param(user_role, user_role, True, id='True'),
+            pytest.param(user_role, admin_role, False, id='False'),
+            pytest.param(user_role, 1, True, id='int True'),
+            pytest.param(user_role, 2, False, id='int False'),
+        ),
+    )
+    def test___eq__(
+        self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
+    ) -> None:
+        r"""Test the `__eq__` (==) method."""
+
+        # Setup - None
+        # ===========================================================
+
+        # Exercise
+        # ===========================================================
+        result = role_left == role_right
+
+        # Verify
+        # ===========================================================
+        assert result == exp_result
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_left, role_right, exp_result',
+        (
+            pytest.param(user_role, admin_role, True, id='True'),
+            pytest.param(user_role, user_role, False, id='False'),
+            pytest.param(user_role, 2, True, id='int True'),
+            pytest.param(user_role, 1, False, id='int False'),
+        ),
+    )
+    def test___nq__(
+        self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
+    ) -> None:
+        r"""Test the `__nq__` method (!=)."""
+
+        # Setup - None
+        # ===========================================================
+
+        # Exercise
+        # ===========================================================
+        result = role_left != role_right
+
+        # Verify
+        # ===========================================================
+        assert result == exp_result
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_left, role_right, exp_result',
+        (
+            pytest.param(user_role, admin_role, True, id='True'),
+            pytest.param(user_role, user_role, False, id='False'),
+            pytest.param(user_role, 2, True, id='int True'),
+            pytest.param(user_role, 1, False, id='int False'),
+        ),
+    )
+    def test___lt__(
+        self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
+    ) -> None:
+        r"""Test the `__lt__` method (<)."""
+
+        # Setup - None
+        # ===========================================================
+
+        # Exercise
+        # ===========================================================
+        result = role_left < role_right
+
+        # Verify
+        # ===========================================================
+        assert result == exp_result
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_left, role_right, exp_result',
+        (
+            pytest.param(user_role, admin_role, True, id='< True'),
+            pytest.param(user_role, user_role, True, id='<= True'),
+            pytest.param(admin_role, user_role, False, id='< False'),
+            pytest.param(user_role, 2, True, id='< int True'),
+            pytest.param(user_role, 1, True, id='<= int True'),
+            pytest.param(user_role, 0, False, id='< int False'),
+        ),
+    )
+    def test___le__(
+        self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
+    ) -> None:
+        r"""Test the `__le__` method (<=)."""
+
+        # Setup - None
+        # ===========================================================
+
+        # Exercise
+        # ===========================================================
+        result = role_left <= role_right
+
+        # Verify
+        # ===========================================================
+        assert result == exp_result
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_left, role_right, exp_result',
+        (
+            pytest.param(admin_role, user_role, True, id='True'),
+            pytest.param(user_role, admin_role, False, id='False'),
+            pytest.param(user_role, 0, True, id='int True'),
+            pytest.param(user_role, 1, False, id='int False'),
+        ),
+    )
+    def test___gt__(
+        self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
+    ) -> None:
+        r"""Test the `__gt__` method (>)."""
+
+        # Setup - None
+        # ===========================================================
+
+        # Exercise
+        # ===========================================================
+        result = role_left > role_right
+
+        # Verify
+        # ===========================================================
+        assert result == exp_result
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_left, role_right, exp_result',
+        (
+            pytest.param(admin_role, user_role, True, id='> True'),
+            pytest.param(user_role, user_role, True, id='>= True'),
+            pytest.param(user_role, admin_role, False, id='> False'),
+            pytest.param(user_role, 0, True, id='> int True'),
+            pytest.param(user_role, 1, True, id='>= int True'),
+            pytest.param(user_role, 2, False, id='> int False'),
+        ),
+    )
+    def test___ge__(
+        self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
+    ) -> None:
+        r"""Test the `__ge__` method (>=)."""
+
+        # Setup - None
+        # ===========================================================
+
+        # Exercise
+        # ===========================================================
+        result = role_left >= role_right
+
+        # Verify
+        # ===========================================================
+        assert result == exp_result
 
         # Clean up - None
         # ===========================================================
@@ -674,6 +849,154 @@ class TestUser:
         print(error_msg)
 
         assert 'username' in error_msg, 'username not in error message!'
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestUserIsAuthorized:
+    r"""Tests for the method `User.is_authorized`."""
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_authenticated_and_authorized_superuser_against_user(
+        self,
+        role_as_int: bool,
+        user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+        user_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that an authenticated superuser is authorized against a user role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_2_emails_and_successful_signin
+        authorized_role, _, _ = user_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is True
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_authenticated_and_authorized_superuser_against_superuser(
+        self,
+        role_as_int: bool,
+        user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+        superuser_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that an authenticated superuser is authorized against a superuser role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_2_emails_and_successful_signin
+        authorized_role, _, _ = superuser_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is True
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_authenticated_and_not_authorized_superuser_against_admin(
+        self,
+        role_as_int: bool,
+        user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+        admin_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that an authenticated superuser is not authorized against an admin role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_2_emails_and_successful_signin
+        authorized_role, _, _ = admin_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is False
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_not_authenticated_and_authorized_superuser_against_user(
+        self,
+        role_as_int: bool,
+        user_1_with_unsuccessful_signin: tuple[models.User, db_models.User, ModelData],
+        user_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that a non-authenticated superuser is not authorized against a user role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_unsuccessful_signin
+        authorized_role, _, _ = user_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is False
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_not_authenticated_and_authorized_superuser_against_superuser(
+        self,
+        role_as_int: bool,
+        user_1_with_unsuccessful_signin: tuple[models.User, db_models.User, ModelData],
+        superuser_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that a non-authenticated superuser is not authorized against a superuser role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_unsuccessful_signin
+        authorized_role, _, _ = superuser_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is False
+
+        # Clean up - None
+        # ===========================================================
+
+    @pytest.mark.parametrize(
+        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+    )
+    def test_not_authenticated_and_not_authorized_superuser_against_admin(
+        self,
+        role_as_int: bool,
+        user_1_with_unsuccessful_signin: tuple[models.User, db_models.User, ModelData],
+        admin_role: tuple[models.Role, db_models.Role, ModelData],
+    ) -> None:
+        r"""Test that a non-authenticated superuser is not authorized against an admin role."""
+
+        # Setup
+        # ===========================================================
+        user, _, _ = user_1_with_unsuccessful_signin
+        authorized_role, _, _ = admin_role
+        role: models.Role | int = authorized_role.rank if role_as_int else authorized_role
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.is_authorized(role=role) is False
 
         # Clean up - None
         # ===========================================================

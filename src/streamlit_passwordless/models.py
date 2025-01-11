@@ -3,7 +3,6 @@ r"""The data models of streamlit-passwordless."""
 # Standard library
 import uuid
 from datetime import datetime
-from enum import StrEnum
 from typing import Self
 
 # Third party
@@ -12,37 +11,9 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 # Local
+from streamlit_passwordless.database.models import Role as DBRole
+
 from . import exceptions
-
-
-class UserRoleName(StrEnum):
-    r"""The predefined user role names of streamlit-passwordless.
-
-    These roles are created in the database when the database is initialized.
-    The default role of a new user is :attr:`UserRoleName.USER`.
-
-    Members
-    -------
-    VIEWER
-        A user that can only view data within an application.
-
-    USER
-        The standard user with normal privileges. When a user is created it is
-        assigned this role by default.
-
-    SUPERUSER
-        A user with higher privileges that can perform certain
-        operations that a normal `USER` can not.
-
-    ADMIN
-        An admin has full access to everything. Only admin users may sign in to the admin page
-        and manage the users of the application. An application should have at least one admin.
-    """
-
-    VIEWER = 'Viewer'
-    USER = 'User'
-    SUPERUSER = 'SuperUser'
-    ADMIN = 'Admin'
 
 
 class BaseModel(PydanticBaseModel):
@@ -69,6 +40,54 @@ class BaseRole(BaseModel):
     name: str
     rank: int
     description: str | None = None
+
+    def __eq__(self, other: object) -> bool:  # ==
+        if isinstance(other, BaseRole):
+            return self.rank == other.rank
+        elif isinstance(other, int):
+            return self.rank == other
+        else:
+            return NotImplemented
+
+    def __nq__(self, other: object) -> bool:  # !=
+        if isinstance(other, BaseRole):
+            return self.rank != other.rank
+        elif isinstance(other, int):
+            return self.rank != other
+        else:
+            return NotImplemented
+
+    def __lt__(self, other: object) -> bool:  # <
+        if isinstance(other, BaseRole):
+            return self.rank < other.rank
+        elif isinstance(other, int):
+            return self.rank < other
+        else:
+            return NotImplemented
+
+    def __le__(self, other: object) -> bool:  # <=
+        if isinstance(other, BaseRole):
+            return self.rank <= other.rank
+        elif isinstance(other, int):
+            return self.rank <= other
+        else:
+            return NotImplemented
+
+    def __gt__(self, other: object) -> bool:  # >
+        if isinstance(other, BaseRole):
+            return self.rank > other.rank
+        elif isinstance(other, int):
+            return self.rank > other
+        else:
+            return NotImplemented
+
+    def __ge__(self, other: object) -> bool:  # >=
+        if isinstance(other, BaseRole):
+            return self.rank >= other.rank
+        elif isinstance(other, int):
+            return self.rank >= other
+        else:
+            return NotImplemented
 
 
 class Role(BaseRole):
@@ -97,50 +116,31 @@ class Role(BaseRole):
     def create_viewer(cls) -> Self:
         r"""Create the VIEWER role."""
 
-        return cls(
-            name=UserRoleName.VIEWER,
-            rank=1,
-            description='A user that can only view data within an application.',
-        )
+        return cls.model_validate(DBRole.create_viewer())
 
     @classmethod
     def create_user(cls) -> Self:
         r"""Create the USER role, which is the default for a new user."""
 
-        return cls(
-            name=UserRoleName.USER,
-            rank=2,
-            description=(
-                'The standard user with normal privileges. The default role for a new user.'
-            ),
-        )
+        return cls.model_validate(DBRole.create_user())
 
     @classmethod
     def create_superuser(cls) -> Self:
         r"""Create the SUPERUSER role."""
 
-        return cls(
-            name=UserRoleName.SUPERUSER,
-            rank=3,
-            description=(
-                'A user with higher privileges that can perform certain '
-                'operations that a normal `USER` can not.'
-            ),
-        )
+        return cls.model_validate(DBRole.create_superuser())
 
     @classmethod
     def create_admin(cls) -> Self:
         r"""Create the ADMIN role."""
 
-        return cls(
-            name=UserRoleName.ADMIN,
-            rank=4,
-            description=(
-                'An admin has full access to everything. Only admin users may sign '
-                'in to the admin page and manage the users of the application. '
-                'An application should have at least one admin.'
-            ),
-        )
+        return cls.model_validate(DBRole.create_admin())
+
+
+ViewerRole = Role.create_viewer()
+UserRole = Role.create_user()
+SuperUserRole = Role.create_superuser()
+AdminRole = Role.create_admin()
 
 
 class CustomRole(BaseRole):
@@ -292,9 +292,9 @@ class User(BaseModel):
     disabled_timestamp : datetime or None, default None
         The timestamp in UTC when the user was disabled.
 
-    role : Role, default `Role(name=UserRoleName.USER)`
-        The role of the user. If not specified the default
-        :attr:`UserRoleName.USER` role is assigned.
+    role : Role, default `streamlit_passwordless.UserRole`
+        The role of the user. The role is used for check if the user is authorized
+        to access certain pages within an application.
 
     custom_roles : dict[str, CustomRole] or None, default None
         The custom roles of the user. The role name is mapped to the :class:`CustomRole` model.
@@ -319,7 +319,7 @@ class User(BaseModel):
     verified_at: datetime | None = None
     disabled: bool = False
     disabled_timestamp: datetime | None = None
-    role: Role = Field(default_factory=Role.create_user)
+    role: Role = UserRole
     custom_roles: dict[str, CustomRole] | None = None
     emails: list[Email] | None = None
     sign_in: UserSignIn | None = None
@@ -351,3 +351,22 @@ class User(BaseModel):
             return False
         else:
             return sign_in.user_id == self.user_id and sign_in.success
+
+    def is_authorized(self, role: Role | int) -> bool:
+        r"""Check if the user is authorized to access parts of an application.
+
+        Parameters
+        ----------
+        role : streamlit_passwordless.Role or int
+            The role to authorize the user against. If the rank of `role` is less than or
+            equal to the rank of the role of the user the user is authorized. If an integer
+            is supplied it is assumed to be the rank of the role to authorize the user against.
+            The user must also be authenticated to be authorized.
+
+        Returns
+        -------
+        bool
+            True if the user is authorized and False otherwise.
+        """
+
+        return self.role >= role if self.is_authenticated else False

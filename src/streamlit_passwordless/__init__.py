@@ -51,7 +51,17 @@ from streamlit_passwordless.exceptions import (
     StreamlitPasswordlessError,
 )
 from streamlit_passwordless.metadata import __releasedate__, __version__, __versiontuple__
-from streamlit_passwordless.models import CustomRole, Email, Role, User, UserRoleName, UserSignIn
+from streamlit_passwordless.models import (
+    AdminRole,
+    CustomRole,
+    Email,
+    Role,
+    SuperUserRole,
+    User,
+    UserRole,
+    UserSignIn,
+    ViewerRole,
+)
 
 # The Public API
 __all__ = [
@@ -103,10 +113,13 @@ __all__ = [
     '__version__',
     '__versiontuple__',
     # models
+    'AdminRole',
     'CustomRole',
     'Email',
     'Role',
+    'SuperUserRole',
     'User',
-    'UserRoleName',
+    'UserRole',
     'UserSignIn',
+    'ViewerRole',
 ]

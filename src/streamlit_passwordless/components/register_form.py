@@ -174,7 +174,7 @@ def _create_user(
     """
 
     if role is None:
-        role = st.session_state.get(config.SK_ROLES, {}).get(models.UserRoleName.USER)
+        role = st.session_state.get(config.SK_ROLES, {}).get(db.models.UserRoleName.USER)
 
     if role is None:
         user = models.User(
