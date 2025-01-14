@@ -376,44 +376,6 @@ def _create_user_in_database(session: db.Session, user: models.User) -> tuple[bo
     return success, error_msg
 
 
-def _save_user_sign_in_to_database(
-    session: db.Session, user_sign_in: models.UserSignIn
-) -> tuple[bool, str]:
-    r"""Save the user sign in entry to the database.
-
-    Parameters
-    ----------
-    db_session : streamlit_passwordless.db.Session
-        An active database session.
-
-    user_sign_in : models.UserSignIn
-        Data about the user sign in after registration.
-
-    Returns
-    -------
-    success : bool
-        True if the user sign in was successfully saved to the database and False otherwise.
-
-    error_msg : str
-        An error message to display to the user if there was an issue with saving the user sign
-        in entry to the database. If no error occurred an empty string is returned.
-    """
-
-    user_sign_in_to_db = db.UserSignInCreate.model_validate(user_sign_in)
-
-    try:
-        db.create_user_sign_in(session=session, user_sign_in=user_sign_in_to_db, commit=True)
-    except exceptions.DatabaseError as e:
-        logger.error(e.detailed_message)
-        error_msg = e.displayable_message
-        success = False
-    else:
-        error_msg = ''
-        success = True
-
-    return success, error_msg
-
-
 def bitwarden_register_form(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
@@ -783,7 +745,7 @@ def bitwarden_register_form(
         if not user_sign_in.success:
             final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
 
-        save_user_sign_in_to_db_ok, error_msg = _save_user_sign_in_to_database(
+        save_user_sign_in_to_db_ok, error_msg = core.save_user_sign_in_to_database(
             session=db_session, user_sign_in=user_sign_in
         )
         if not save_user_sign_in_to_db_ok:
@@ -1019,7 +981,7 @@ def bitwarden_register_form_existing_user(
         if not user_sign_in.success:
             final_error_msg = sign_in_failed_error_msg
 
-        save_user_sign_in_to_db_ok, error_msg = _save_user_sign_in_to_database(
+        save_user_sign_in_to_db_ok, error_msg = core.save_user_sign_in_to_database(
             session=db_session, user_sign_in=user_sign_in
         )
         if not save_user_sign_in_to_db_ok:
