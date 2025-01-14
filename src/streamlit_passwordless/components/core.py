@@ -11,6 +11,7 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
 # Local
+from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessClient
 
@@ -86,6 +87,44 @@ def verify_sign_in(
     st.session_state[config.SK_USER_SIGN_IN] = user_sign_in
 
     return user_sign_in, error_msg
+
+
+def save_user_sign_in_to_database(
+    session: db.Session, user_sign_in: models.UserSignIn
+) -> tuple[bool, str]:
+    r"""Save the user sign in entry to the database.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    user_sign_in : streamlit_passwordless.UserSignIn
+        Data from Bitwarden Passwordless about the user that signed in.
+
+    Returns
+    -------
+    success : bool
+        True if the user sign in was successfully saved to the database and False otherwise.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with saving the user sign
+        in entry to the database. If no error occurred an empty string is returned.
+    """
+
+    user_sign_in_to_db = db.UserSignInCreate.model_validate(user_sign_in)
+
+    try:
+        db.create_user_sign_in(session=session, user_sign_in=user_sign_in_to_db, commit=True)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        success = False
+    else:
+        error_msg = ''
+        success = True
+
+    return success, error_msg
 
 
 def display_banner_message(
