@@ -267,11 +267,13 @@ def bitwarden_sign_in_form(
     border: bool = True,
     submit_button_label: str = 'Sign in',
     button_type: core.ButtonType = 'primary',
+    banner_container: core.BannerContainer | None = None,
+    redirect: core.Redirectable | None = None,
     alias_label: str = 'Alias',
     alias_max_length: int | None = 50,
     alias_placeholder: str | None = 'john.doe@example.com',
     alias_help: str | None = '__default__',
-) -> models.User | None:
+) -> tuple[models.User | None, bool]:
     r"""Render the Bitwarden Passwordless sign in form.
 
     Allows the user to sign in to the application with a registered passkey.
@@ -321,6 +323,17 @@ def bitwarden_sign_in_form(
     button_type : Literal['primary', 'secondary'], default 'primary'
         The styling of the button. Emulates the `type` parameter of :func:`streamlit.button`.
 
+    banner_container : streamlit_passwordless.BannerContainer or None, default None
+        A container produced by :func:`streamlit.empty`, in which error or success messages about
+        the sign in process will be displayed. Useful to make the banner appear at the desired
+        location on a page. If None the banner will be displayed right above the form.
+
+    redirect : str or streamlit.navigation.page.StreamlitPage or None, default None
+        The Streamlit page to redirect `user` to if authorized. If str it should be
+        the path, relative to the file passed to the ``streamlit run`` command, to the
+        Python file containing the page to redirect to. See :func:`streamlit.switch_page`
+        for more info. If None no redirect is performed.
+
     Other Parameters
     ----------------
     alias_label : str, default 'Alias'
@@ -342,21 +355,34 @@ def bitwarden_sign_in_form(
     user : streamlit_passwordless.User or None
         The user object of the user that signed in. None is returned if a user has not
         signed in yet or if the sign in failed and a user object could not be retrieved.
+
+    success : bool
+        True if the user was signed in and authorized without errors and False otherwise.
+
+    Raises
+    ------
+    streamlit_passwordless.StreamlitPasswordlessError
+        If no sign in method is chosen i.e. `with_alias` is False,
+        `with_discoverable` is False and `with_autofill` is False.
     """
 
-    error_msg = ''
-    help: str | None = None
-    banner_container = st.empty()
-
     if with_alias is False and with_discoverable is False and with_autofill is False:
-        with banner_container:
-            error_msg = (
-                f'At least one sign in method must be chosen!\n'
-                f'*{with_alias=}*, *{with_discoverable=}*,  *{with_autofill=}*'
-            )
-            logger.error(error_msg)
-            st.error(error_msg, icon=config.ICON_ERROR)
-            return None
+        error_msg = (
+            f'At least one sign in method must be chosen!\n'
+            f'bitwarden_sign_in_form({with_alias=}, {with_discoverable=}, {with_autofill=})'
+        )
+        logger.error(error_msg)
+        raise exceptions.StreamlitPasswordlessError(
+            message=error_msg,
+            data={
+                'with_alias': with_alias,
+                'with_discoverable': with_discoverable,
+                'with_autofill': with_autofill,
+            },
+        )
+
+    help: str | None = None
+    banner_container = st.empty() if banner_container is None else banner_container
 
     with st.container(border=border):
         st.markdown(title)
@@ -388,46 +414,18 @@ def bitwarden_sign_in_form(
             key=ids.BP_SIGN_IN_FORM_SUBMIT_BUTTON,
         )
 
-    if not clicked:
-        return None
-
-    if not token and error:
-        error_msg = f'Error signing in!\nerror : {error}'
-        logger.error(error_msg)
-        core.display_banner_message(
-            message=error_msg,
-            message_type=core.BannerMessageType.ERROR,
-            container=banner_container,
-        )
-        return None
-
-    user_sign_in, error_msg = core.verify_sign_in(client=client, token=token)
-
-    if user_sign_in is None or user_sign_in.success is False:
-        core.display_banner_message(
-            message=error_msg,
-            message_type=core.BannerMessageType.ERROR,
-            container=banner_container,
-        )
-        return None
-
-    user, error_msg = _process_user_sign_in(
-        session=db_session, user_sign_in=user_sign_in, role=role
+    user, success = _process_user_sign_in(
+        token=token,
+        error=error,
+        clicked=clicked,
+        client=client,
+        session=db_session,
+        role=role,
+        banner_container=banner_container,
+        redirect=redirect,
     )
-    if user is None or error_msg:
-        core.display_banner_message(
-            message=error_msg,
-            message_type=core.BannerMessageType.ERROR,
-            container=banner_container,
-        )
-    else:
-        core.display_banner_message(
-            message=f'Successfully signed in user {user.username}',
-            message_type=core.BannerMessageType.SUCCESS,
-            container=banner_container,
-        )
 
-    return user
+    return user, success
 
 
 def bitwarden_sign_in_button(
