@@ -19,6 +19,7 @@ from streamlit_passwordless.bitwarden_passwordless import (
 )
 from streamlit_passwordless.components import (
     ICON_ERROR,
+    ICON_INFO,
     ICON_SUCCESS,
     ICON_WARNING,
     SK_CUSTOM_ROLES,
@@ -28,9 +29,14 @@ from streamlit_passwordless.components import (
     SK_SESSION_STATE_INITIALIZED,
     SK_USER,
     SK_USER_SIGN_IN,
+    BannerContainer,
+    BannerMessageType,
+    Redirectable,
     bitwarden_register_form,
     bitwarden_register_form_existing_user,
+    bitwarden_sign_in_button,
     bitwarden_sign_in_form,
+    display_banner_message,
     init_session_state,
 )
 from streamlit_passwordless.config import (
@@ -78,6 +84,7 @@ __all__ = [
     'sign_in_button',
     # components
     'ICON_ERROR',
+    'ICON_INFO',
     'ICON_SUCCESS',
     'ICON_WARNING',
     'SK_CUSTOM_ROLES',
@@ -87,9 +94,14 @@ __all__ = [
     'SK_SESSION_STATE_INITIALIZED',
     'SK_USER',
     'SK_USER_SIGN_IN',
+    'BannerContainer',
+    'BannerMessageType',
+    'Redirectable',
     'bitwarden_register_form',
     'bitwarden_register_form_existing_user',
+    'bitwarden_sign_in_button',
     'bitwarden_sign_in_form',
+    'display_banner_message',
     'init_session_state',
     # config
     'STP_BWP_PRIVATE_KEY',

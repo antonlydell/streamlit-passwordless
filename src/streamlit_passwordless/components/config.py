@@ -25,6 +25,7 @@ SK_SESSION_STATE_INITIALIZED = 'stp-session-state-initialized'
 # =====================================================================================
 
 ICON_ERROR = '🚨'
+ICON_INFO = 'ℹ️'
 ICON_SUCCESS = '✅'
 ICON_WARNING = '⚠️'
 
