@@ -27,6 +27,7 @@ BP_REGISTER_FORM_EXISTING_USER_SUBMIT_BUTTON = 'bp-register-form-existing-user-s
 # Sign in form
 # =====================================================================================
 
+BP_SIGN_IN_BUTTON = 'bp-sign-in-button'
 BP_SIGN_IN_FORM_ALIAS_TEXT_INPUT = 'bp-sign-in-form-alias-text-input'
 BP_SIGN_IN_FORM_SUBMIT_BUTTON = 'bp-sign-in-form-submit-button'
 

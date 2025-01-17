@@ -9,6 +9,7 @@ from typing import Literal, TypeAlias
 # Third party
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+from streamlit.navigation.page import StreamlitPage
 
 # Local
 from streamlit_passwordless import database as db
@@ -19,6 +20,7 @@ from . import config
 
 BannerContainer: TypeAlias = DeltaGenerator
 ButtonType: TypeAlias = Literal['primary', 'secondary']
+Redirectable: TypeAlias = StreamlitPage | str
 logger = logging.getLogger(__name__)
 
 
