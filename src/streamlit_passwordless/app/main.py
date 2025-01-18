@@ -19,7 +19,7 @@ def main() -> None:
         st.Page(page=Pages.ADMIN, title='Admin', default=True),
         st.Page(page=Pages.SIGN_IN, title='Sign in', url_path='sign_in'),
     ]
-    page = st.navigation(pages)
+    page = st.navigation(pages, position='hidden')
     page.run()
 
 

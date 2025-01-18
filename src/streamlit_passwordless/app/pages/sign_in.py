@@ -26,6 +26,7 @@ def sign_in_page() -> None:
         page_title='Admin Sign in - Streamlit Passwordless',
         page_icon=':key:',
         layout='centered',
+        initial_sidebar_state='collapsed',
         menu_items={
             'About': ABOUT,
             'Get Help': APP_HOME_PAGE_URL,

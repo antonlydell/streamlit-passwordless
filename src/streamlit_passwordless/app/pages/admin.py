@@ -13,6 +13,7 @@ from streamlit_passwordless.app.config import (
 )
 from streamlit_passwordless.app.controllers.admin import controller
 from streamlit_passwordless.authorization import authorized
+from streamlit_passwordless.components.config import SK_USER
 from streamlit_passwordless.models import AdminRole
 
 ABOUT = f"""\
@@ -39,8 +40,12 @@ def admin_page() -> None:
     )
     client, session_factory, _ = setup()
 
+    user = st.session_state.get(SK_USER)
+    if user is None:
+        return
+
     with session_factory() as session:
-        controller(client=client, db_session=session)
+        controller(client=client, db_session=session, user=user)
 
 
 admin_page_authorized = authorized(redirect=Pages.SIGN_IN, role=AdminRole)(admin_page)
