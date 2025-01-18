@@ -13,6 +13,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.12.0] - 2025-01-18
+
+First draft of the Streamlit Passwordless admin app!
+
+The admin app let's you manage the users of your application. The app is launched through the command:
+`stp run admin`. This first version only lets admin users sign in to the app and sign out again.
+The admin user is created through the init page by running the command `stp run init`.
+
+
+### Added
+
+- `stp run admin` : The Streamlit Passwordless CLI command to run the admin app.
+
+- `streamlit_passwordless.admin_page` : The main page of the Streamlit Passwordless admin web app.
+
+- `streamlit_passwordless.authorized` : A decorator, which checks if a user is authorized to
+  access content of specified role. If the user is authorized the decorated function is executed
+  and if not a redirect to another page is possible.
+
+- `streamlit_passwordless.BannerMessageType` : The banner message types defined in Streamlit Passwordless.
+
+- `streamlit_passwordless.bitwarden_sign_in_button` : Allows the user to sign in to the application
+  with a discoverable passkey. Similar to `streamlit_passwordless.bitwarden_sign_in_form`, but without the
+  possibility to sign in with user_id, alias or a non-discoverable passkey. It also provides the `redirect`
+  parameter, which will redirect the user to specified page on successful sign in.
+
+- `streamlit_passwordless.display_banner_message` : Display a message in a banner on a page.
+
+- `streamlit_passwordless.load_config` : Load the configuration for a Streamlit Passwordless application.
+  The function result is a cached resource for 6 hours.
+
+- `streamlit_passwordless.sign_out` : Sign out a signed in user. The function is executed when
+  `streamlit_passwordless.sign_out_button` is clicked.
+
+- `streamlit_passwordless.sign_out_button` : If clicked the user is signed out from the application.
+  The button is disabled if a user is not signed in.
+
+- `streamlit_passwordless.User.is_authorized` : The method checks checks if the user is authorized
+  to access content of specified role.
+
+- Added the default roles as instances to facilitate using them in authorization processes. The roles
+directly correspond to the roles created in the database when Streamlit Passwordless is initialized:
+
+  - `streamlit_passwordless.ViewerRole` : A user that can only view data within an application.
+
+  - `streamlit_passwordless.UserRole` : The standard user with normal privileges. When a user is
+    created it is assigned this role by default.
+
+  - `streamlit_passwordless.SuperUserRole` : A user with higher privileges that can perform certain
+    operations that a normal user can not.
+
+  - `streamlit_passwordless.AdminRole` : An admin has full access to everything. Only admin users may
+    sign in to the admin page and manage the users of the application. An application should have at
+    least one admin.
+
+
+### Changed
+
+- `streamlit_passwordless.bitwarden_sign_in_form` : The user that signs in can now optionally be
+   authorized against a specified role using the new `role` parameter. Added the `banner_container`
+   parameter, which allows the user to pass in a custom container in which the error and success
+   messages from the sign in form will be written to. The `redirect` parameter can optionally redirect
+   the user to specified page on successful sign in. The form now also returns a `success` value,
+   which is True if the user was signed in and authorized without errors and False otherwise.
+
+- `streamlit_passwordless.ConfigManager` : Is now immutable.
+
+- `streamlit_passwordless.setup` : Changed the order of the return values from
+  (`ConfigManager`, `SessionFactory`, `BitwardenPasswordlessClient`) to
+  (`BitwardenPasswordlessClient`, `SessionFactory`, `ConfigManager`).
+  This returns the most frequently used objects first. `ConfigManager`
+  is not needed in most cases.
+
+- `streamlit_passwordless.UserRoleName`:  Moved to `streamlit_passwordless.db.models.UserRoleName` since
+  It makes more sense to keep the `UserRoleName` enum among the database models.
+
+
 ## [0.11.0] - 2025-01-02
 
 Introducing the Streamlit Passwordless CLI (`stp`) and the init page!
@@ -506,7 +583,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.12.0
 [0.11.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.11.0
 [0.10.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.10.0
 [0.9.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.9.0
