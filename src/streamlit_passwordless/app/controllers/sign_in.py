@@ -5,9 +5,11 @@ import streamlit as st
 
 # Local
 import streamlit_passwordless.database as db
+from streamlit_passwordless.app.config import Pages
 from streamlit_passwordless.app.views.sign_in import title
 from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
-from streamlit_passwordless.components import bitwarden_sign_in_form
+from streamlit_passwordless.components import bitwarden_sign_in_button
+from streamlit_passwordless.models import AdminRole
 
 
 def controller(client: BitwardenPasswordlessClient, db_session: db.Session) -> None:
@@ -23,8 +25,14 @@ def controller(client: BitwardenPasswordlessClient, db_session: db.Session) -> N
         An active session to the Streamlit Passwordless database.
     """
 
+    banner_container = st.empty()
+
     with st.container(border=True):
         title()
-        bitwarden_sign_in_form(
-            client=client, db_session=db_session, with_alias=False, border=False, title=''
+        bitwarden_sign_in_button(
+            client=client,
+            db_session=db_session,
+            role=AdminRole,
+            banner_container=banner_container,
+            redirect=Pages.ADMIN,
         )
