@@ -102,7 +102,7 @@ working directory *stp_demo*.
       st.set_page_config(page_title=page_title)
       st.title(page_title)
 
-      _, session_factory, client = stp.setup(create_database=True)
+      client, session_factory, _ = stp.setup(create_database=True)
       with session_factory() as session:
          stp.db.init(_session=session)
          register_tab, signin_in_tab = st.tabs(['Register', 'Sign in'])
@@ -110,6 +110,8 @@ working directory *stp_demo*.
             stp.bitwarden_register_form(client=client, db_session=session)
          with signin_in_tab:
             stp.bitwarden_sign_in_form(client=client, db_session=session)
+
+      stp.sign_out_button(use_container_width=True)
 
 
    if __name__ == '__main__':
@@ -128,7 +130,7 @@ The function ``stp.db.init`` initializes the database by creating the default us
 is cached with st.cache_resource_, which makes it only execute once. The database can also be initialized
 through the streamlit-passwordless CLI by running the command ``stp run init``. It launches a Streamlit
 app that initializes the database and lets you create an admin user for the application. Lastly the forms
-to *register* and *sign in* are rendered in separate tabs.
+to *register* and *sign in* are rendered in separate tabs, and finally the *sign out* button is rendered.
 
 .. _st.cache_resource : https://docs.streamlit.io/develop/api-reference/caching-and-state/st.cache_resource
 .. _SQLAlchemy database URL : https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls
