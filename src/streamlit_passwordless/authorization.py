@@ -51,9 +51,9 @@ def authorized(
             r"""Check if the user is authorized."""
 
             nonlocal user
-            user = st.session_state.get(SK_USER) if user is None else user
+            _user = st.session_state.get(SK_USER) if user is None else user
 
-            if user is None or not user.is_authorized(role=role):
+            if _user is None or not _user.is_authorized(role=role):
                 if redirect is None:
                     return None
                 st.switch_page(redirect)
