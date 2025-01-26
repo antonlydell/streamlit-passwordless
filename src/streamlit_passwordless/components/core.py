@@ -24,6 +24,30 @@ Redirectable: TypeAlias = StreamlitPage | str
 logger = logging.getLogger(__name__)
 
 
+class FormField(StrEnum):
+    r"""The text input form fields defined in Streamlit Passwordless.
+
+    Members
+    -------
+    USERNAME
+        The username of a user.
+
+    DISPLAYNAME
+        The displayname of a user.
+
+    AD_USERNAME
+        The active directory username of a user.
+
+    EMAIL
+        An email address of a user.
+    """
+
+    USERNAME = 'username'
+    DISPLAYNAME = 'displayname'
+    AD_USERNAME = 'ad_username'
+    EMAIL = 'email'
+
+
 class BannerMessageType(StrEnum):
     r"""The banner message types defined in Streamlit Passwordless.
 
