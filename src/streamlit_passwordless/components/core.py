@@ -299,3 +299,31 @@ def display_banner_message(
     else:
         with container:
             func(message)
+
+
+def process_form_validation_errors(
+    validation_errors: dict[str, str],
+    banner_container_mapping: dict[str, BannerContainer],
+    default_banner_container: BannerContainer | None = None,
+) -> None:
+    r"""Process form validation errors and display them in an error banner.
+
+    Parameters
+    ----------
+    validation_errors : dict[str, str]
+        A mapping of the field name to its error message.
+
+    banner_container_mapping : dict[str, streamlit_passwordless.BannerContainer]
+        A mapping of the field name to its banner container.
+
+    default_banner_container : streamlit_passwordless.BannerContainer or None, default None
+        The default banner container to use if a field does not have a matching entry in
+        `banner_container_mapping`. If None the banner will be displayed at the location
+        of the page where this function is called.
+    """
+
+    for field_name, error_msg in validation_errors.items():
+        bc = banner_container_mapping.get(field_name, default_banner_container)
+        display_banner_message(
+            message=error_msg, message_type=BannerMessageType.ERROR, container=bc
+        )
