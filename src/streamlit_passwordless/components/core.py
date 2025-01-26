@@ -129,6 +129,49 @@ def save_user_sign_in_to_database(
     return success, error_msg
 
 
+def get_user_from_database(
+    session: db.Session, username: str, disabled: bool = False
+) -> tuple[db.models.User | None, str]:
+    r"""Get a user from the database.
+
+    Updates the session state key `streamlit_passwordless.SK_DB_USER`
+    with the user object from the database.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    username : str
+        The username of the user to retrieve from the database.
+
+    disabled : bool, default False
+        Specify True to retrieve disabled users and False for enabled users.
+
+    Returns
+    -------
+    user : streamlit_passwordless.db.models.User or None
+        The user matching `username`. None is returned if no user was found.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with retrieving
+        the user from the database. If no error occurred an empty string is returned.
+    """
+
+    try:
+        user = db.get_user_by_username(session=session, username=username, disabled=disabled)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        user = None
+    else:
+        error_msg = ''
+
+    st.session_state[config.SK_DB_USER] = user
+
+    return user, error_msg
+
+
 def display_banner_message(
     message: str,
     message_type: BannerMessageType = BannerMessageType.SUCCESS,
