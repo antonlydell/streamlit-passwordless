@@ -321,61 +321,6 @@ def _validate_form(
         st.session_state[config.SK_REGISTER_FORM_IS_VALID] = True
 
 
-def _create_user_in_database(session: db.Session, user: models.User) -> tuple[bool, str]:
-    r"""Create a new user in the database.
-
-    Parameters
-    ----------
-    session : streamlit_passwordless.db.Session
-        An active database session.
-
-    user : models.User
-        The user to save to the database.
-
-    Returns
-    -------
-    success : bool
-        True if the user was successfully saved to the database and False otherwise.
-
-    error_msg : str
-        An error message to display to the user if there was an issue with creating the user
-        in the database. If no error occurred an empty string is returned.
-
-    Raises
-    ------
-    streamlit_passwordless.DatabaseCreateUserError
-        If a role matching :attr:`streamlit_passwordless.User.role.name`
-        was not found in the database.
-    """
-
-    try:
-        if (role_id := user.role.role_id) is None:
-            db_role = db.get_role_by_name(session=session, name=user.role.name)
-            if db_role is None:
-                raise exceptions.DatabaseCreateUserError(
-                    f'Cannot create user "{user.username}" because role '
-                    f'with name "{user.role.name}" does not exist in the database!'
-                ) from None
-            role_id = db_role.role_id
-
-        user_create = db.UserCreate(
-            user_id=user.user_id,
-            username=user.username,
-            displayname=user.displayname,
-            role_id=role_id,
-        )
-        db.create_user(session=session, user=user_create, commit=True)
-    except exceptions.DatabaseError as e:
-        logger.error(e.detailed_message)
-        error_msg = e.displayable_message
-        success = False
-    else:
-        error_msg = ''
-        success = True
-
-    return success, error_msg
-
-
 def bitwarden_register_form(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
@@ -720,7 +665,9 @@ def bitwarden_register_form(
 
     final_error_msg = ''
     if not db_user:
-        can_save_sign_in_to_db, error_msg = _create_user_in_database(session=db_session, user=user)
+        can_save_sign_in_to_db, error_msg = core.create_user_in_database(
+            session=db_session, user=user
+        )
         if not can_save_sign_in_to_db:
             final_error_msg = (
                 f'Could not save user {user.username} to database! '
