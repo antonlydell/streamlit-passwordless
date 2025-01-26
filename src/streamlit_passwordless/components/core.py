@@ -154,7 +154,7 @@ def save_user_sign_in_to_database(
 
 
 def get_user_from_database(
-    session: db.Session, username: str, disabled: bool = False
+    session: db.Session, username: str, disabled: bool | None = None
 ) -> tuple[db.models.User | None, str]:
     r"""Get a user from the database.
 
@@ -169,8 +169,9 @@ def get_user_from_database(
     username : str
         The username of the user to retrieve from the database.
 
-    disabled : bool, default False
+    disabled : bool or None, default None
         Specify True to retrieve disabled users and False for enabled users.
+        If None filtering by disabled or enabled user is omitted.
 
     Returns
     -------
