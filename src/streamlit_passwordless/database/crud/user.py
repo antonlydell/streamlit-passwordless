@@ -60,7 +60,7 @@ def get_all_users(
 
 
 def get_user_by_username(
-    session: Session, username: str, disabled: bool = False
+    session: Session, username: str, disabled: bool | None = False
 ) -> models.User | None:
     r"""Get a user by its username.
 
@@ -72,8 +72,9 @@ def get_user_by_username(
     username : str
         The username to filter by.
 
-    disabled : bool, default False
-        True if filtering for a disabled user and False for an active user.
+    disabled : bool or None, default False
+        True if filtering for a disabled user and False for an enabled user.
+        If None filtering by disabled or enabled user is omitted.
 
     Returns
     -------
@@ -81,9 +82,13 @@ def get_user_by_username(
         The user with `username` or None if a user with `username` was not found.
     """
 
-    query = select(models.User).where(
-        and_(models.User.username == username, models.User.disabled == disabled)
-    )
+    if disabled is None:
+        where_clause = models.User.username == username
+    else:
+        where_clause = and_(models.User.username == username, models.User.disabled == disabled)
+
+    query = select(models.User).where(where_clause)
+
     return session.scalars(query).one_or_none()
 
 

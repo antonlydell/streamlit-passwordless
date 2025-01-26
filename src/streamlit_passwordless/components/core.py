@@ -24,6 +24,30 @@ Redirectable: TypeAlias = StreamlitPage | str
 logger = logging.getLogger(__name__)
 
 
+class FormField(StrEnum):
+    r"""The text input form fields defined in Streamlit Passwordless.
+
+    Members
+    -------
+    USERNAME
+        The username of a user.
+
+    DISPLAYNAME
+        The displayname of a user.
+
+    AD_USERNAME
+        The active directory username of a user.
+
+    EMAIL
+        An email address of a user.
+    """
+
+    USERNAME = 'username'
+    DISPLAYNAME = 'displayname'
+    AD_USERNAME = 'ad_username'
+    EMAIL = 'email'
+
+
 class BannerMessageType(StrEnum):
     r"""The banner message types defined in Streamlit Passwordless.
 
@@ -129,6 +153,105 @@ def save_user_sign_in_to_database(
     return success, error_msg
 
 
+def get_user_from_database(
+    session: db.Session, username: str, disabled: bool | None = None
+) -> tuple[db.models.User | None, str]:
+    r"""Get a user from the database.
+
+    Updates the session state key `streamlit_passwordless.SK_DB_USER`
+    with the user object from the database.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    username : str
+        The username of the user to retrieve from the database.
+
+    disabled : bool or None, default None
+        Specify True to retrieve disabled users and False for enabled users.
+        If None filtering by disabled or enabled user is omitted.
+
+    Returns
+    -------
+    user : streamlit_passwordless.db.models.User or None
+        The user matching `username`. None is returned if no user was found.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with retrieving
+        the user from the database. If no error occurred an empty string is returned.
+    """
+
+    try:
+        user = db.get_user_by_username(session=session, username=username, disabled=disabled)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        user = None
+    else:
+        error_msg = ''
+
+    st.session_state[config.SK_DB_USER] = user
+
+    return user, error_msg
+
+
+def create_user_in_database(session: db.Session, user: models.User) -> tuple[bool, str]:
+    r"""Create a new user in the database.
+
+    Parameters
+    ----------
+    session : streamlit_passwordless.db.Session
+        An active database session.
+
+    user : models.User
+        The user to save to the database.
+
+    Returns
+    -------
+    success : bool
+        True if the user was successfully saved to the database and False otherwise.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with creating the user
+        in the database. If no error occurred an empty string is returned.
+    """
+
+    try:
+        if (role_id := user.role.role_id) is None:
+            db_role = db.get_role_by_name(session=session, name=user.role.name)
+
+            if db_role is None:
+                error_msg = (
+                    f'Cannot create user "{user.username}" because role '
+                    f'with name "{user.role.name}" does not exist in the database!'
+                )
+                return False, error_msg
+
+            role_id = db_role.role_id
+
+        user_create = db.UserCreate(
+            user_id=user.user_id,
+            username=user.username,
+            ad_username=user.ad_username,
+            displayname=user.displayname,
+            role_id=role_id,
+            disabled=user.disabled,
+            disabled_timestamp=user.disabled_timestamp,
+        )
+        db.create_user(session=session, user=user_create, commit=True)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        success = False
+    else:
+        error_msg = ''
+        success = True
+
+    return success, error_msg
+
+
 def display_banner_message(
     message: str,
     message_type: BannerMessageType = BannerMessageType.SUCCESS,
@@ -177,3 +300,31 @@ def display_banner_message(
     else:
         with container:
             func(message)
+
+
+def process_form_validation_errors(
+    validation_errors: dict[str, str],
+    banner_container_mapping: dict[str, BannerContainer],
+    default_banner_container: BannerContainer | None = None,
+) -> None:
+    r"""Process form validation errors and display them in an error banner.
+
+    Parameters
+    ----------
+    validation_errors : dict[str, str]
+        A mapping of the field name to its error message.
+
+    banner_container_mapping : dict[str, streamlit_passwordless.BannerContainer]
+        A mapping of the field name to its banner container.
+
+    default_banner_container : streamlit_passwordless.BannerContainer or None, default None
+        The default banner container to use if a field does not have a matching entry in
+        `banner_container_mapping`. If None the banner will be displayed at the location
+        of the page where this function is called.
+    """
+
+    for field_name, error_msg in validation_errors.items():
+        bc = banner_container_mapping.get(field_name, default_banner_container)
+        display_banner_message(
+            message=error_msg, message_type=BannerMessageType.ERROR, container=bc
+        )

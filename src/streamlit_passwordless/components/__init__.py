@@ -15,7 +15,14 @@ from .config import (
     SK_USER_SIGN_IN,
     init_session_state,
 )
-from .core import BannerContainer, BannerMessageType, Redirectable, display_banner_message
+from .core import (
+    BannerContainer,
+    BannerMessageType,
+    Redirectable,
+    display_banner_message,
+    process_form_validation_errors,
+)
+from .create_user_form import create_user_form
 from .register_form import bitwarden_register_form, bitwarden_register_form_existing_user
 from .sign_in_form import bitwarden_sign_in_button, bitwarden_sign_in_form
 from .sign_out import sign_out_button
@@ -40,6 +47,9 @@ __all__ = [
     'BannerMessageType',
     'Redirectable',
     'display_banner_message',
+    'process_form_validation_errors',
+    # create_user_form
+    'create_user_form',
     # register_form
     'bitwarden_register_form',
     'bitwarden_register_form_existing_user',

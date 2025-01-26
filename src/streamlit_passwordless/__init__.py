@@ -37,8 +37,10 @@ from streamlit_passwordless.components import (
     bitwarden_register_form_existing_user,
     bitwarden_sign_in_button,
     bitwarden_sign_in_form,
+    create_user_form,
     display_banner_message,
     init_session_state,
+    process_form_validation_errors,
     sign_out_button,
 )
 from streamlit_passwordless.config import (
@@ -108,8 +110,10 @@ __all__ = [
     'bitwarden_register_form_existing_user',
     'bitwarden_sign_in_button',
     'bitwarden_sign_in_form',
+    'create_user_form',
     'display_banner_message',
     'init_session_state',
+    'process_form_validation_errors',
     'sign_out_button',
     # config
     'STP_BWP_PRIVATE_KEY',

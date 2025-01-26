@@ -1,6 +1,21 @@
 r"""The ID:s of components used for identification and session state management."""
 
 # =====================================================================================
+# Create user form
+# =====================================================================================
+
+CREATE_USER_FORM = 'create-user-form'
+CREATE_USER_FORM_USERNAME_TEXT_INPUT = 'create-user-form-username-text-input'
+CREATE_USER_FORM_DISPLAYNAME_TEXT_INPUT = 'create-user-form-displayname-text-input'
+CREATE_USER_FORM_AD_USERNAME_TEXT_INPUT = 'create-user-form-ad-username-text-input'
+CREATE_USER_FORM_ROLE_SELECTBOX = 'create-user-form-role-selectbox'
+CREATE_USER_FORM_CUSTOM_ROLES_MULTISELECTBOX = 'create-user-form-custom-roles-multiselectbox'
+CREATE_USER_FORM_EMAIL_TEXT_INPUT = 'create-user-form-email-text-input'
+CREATE_USER_FORM_DISABLED_TOGGLE = 'create-user-form-disabled-toggle'
+CREATE_USER_FORM_SUBMIT_BUTTON = 'create-user-form-submit-button'
+
+
+# =====================================================================================
 # Register form
 # =====================================================================================
 
