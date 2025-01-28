@@ -16,6 +16,7 @@ SK_USER = 'stp-user'
 SK_USER_SIGN_IN = 'stp-user-sign-in'
 SK_DB_USER = 'stp-db-user'
 SK_REGISTER_FORM_IS_VALID = 'stp-register-form-is-valid'
+SK_REGISTER_FORM_VALIDATION_ERRORS = 'stp-register-form-validation-errors'
 SK_ROLES = 'stp-roles'
 SK_CUSTOM_ROLES = 'stp-custom-roles'
 SK_SESSION_STATE_INITIALIZED = 'stp-session-state-initialized'
@@ -61,6 +62,10 @@ def init_session_state() -> None:
     SK_REGISTER_FORM_IS_VALID : bool, default False
         True if the input to the register form is valid and False otherwise.
 
+    SK_REGISTER_FORM_VALIDATION_ERRORS : dict[str, str]
+        A dictionary mapping of the form field name to its error message
+        for the register form.
+
     SK_ROLES : dict[str, streamlit_passwordless.Role]
         The available roles for a user.
 
@@ -71,7 +76,8 @@ def init_session_state() -> None:
         True if the input to the create user form is valid and False otherwise.
 
     SK_CREATE_USER_FORM_VALIDATION_ERRORS : dict[str, str]
-        A dictionary mapping of the user form field name to its error message.
+        A dictionary mapping of the form field name to its error message
+        for the create user form.
     """
 
     if st.session_state.get(SK_SESSION_STATE_INITIALIZED, False):
@@ -87,7 +93,12 @@ def init_session_state() -> None:
     for key in false_keys:
         st.session_state[key] = False
 
-    empty_dict_keys = (SK_CREATE_USER_FORM_VALIDATION_ERRORS, SK_ROLES, SK_CUSTOM_ROLES)
+    empty_dict_keys = (
+        SK_REGISTER_FORM_VALIDATION_ERRORS,
+        SK_CREATE_USER_FORM_VALIDATION_ERRORS,
+        SK_ROLES,
+        SK_CUSTOM_ROLES,
+    )
     for key in empty_dict_keys:
         st.session_state[key] = {}
 
