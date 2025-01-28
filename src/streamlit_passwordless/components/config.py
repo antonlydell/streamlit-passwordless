@@ -6,7 +6,7 @@ r"""Contains the Streamlit configuration of the web components."""
 import streamlit as st
 
 # Local
-
+from streamlit_passwordless.models import User
 
 # =====================================================================================
 # Session state keys
@@ -90,3 +90,15 @@ def init_session_state() -> None:
     empty_dict_keys = (SK_CREATE_USER_FORM_VALIDATION_ERRORS, SK_ROLES, SK_CUSTOM_ROLES)
     for key in empty_dict_keys:
         st.session_state[key] = {}
+
+
+def get_current_user() -> User | None:
+    r"""Get the current user from the session state.
+
+    Returns
+    -------
+    streamlit_passwordless.User or None
+        The user from the session state. None is returned if a user has not signed in yet.
+    """
+
+    return st.session_state.get(SK_USER)
