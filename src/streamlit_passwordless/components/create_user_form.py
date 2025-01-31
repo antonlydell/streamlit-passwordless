@@ -41,14 +41,14 @@ def _validate_form(db_session: db.Session) -> None:
             session=db_session, username=username.casefold()
         )
 
-        if db_user is not None:
+        if error_msg:  # DatabaseError
+            st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = {
+                core.FormField.USERNAME: error_msg
+            }
+        elif db_user is not None:
             form_is_valid = False
             st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = {
                 core.FormField.USERNAME: f'User {username} already exist!'
-            }
-        elif db_user is None and error_msg:  # DatabaseError
-            st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = {
-                core.FormField.USERNAME: error_msg
             }
         else:
             pass
