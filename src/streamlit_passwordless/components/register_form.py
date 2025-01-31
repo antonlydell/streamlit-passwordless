@@ -234,6 +234,70 @@ def _create_register_token(
     return register_token, error_msg
 
 
+def _validate_username_field(
+    db_session: db.Session, client: BitwardenPasswordlessClient, origin: str, pre_authorized: bool
+) -> bool:
+    r"""Validate the username form input field of the register form."""
+
+    username = st.session_state[ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT]
+    if not username:
+        st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS] = {
+            core.FormField.USERNAME: 'The username field is required!',
+        }
+        return False
+
+    db_user, error_msg = core.get_user_from_database(
+        session=db_session, username=username.casefold()
+    )
+    st.session_state[config.SK_DB_USER] = db_user
+
+    if db_user is None:
+        if error_msg:  # DatabaseError
+            st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = {
+                core.FormField.USERNAME: error_msg
+            }
+            return False
+        elif not pre_authorized:
+            return True
+
+        error_msg = (
+            f'User {username} does not exist, but is required to exist to allow registration!'
+        )
+        logger.warning(error_msg)
+        st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS] = {
+            core.FormField.USERNAME: error_msg
+        }
+        return False
+
+    if (user := config.get_current_user()) is None:
+        is_authenticated = False
+    else:
+        is_authenticated = user.is_authenticated and db_user.user_id == user.user_id
+
+    if is_authenticated:
+        return True
+
+    if origin:
+        try:
+            credentials = client.get_credentials(user_id=db_user.user_id, origin=origin)
+        except exceptions.StreamlitPasswordlessError as e:
+            error_msg = (
+                f'Could not get passkey credentials for user {username}!\n{e.detailed_message}'
+            )
+            logger.error(error_msg)
+            credentials = []
+
+        if not credentials:
+            return True
+
+    error_msg = f'User {username} already exist! To add additional passkeys, please sign in first.'
+    st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS] = {
+        core.FormField.USERNAME: error_msg
+    }
+
+    return False
+
+
 def _validate_form(
     db_session: db.Session,
     client: BitwardenPasswordlessClient,
@@ -243,12 +307,15 @@ def _validate_form(
     r"""Validate the input fields of the register form.
 
     Updates the following session state keys:
-    - `config.SK_DB_USER` :
+    - `streamlit_passwordless.SK_DB_USER` :
         Assigns the database user object. None is assigned if the user does
         not exist in the database.
 
-    - `config.SK_REGISTER_FORM_IS_VALID` :
+    - `streamlit_passwordless.SK_REGISTER_FORM_IS_VALID` :
         True if the form validation passed and False otherwise.
+
+    - `streamlit_passwordless.SK_REGISTER_FORM_VALIDATION_ERRORS` :
+        A dictionary mapping of the user form field name to its error message.
 
     Parameters
     ----------
@@ -269,111 +336,10 @@ def _validate_form(
         the user to register a new passkey credential. If False omit this validation.
     """
 
-    error_msg = ''
-
-    username = st.session_state[ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT]
-    if not username:
-        error_msg = 'The username field is required!'
-        st.error(error_msg, icon=config.ICON_ERROR)
-        st.session_state[config.SK_REGISTER_FORM_IS_VALID] = False
-        return
-
-    user = db.get_user_by_username(session=db_session, username=username)
-
-    if not user:
-        st.session_state[config.SK_DB_USER] = None
-
-        if pre_authorized:
-            error_msg = (
-                f'User {username} does not exist, but is required to exist '
-                'to allow registration!'
-            )
-            logger.warning(error_msg)
-
-    elif user:
-        st.session_state[config.SK_DB_USER] = user
-
-        if origin:
-            try:
-                credentials = client.get_credentials(user_id=user.user_id, origin=origin)
-            except exceptions.StreamlitPasswordlessError as e:
-                error_msg = f'Could not get passkey credentials for user {username}!\n{str(e)}'
-                credentials = []
-        else:
-            credentials = []
-
-        if (user_sign_in := st.session_state.get(config.SK_USER_SIGN_IN)) is not None:
-            is_authenticated = True if user_sign_in.user_id == user.user_id else False
-        else:
-            is_authenticated = False
-
-        if not error_msg and credentials and not is_authenticated:
-            error_msg = (
-                f'User {username} already exist! '
-                'To add additional passkeys, please sign in first.'
-            )
-            logger.warning(error_msg)
-
-    if error_msg:
-        st.error(error_msg, icon=config.ICON_ERROR)
-        st.session_state[config.SK_REGISTER_FORM_IS_VALID] = False
-    else:
-        st.session_state[config.SK_REGISTER_FORM_IS_VALID] = True
-
-
-def _create_user_in_database(session: db.Session, user: models.User) -> tuple[bool, str]:
-    r"""Create a new user in the database.
-
-    Parameters
-    ----------
-    session : streamlit_passwordless.db.Session
-        An active database session.
-
-    user : models.User
-        The user to save to the database.
-
-    Returns
-    -------
-    success : bool
-        True if the user was successfully saved to the database and False otherwise.
-
-    error_msg : str
-        An error message to display to the user if there was an issue with creating the user
-        in the database. If no error occurred an empty string is returned.
-
-    Raises
-    ------
-    streamlit_passwordless.DatabaseCreateUserError
-        If a role matching :attr:`streamlit_passwordless.User.role.name`
-        was not found in the database.
-    """
-
-    try:
-        if (role_id := user.role.role_id) is None:
-            db_role = db.get_role_by_name(session=session, name=user.role.name)
-            if db_role is None:
-                raise exceptions.DatabaseCreateUserError(
-                    f'Cannot create user "{user.username}" because role '
-                    f'with name "{user.role.name}" does not exist in the database!'
-                ) from None
-            role_id = db_role.role_id
-
-        user_create = db.UserCreate(
-            user_id=user.user_id,
-            username=user.username,
-            displayname=user.displayname,
-            role_id=role_id,
-        )
-        db.create_user(session=session, user=user_create, commit=True)
-    except exceptions.DatabaseError as e:
-        logger.error(e.detailed_message)
-        error_msg = e.displayable_message
-        success = False
-    else:
-        error_msg = ''
-        success = True
-
-    return success, error_msg
+    form_is_valid = _validate_username_field(
+        db_session=db_session, client=client, origin=origin, pre_authorized=pre_authorized
+    )
+    st.session_state[config.SK_REGISTER_FORM_IS_VALID] = form_is_valid
 
 
 def bitwarden_register_form(
@@ -392,6 +358,7 @@ def bitwarden_register_form(
     validate_button_type: core.ButtonType | None = None,
     register_button_type: core.ButtonType = 'primary',
     clear_on_validate: bool = False,
+    banner_container: core.BannerContainer | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -486,6 +453,11 @@ def bitwarden_register_form(
         True if the form fields should be cleared when the validate form button is clicked
         and False otherwise.
 
+    banner_container : streamlit_passwordless.BannerContainer or None, default None
+        A container produced by :func:`streamlit.empty`, in which error or success messages about
+        the register user process will be displayed. Useful to make the banner appear at the desired
+        location on a page. If None the banner will be displayed right above the form.
+
     Other Parameters
     ----------------
     username_label : str, default 'Username'
@@ -577,11 +549,15 @@ def bitwarden_register_form(
 
     user = None
     error_msg = ''
-    banner_container = st.empty()
+    banner_container = st.empty() if banner_container is None else banner_container
+    banner_container_mapping = {}
 
     with st.container(border=border):
         st.markdown(title)
         with st.form(key=ids.BP_REGISTER_FORM, clear_on_submit=clear_on_validate, border=False):
+            username_error_banner = st.empty()
+            banner_container_mapping[core.FormField.USERNAME] = username_error_banner
+
             username = st.text_input(
                 label=username_label,
                 placeholder=username_placeholder,
@@ -589,6 +565,7 @@ def bitwarden_register_form(
                 help=USERNAME_HELP if username_help == USE_DEFAULT_HELP else username_help,
                 key=ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT,
             )
+
             if with_displayname:
                 displayname = st.text_input(
                     label=displayname_label,
@@ -670,8 +647,6 @@ def bitwarden_register_form(
             )
 
         db_user = st.session_state.get(config.SK_DB_USER)
-
-        disabled = not form_is_valid
         register_token = ''
 
         if form_is_valid:
@@ -688,39 +663,55 @@ def bitwarden_register_form(
                 client=client, user=user, discoverable=discoverable
             )
 
+        form_is_not_valid = not form_is_valid
+
         token, error, clicked = register_button(
             register_token=register_token,
             public_key=client.public_key,
             credential_nickname=credential_nickname,
-            disabled=disabled,
+            disabled=form_is_not_valid,
             label=register_button_label,
             button_type=register_button_type,
             key=ids.BP_REGISTER_FORM_SUBMIT_BUTTON,
         )
 
-    if disabled or not clicked:
+    if form_is_not_valid:
+        validation_error_key = config.SK_REGISTER_FORM_VALIDATION_ERRORS
+        core.process_form_validation_errors(
+            validation_errors=st.session_state[validation_error_key],
+            banner_container_mapping=banner_container_mapping,  # type: ignore
+            default_banner_container=banner_container,
+        )
+        st.session_state[validation_error_key] = {}
+
+        return user, False
+
+    if not clicked:
         return user, False
 
     if user is None:
-        with banner_container:
-            st.error(error_msg, icon=config.ICON_ERROR)
+        core.display_banner_message(
+            message=error_msg, message_type=core.BannerMessageType.ERROR, container=banner_container
+        )
         return user, False
 
-    if not token and error:
-        error_msg = f'Error creating passkey for user ({username})!\nerror : {error}'
-        logger.error(error_msg)
-    elif not token:
-        error_msg = 'Unexpected error for missing token!'
-        logger.error(error_msg)
+    if not token:
+        if error:
+            error_msg = f'Error creating passkey for user "{username}"!\nerror : {error}'
+        else:
+            error_msg = 'Unexpected error for missing register token!'
 
-    if error_msg:
-        with banner_container:
-            st.error(error_msg, icon=config.ICON_ERROR)
+        logger.error(error_msg)
+        core.display_banner_message(
+            message=error_msg, message_type=core.BannerMessageType.ERROR, container=banner_container
+        )
         return user, False
 
     final_error_msg = ''
     if not db_user:
-        can_save_sign_in_to_db, error_msg = _create_user_in_database(session=db_session, user=user)
+        can_save_sign_in_to_db, error_msg = core.create_user_in_database(
+            session=db_session, user=user
+        )
         if not can_save_sign_in_to_db:
             final_error_msg = (
                 f'Could not save user {user.username} to database! '
@@ -735,7 +726,8 @@ def bitwarden_register_form(
     st.session_state[config.SK_USER] = user
 
     sign_in_failed_error_msg = (
-        f'User {username} was registered, but the sign in attempt with registered passkey failed!'
+        f'User {username} was registered, but the sign in attempt '
+        f'with registered passkey "{credential_nickname}" failed!'
     )
     if user_sign_in is None:
         final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
@@ -754,20 +746,27 @@ def bitwarden_register_form(
         save_user_sign_in_to_db_ok = False
 
     if not can_save_sign_in_to_db:
-        with banner_container:
-            logger.error(final_error_msg)
-            st.error(final_error_msg, icon=config.ICON_ERROR)
+        logger.error(final_error_msg)
+        core.display_banner_message(
+            message=final_error_msg,
+            message_type=core.BannerMessageType.ERROR,
+            container=banner_container,
+        )
 
     elif save_user_sign_in_to_db_ok:
         msg = f'Successfully registered user: {user.username}!'
         logger.info(msg)
-        with banner_container:
-            st.success(msg, icon=config.ICON_SUCCESS)
+        core.display_banner_message(
+            message=msg, message_type=core.BannerMessageType.SUCCESS, container=banner_container
+        )
 
     elif not save_user_sign_in_to_db_ok:
-        with banner_container:
-            logger.warning(final_error_msg)
-            st.warning(final_error_msg, icon=config.ICON_WARNING)
+        logger.warning(final_error_msg)
+        core.display_banner_message(
+            message=final_error_msg,
+            message_type=core.BannerMessageType.WARNING,
+            container=banner_container,
+        )
 
     else:
         pass
@@ -785,6 +784,7 @@ def bitwarden_register_form_existing_user(
     border: bool = True,
     register_button_label: str = 'Register',
     register_button_type: core.ButtonType = 'primary',
+    banner_container: core.BannerContainer | None = None,
     credential_nickname_label: str = 'Credential Nickname',
     credential_nickname_max_length: int | None = 50,
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
@@ -845,6 +845,11 @@ def bitwarden_register_form_existing_user(
     register_button_type : Literal['primary', 'secondary'], default 'primary'
         The styling of the register button. Emulates the `type` parameter of :func:`streamlit.button`.
 
+    banner_container : streamlit_passwordless.BannerContainer or None, default None
+        A container produced by :func:`streamlit.empty`, in which error or success messages about
+        the register user process will be displayed. Useful to make the banner appear at the desired
+        location on a page. If None the banner will be displayed right above the form.
+
     Other Parameters
     ----------------
     credential_nickname_label : str, default 'Credential Nickname'
@@ -894,7 +899,7 @@ def bitwarden_register_form_existing_user(
     """
 
     error_msg = ''
-    banner_container = st.empty()
+    banner_container = st.empty() if banner_container is None else banner_container
     user = st.session_state.get(config.SK_USER) if user is None else user
     username, components_disabled = ('', True) if user is None else (user.username, False)
 
@@ -952,16 +957,16 @@ def bitwarden_register_form_existing_user(
     if disabled or not clicked or user is None:
         return user, False
 
-    if not token and error:
-        error_msg = f'Error creating passkey for user "{username}"!\nerror : {error}'
-        logger.error(error_msg)
-    elif not token:
-        error_msg = 'Unexpected error for missing token!'
-        logger.error(error_msg)
+    if not token:
+        if error:
+            error_msg = f'Error creating passkey for user "{username}"!\nerror : {error}'
+        else:
+            error_msg = 'Unexpected error for missing register token!'
 
-    if error_msg:
-        with banner_container:
-            st.error(error_msg, icon=config.ICON_ERROR)
+        logger.error(error_msg)
+        core.display_banner_message(
+            message=error_msg, message_type=core.BannerMessageType.ERROR, container=banner_container
+        )
         return user, False
 
     # The passkey is still registered even though the sign in may fail!
@@ -990,11 +995,15 @@ def bitwarden_register_form_existing_user(
     if save_user_sign_in_to_db_ok:
         msg = f'Successfully registered passkey "{credential_nickname}" for user "{username}"!'
         logger.info(msg)
-        with banner_container:
-            st.success(msg, icon=config.ICON_SUCCESS)
+        core.display_banner_message(
+            message=msg, message_type=core.BannerMessageType.SUCCESS, container=banner_container
+        )
     else:
-        with banner_container:
-            logger.warning(final_error_msg)
-            st.warning(final_error_msg, icon=config.ICON_WARNING)
+        logger.warning(final_error_msg)
+        core.display_banner_message(
+            message=final_error_msg,
+            message_type=core.BannerMessageType.WARNING,
+            container=banner_container,
+        )
 
     return user, True
