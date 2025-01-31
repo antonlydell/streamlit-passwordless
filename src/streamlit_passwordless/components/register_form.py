@@ -358,6 +358,7 @@ def bitwarden_register_form(
     validate_button_type: core.ButtonType | None = None,
     register_button_type: core.ButtonType = 'primary',
     clear_on_validate: bool = False,
+    banner_container: core.BannerContainer | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -452,6 +453,11 @@ def bitwarden_register_form(
         True if the form fields should be cleared when the validate form button is clicked
         and False otherwise.
 
+    banner_container : streamlit_passwordless.BannerContainer or None, default None
+        A container produced by :func:`streamlit.empty`, in which error or success messages about
+        the register user process will be displayed. Useful to make the banner appear at the desired
+        location on a page. If None the banner will be displayed right above the form.
+
     Other Parameters
     ----------------
     username_label : str, default 'Username'
@@ -543,7 +549,7 @@ def bitwarden_register_form(
 
     user = None
     error_msg = ''
-    banner_container = st.empty()
+    banner_container = st.empty() if banner_container is None else banner_container
     banner_container_mapping = {}
 
     with st.container(border=border):
@@ -684,20 +690,21 @@ def bitwarden_register_form(
         return user, False
 
     if user is None:
-        with banner_container:
-            st.error(error_msg, icon=config.ICON_ERROR)
+        core.display_banner_message(
+            message=error_msg, message_type=core.BannerMessageType.ERROR, container=banner_container
+        )
         return user, False
 
-    if not token and error:
-        error_msg = f'Error creating passkey for user ({username})!\nerror : {error}'
-        logger.error(error_msg)
-    elif not token:
-        error_msg = 'Unexpected error for missing token!'
-        logger.error(error_msg)
+    if not token:
+        if error:
+            error_msg = f'Error creating passkey for user "{username}"!\nerror : {error}'
+        else:
+            error_msg = 'Unexpected error for missing register token!'
 
-    if error_msg:
-        with banner_container:
-            st.error(error_msg, icon=config.ICON_ERROR)
+        logger.error(error_msg)
+        core.display_banner_message(
+            message=error_msg, message_type=core.BannerMessageType.ERROR, container=banner_container
+        )
         return user, False
 
     final_error_msg = ''
@@ -719,7 +726,8 @@ def bitwarden_register_form(
     st.session_state[config.SK_USER] = user
 
     sign_in_failed_error_msg = (
-        f'User {username} was registered, but the sign in attempt with registered passkey failed!'
+        f'User {username} was registered, but the sign in attempt '
+        f'with registered passkey "{credential_nickname}" failed!'
     )
     if user_sign_in is None:
         final_error_msg = f'{final_error_msg}\n{sign_in_failed_error_msg}'
@@ -738,20 +746,27 @@ def bitwarden_register_form(
         save_user_sign_in_to_db_ok = False
 
     if not can_save_sign_in_to_db:
-        with banner_container:
-            logger.error(final_error_msg)
-            st.error(final_error_msg, icon=config.ICON_ERROR)
+        logger.error(final_error_msg)
+        core.display_banner_message(
+            message=final_error_msg,
+            message_type=core.BannerMessageType.ERROR,
+            container=banner_container,
+        )
 
     elif save_user_sign_in_to_db_ok:
         msg = f'Successfully registered user: {user.username}!'
         logger.info(msg)
-        with banner_container:
-            st.success(msg, icon=config.ICON_SUCCESS)
+        core.display_banner_message(
+            message=msg, message_type=core.BannerMessageType.SUCCESS, container=banner_container
+        )
 
     elif not save_user_sign_in_to_db_ok:
-        with banner_container:
-            logger.warning(final_error_msg)
-            st.warning(final_error_msg, icon=config.ICON_WARNING)
+        logger.warning(final_error_msg)
+        core.display_banner_message(
+            message=final_error_msg,
+            message_type=core.BannerMessageType.WARNING,
+            container=banner_container,
+        )
 
     else:
         pass
@@ -769,6 +784,7 @@ def bitwarden_register_form_existing_user(
     border: bool = True,
     register_button_label: str = 'Register',
     register_button_type: core.ButtonType = 'primary',
+    banner_container: core.BannerContainer | None = None,
     credential_nickname_label: str = 'Credential Nickname',
     credential_nickname_max_length: int | None = 50,
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
@@ -829,6 +845,11 @@ def bitwarden_register_form_existing_user(
     register_button_type : Literal['primary', 'secondary'], default 'primary'
         The styling of the register button. Emulates the `type` parameter of :func:`streamlit.button`.
 
+    banner_container : streamlit_passwordless.BannerContainer or None, default None
+        A container produced by :func:`streamlit.empty`, in which error or success messages about
+        the register user process will be displayed. Useful to make the banner appear at the desired
+        location on a page. If None the banner will be displayed right above the form.
+
     Other Parameters
     ----------------
     credential_nickname_label : str, default 'Credential Nickname'
@@ -878,7 +899,7 @@ def bitwarden_register_form_existing_user(
     """
 
     error_msg = ''
-    banner_container = st.empty()
+    banner_container = st.empty() if banner_container is None else banner_container
     user = st.session_state.get(config.SK_USER) if user is None else user
     username, components_disabled = ('', True) if user is None else (user.username, False)
 
@@ -936,16 +957,16 @@ def bitwarden_register_form_existing_user(
     if disabled or not clicked or user is None:
         return user, False
 
-    if not token and error:
-        error_msg = f'Error creating passkey for user "{username}"!\nerror : {error}'
-        logger.error(error_msg)
-    elif not token:
-        error_msg = 'Unexpected error for missing token!'
-        logger.error(error_msg)
+    if not token:
+        if error:
+            error_msg = f'Error creating passkey for user "{username}"!\nerror : {error}'
+        else:
+            error_msg = 'Unexpected error for missing register token!'
 
-    if error_msg:
-        with banner_container:
-            st.error(error_msg, icon=config.ICON_ERROR)
+        logger.error(error_msg)
+        core.display_banner_message(
+            message=error_msg, message_type=core.BannerMessageType.ERROR, container=banner_container
+        )
         return user, False
 
     # The passkey is still registered even though the sign in may fail!
@@ -974,11 +995,15 @@ def bitwarden_register_form_existing_user(
     if save_user_sign_in_to_db_ok:
         msg = f'Successfully registered passkey "{credential_nickname}" for user "{username}"!'
         logger.info(msg)
-        with banner_container:
-            st.success(msg, icon=config.ICON_SUCCESS)
+        core.display_banner_message(
+            message=msg, message_type=core.BannerMessageType.SUCCESS, container=banner_container
+        )
     else:
-        with banner_container:
-            logger.warning(final_error_msg)
-            st.warning(final_error_msg, icon=config.ICON_WARNING)
+        logger.warning(final_error_msg)
+        core.display_banner_message(
+            message=final_error_msg,
+            message_type=core.BannerMessageType.WARNING,
+            container=banner_container,
+        )
 
     return user, True
