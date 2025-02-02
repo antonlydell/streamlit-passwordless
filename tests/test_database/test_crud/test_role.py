@@ -3,14 +3,13 @@ r"""Unit tests for the crud operations on the Role model."""
 # Standard library
 from datetime import datetime
 from itertools import zip_longest
-from typing import Generator, TypeAlias
 from unittest.mock import Mock
 
 # Third party
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -23,52 +22,9 @@ from streamlit_passwordless.database.crud.role import (
     get_role_by_name,
     get_role_by_role_id,
 )
-from streamlit_passwordless.database.models import Base, Role
+from streamlit_passwordless.database.models import Role
 from streamlit_passwordless.database.schemas.role import RoleCreate
-
-SQLiteDbWithRolesType: TypeAlias = tuple[Session, sessionmaker, tuple[Role, Role, Role, Role]]
-
-# =============================================================================================
-# Fixtures
-# =============================================================================================
-
-
-@pytest.fixture(scope='module')
-def sqlite_in_memory_database_with_roles() -> Generator[SQLiteDbWithRolesType, None, None]:
-    r"""A SQLite database with roles defined.
-
-    The database has all tables created and foreign key constraints enabled.
-
-    Yields
-    ------
-    session : sqlalchemy.orm.Session
-        An open session to the database.
-
-    session_factory : sqlalchemy.orm.sessionmaker
-        The session factory that can produce new database sessions.
-
-    roles : tuple[Role, Role, Role, Role]
-        The roles that exist in the database.
-    """
-
-    engine = create_engine(url='sqlite://', echo=True)
-    session_factory = sessionmaker(bind=engine)
-    Base.metadata.create_all(bind=engine)
-
-    roles = (
-        Role(role_id=1, name='Viewer', rank=1, description='A viewer.'),
-        Role(role_id=2, name='User', rank=2),
-        Role(role_id=3, name='SuperUser', rank=3),
-        Role(role_id=4, name='Admin', rank=4, description='An admin.'),
-    )
-
-    with session_factory() as session:
-        session.execute(text('PRAGMA foreign_keys=ON'))
-        session.add_all(roles)
-        session.commit()
-
-        yield session, session_factory, roles
-
+from tests.config import DbWithRoles
 
 # =============================================================================================
 # Tests
@@ -78,9 +34,7 @@ def sqlite_in_memory_database_with_roles() -> Generator[SQLiteDbWithRolesType, N
 class TestGetAllRoles:
     r"""Tests for the function `get_all_roles`."""
 
-    def test_get_all_roles(
-        self, sqlite_in_memory_database_with_roles: SQLiteDbWithRolesType
-    ) -> None:
+    def test_get_all_roles(self, sqlite_in_memory_database_with_roles: DbWithRoles) -> None:
         r"""Test to get all roles from the database."""
 
         # Setup
@@ -106,7 +60,7 @@ class TestGetAllRoles:
         # ===========================================================
 
     def test_get_all_roles_as_dataframe(
-        self, sqlite_in_memory_database_with_roles: SQLiteDbWithRolesType
+        self, sqlite_in_memory_database_with_roles: DbWithRoles
     ) -> None:
         r"""Test to get all roles from the database as a `pandas.DataFrame`."""
 
