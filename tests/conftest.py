@@ -211,11 +211,11 @@ def user_1_email_primary(user_1_user_id: str) -> tuple[models.Email, db_models.E
     """
 
     data = {
-        'email_id': 1,
+        'email_id': None,
         'user_id': user_1_user_id,
         'email': 'rev@ax7.com',
         'rank': 1,
-        'verified_at': datetime(1999, 1, 1, 1, 1, 1, tzinfo=TZ_UTC),
+        'verified_at': datetime(1999, 1, 1, 1, 1, 1),
         'disabled': False,
         'disabled_timestamp': None,
     }
@@ -243,13 +243,13 @@ def user_1_email_secondary(user_1_user_id: str) -> tuple[models.Email, db_models
     """
 
     data = {
-        'email_id': 2,
+        'email_id': None,
         'user_id': user_1_user_id,
         'email': 'the.rev@ax7.com',
         'rank': 2,
         'verified_at': None,
         'disabled': True,
-        'disabled_timestamp': datetime(2007, 10, 30, 12, 0, 0, tzinfo=TZ_UTC),
+        'disabled_timestamp': datetime(2007, 10, 30, 12, 0, 0),
     }
 
     model = models.Email.model_validate(data)
