@@ -393,7 +393,7 @@ class Email(Base):
     )
 
     __tablename__ = 'stp_email'
-    __table_args__ = (UniqueConstraint('email', 'rank', name=f'{__tablename__}_email_rank_iu'),)
+    __table_args__ = (UniqueConstraint('user_id', 'rank', name=f'{__tablename__}_user_id_rank_iu'),)
 
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
