@@ -341,7 +341,7 @@ class User(Base):
         passive_deletes=True,
     )
     emails: Mapped[list['Email']] = relationship(
-        back_populates='user', cascade='delete, delete-orphan'
+        back_populates='user', cascade='delete, delete-orphan', order_by='Email.rank'
     )
     sign_ins: Mapped[list['UserSignIn']] = relationship(back_populates='user')
 
