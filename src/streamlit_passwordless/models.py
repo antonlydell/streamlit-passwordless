@@ -197,7 +197,7 @@ class Email(BaseModel):
     """
 
     email_id: int | None = None
-    user_id: str
+    user_id: str = ''
     email: str
     rank: int
     verified_at: datetime | None = None
