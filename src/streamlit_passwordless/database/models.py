@@ -167,6 +167,7 @@ class Role(Base):
         r"""Create the VIEWER role."""
 
         return cls(
+            role_id=1,
             name=UserRoleName.VIEWER,
             rank=1,
             description='A user that can only view data within an application.',
@@ -177,6 +178,7 @@ class Role(Base):
         r"""Create the USER role, which is the default for a new user."""
 
         return cls(
+            role_id=2,
             name=UserRoleName.USER,
             rank=2,
             description=(
@@ -189,6 +191,7 @@ class Role(Base):
         r"""Create the SUPERUSER role."""
 
         return cls(
+            role_id=3,
             name=UserRoleName.SUPERUSER,
             rank=3,
             description=(
@@ -202,6 +205,7 @@ class Role(Base):
         r"""Create the ADMIN role."""
 
         return cls(
+            role_id=4,
             name=UserRoleName.ADMIN,
             rank=4,
             description=(

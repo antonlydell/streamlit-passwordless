@@ -42,7 +42,7 @@ def viewer_role() -> tuple[models.Role, db_models.Role, ModelData]:
     """
 
     data = {
-        'role_id': None,
+        'role_id': 1,
         'name': db_models.UserRoleName.VIEWER,
         'rank': 1,
         'description': 'A user that can only view data within an application.',
@@ -70,7 +70,7 @@ def user_role() -> tuple[models.Role, db_models.Role, ModelData]:
     """
 
     data = {
-        'role_id': None,
+        'role_id': 2,
         'name': db_models.UserRoleName.USER,
         'rank': 2,
         'description': 'The standard user with normal privileges. The default role for a new user.',
@@ -98,7 +98,7 @@ def superuser_role() -> tuple[models.Role, db_models.Role, ModelData]:
     """
 
     data = {
-        'role_id': None,
+        'role_id': 3,
         'name': db_models.UserRoleName.SUPERUSER,
         'rank': 3,
         'description': (
@@ -129,7 +129,7 @@ def admin_role() -> tuple[models.Role, db_models.Role, ModelData]:
     """
 
     data = {
-        'role_id': None,
+        'role_id': 4,
         'name': db_models.UserRoleName.ADMIN,
         'rank': 4,
         'description': (
