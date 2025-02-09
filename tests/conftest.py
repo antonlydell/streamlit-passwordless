@@ -15,9 +15,10 @@ from sqlalchemy.orm import Session, sessionmaker
 # Local
 import streamlit_passwordless.bitwarden_passwordless.backend
 from streamlit_passwordless import common, models
+from streamlit_passwordless.database import SessionFactory
 from streamlit_passwordless.database import models as db_models
 
-from .config import TZ_UTC, ModelData
+from .config import TZ_UTC, DbWithRoles, ModelData
 
 # =============================================================================================
 # Models
@@ -41,7 +42,7 @@ def viewer_role() -> tuple[models.Role, db_models.Role, ModelData]:
     """
 
     data = {
-        'role_id': None,
+        'role_id': 1,
         'name': db_models.UserRoleName.VIEWER,
         'rank': 1,
         'description': 'A user that can only view data within an application.',
@@ -69,7 +70,7 @@ def user_role() -> tuple[models.Role, db_models.Role, ModelData]:
     """
 
     data = {
-        'role_id': None,
+        'role_id': 2,
         'name': db_models.UserRoleName.USER,
         'rank': 2,
         'description': 'The standard user with normal privileges. The default role for a new user.',
@@ -97,7 +98,7 @@ def superuser_role() -> tuple[models.Role, db_models.Role, ModelData]:
     """
 
     data = {
-        'role_id': None,
+        'role_id': 3,
         'name': db_models.UserRoleName.SUPERUSER,
         'rank': 3,
         'description': (
@@ -128,7 +129,7 @@ def admin_role() -> tuple[models.Role, db_models.Role, ModelData]:
     """
 
     data = {
-        'role_id': None,
+        'role_id': 4,
         'name': db_models.UserRoleName.ADMIN,
         'rank': 4,
         'description': (
@@ -210,11 +211,11 @@ def user_1_email_primary(user_1_user_id: str) -> tuple[models.Email, db_models.E
     """
 
     data = {
-        'email_id': 1,
+        'email_id': None,
         'user_id': user_1_user_id,
         'email': 'rev@ax7.com',
         'rank': 1,
-        'verified_at': datetime(1999, 1, 1, 1, 1, 1, tzinfo=TZ_UTC),
+        'verified_at': datetime(1999, 1, 1, 1, 1, 1),
         'disabled': False,
         'disabled_timestamp': None,
     }
@@ -242,13 +243,13 @@ def user_1_email_secondary(user_1_user_id: str) -> tuple[models.Email, db_models
     """
 
     data = {
-        'email_id': 2,
+        'email_id': None,
         'user_id': user_1_user_id,
         'email': 'the.rev@ax7.com',
         'rank': 2,
         'verified_at': None,
         'disabled': True,
-        'disabled_timestamp': datetime(2007, 10, 30, 12, 0, 0, tzinfo=TZ_UTC),
+        'disabled_timestamp': datetime(2007, 10, 30, 12, 0, 0),
     }
 
     model = models.Email.model_validate(data)
@@ -538,7 +539,7 @@ def mocked_get_current_datetime(monkeypatch: pytest.MonkeyPatch) -> datetime:
 
 
 @pytest.fixture()
-def empty_sqlite_in_memory_database() -> Generator[tuple[Session, sessionmaker], None, None]:
+def empty_sqlite_in_memory_database() -> Generator[tuple[Session, SessionFactory], None, None]:
     r"""An empty in-memory SQLite database.
 
     The database has all tables created and foreign key constraints enabled.
@@ -560,3 +561,38 @@ def empty_sqlite_in_memory_database() -> Generator[tuple[Session, sessionmaker],
         session.execute(text('PRAGMA foreign_keys=ON'))
         session.commit()
         yield session, session_factory
+
+
+@pytest.fixture()
+def sqlite_in_memory_database_with_roles(
+    empty_sqlite_in_memory_database: tuple[Session, SessionFactory]
+) -> Generator[DbWithRoles, None, None]:
+    r"""A SQLite database with roles defined.
+
+    The database has all tables created and foreign key constraints enabled.
+
+    Yields
+    ------
+    session : sqlalchemy.orm.Session
+        An open session to the database.
+
+    session_factory : sqlalchemy.orm.sessionmaker
+        The session factory that can produce new database sessions.
+
+    roles : tuple[Role, Role, Role, Role]
+        The roles that exist in the database.
+    """
+
+    session, session_factory = empty_sqlite_in_memory_database
+
+    roles = (
+        db_models.Role(role_id=1, name='Viewer', rank=1, description='A viewer.'),
+        db_models.Role(role_id=2, name='User', rank=2),
+        db_models.Role(role_id=3, name='SuperUser', rank=3),
+        db_models.Role(role_id=4, name='Admin', rank=4, description='An admin.'),
+    )
+
+    session.add_all(roles)
+    session.commit()
+
+    yield session, session_factory, roles

@@ -1,6 +1,7 @@
 r"""Database operations on the user table."""
 
 # Standard library
+import logging
 from typing import Sequence
 
 # Third party
@@ -10,11 +11,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 # Local
 from streamlit_passwordless import exceptions
+from streamlit_passwordless.models import User
 
 from .. import models
 from ..core import Session
 from ..core import commit as db_commit
-from ..schemas import user as schemas
+
+logger = logging.getLogger(__name__)
 
 
 def get_all_users(
@@ -141,7 +144,7 @@ def get_user_by_user_id(
         ) from None
 
 
-def create_user(session: Session, user: schemas.UserCreate, commit: bool = False) -> models.User:
+def create_user(session: Session, user: User, commit: bool = False) -> models.User:
     r"""Create a new user in the database.
 
     Parameters
@@ -149,8 +152,8 @@ def create_user(session: Session, user: schemas.UserCreate, commit: bool = False
     session : Session
         An active database session.
 
-    user : schemas.UserCreate
-        The user to crete.
+    user : streamlit_passwordless.User
+        The user to create.
 
     commit : bool, default False
         True if the added user should be committed after being added to the session and False
@@ -164,20 +167,44 @@ def create_user(session: Session, user: schemas.UserCreate, commit: bool = False
 
     Raises
     ------
-    streamlit_passwordless.DatabaseError
-        If an error occurs while saving the user to the database.
-
-    streamlit_passwordless.DatabaseStatementError
-        If there is an error with the executed SQL statement.
+    streamlit_passwordless.DatabaseCreateUserError
+        If an error occurs while saving the user to the database or if the
+        role of the user does not exist in the database.
     """
 
-    db_user = models.User(**user.model_dump())
+    if (role_id := user.role.role_id) is None:
+        error_msg = (
+            f'Cannot create user "{user.username}" because user.role.role_id is not specified!'
+        )
+        logger.error(error_msg)
+        raise exceptions.DatabaseCreateUserError(error_msg)
+
+    db_user = models.User(
+        user_id=user.user_id,
+        username=user.username,
+        ad_username=user.ad_username,
+        displayname=user.displayname,
+        role_id=role_id,
+        verified_at=user.verified_at,
+        disabled=user.disabled,
+        disabled_timestamp=user.disabled_timestamp,
+    )
+
+    if emails := user.emails:
+        db_emails = [models.Email(**email.model_dump()) for email in emails]
+        db_user.emails.extend(db_emails)
+        session.add_all(db_emails)
+
     session.add(db_user)
 
     if commit:
         error_msg = (
-            f'Unable to save user {user.username} to database! Check the logs for more details.'
+            f'Unable to save user "{user.username}" to database! Check the logs for more details.'
         )
-        db_commit(session=session, error_msg=error_msg)
+        try:
+            db_commit(session=session, error_msg=error_msg)
+        except exceptions.DatabaseError as e:
+            logger.error(e.detailed_message)
+            raise exceptions.DatabaseCreateUserError(error_msg, e=e) from None
 
     return db_user

@@ -167,6 +167,7 @@ class Role(Base):
         r"""Create the VIEWER role."""
 
         return cls(
+            role_id=1,
             name=UserRoleName.VIEWER,
             rank=1,
             description='A user that can only view data within an application.',
@@ -177,6 +178,7 @@ class Role(Base):
         r"""Create the USER role, which is the default for a new user."""
 
         return cls(
+            role_id=2,
             name=UserRoleName.USER,
             rank=2,
             description=(
@@ -189,6 +191,7 @@ class Role(Base):
         r"""Create the SUPERUSER role."""
 
         return cls(
+            role_id=3,
             name=UserRoleName.SUPERUSER,
             rank=3,
             description=(
@@ -202,6 +205,7 @@ class Role(Base):
         r"""Create the ADMIN role."""
 
         return cls(
+            role_id=4,
             name=UserRoleName.ADMIN,
             rank=4,
             description=(
@@ -341,7 +345,7 @@ class User(Base):
         passive_deletes=True,
     )
     emails: Mapped[list['Email']] = relationship(
-        back_populates='user', cascade='delete, delete-orphan'
+        back_populates='user', cascade='delete, delete-orphan', order_by='Email.rank'
     )
     sign_ins: Mapped[list['UserSignIn']] = relationship(back_populates='user')
 
@@ -393,7 +397,7 @@ class Email(Base):
     )
 
     __tablename__ = 'stp_email'
-    __table_args__ = (UniqueConstraint('email', 'rank', name=f'{__tablename__}_email_rank_iu'),)
+    __table_args__ = (UniqueConstraint('user_id', 'rank', name=f'{__tablename__}_user_id_rank_iu'),)
 
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))

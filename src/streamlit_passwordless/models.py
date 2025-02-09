@@ -197,7 +197,7 @@ class Email(BaseModel):
     """
 
     email_id: int | None = None
-    user_id: str
+    user_id: str = ''
     email: str
     rank: int
     verified_at: datetime | None = None
@@ -268,9 +268,9 @@ class User(BaseModel):
 
     Parameters
     ----------
-    user_id : str or None, default None
+    user_id : str, default ''
         The unique ID of the user which serves as the primary key in the database.
-        If None it will be generated as a uuid.
+        If empty string (the default) it will be generated as a uuid.
 
     username : str
         The username of the user. It must be unique across all users.
@@ -312,7 +312,7 @@ class User(BaseModel):
         aliases if tuple is not used.
     """
 
-    user_id: str | None = Field(default=None, validate_default=True)
+    user_id: str = Field(default='', validate_default=True)
     username: str
     ad_username: str | None = None
     displayname: str | None = None
@@ -329,10 +329,10 @@ class User(BaseModel):
         return hash(self.user_id)
 
     @field_validator('user_id')
-    def generate_user_id(cls, v: str | None) -> str:
+    def generate_user_id(cls, v: str) -> str:
         r"""Generate a user ID if not supplied."""
 
-        return str(uuid.uuid4()) if v is None else v
+        return str(uuid.uuid4()) if not v else v
 
     @field_validator('aliases')
     def process_aliases(cls, aliases: tuple[str, ...] | str | None) -> tuple[str, ...] | None:
