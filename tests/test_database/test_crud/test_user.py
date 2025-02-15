@@ -11,8 +11,8 @@ from sqlalchemy.orm import selectinload
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions
-from streamlit_passwordless.models import Email, Role, User
-from tests.config import TZ_UTC, DbWithRoles, ModelData
+from streamlit_passwordless.models import CustomRole, Email, Role, User
+from tests.config import TZ_UTC, DbWithCustomRoles, DbWithRoles, ModelData
 
 # =============================================================================================
 # Tests
@@ -364,6 +364,168 @@ class TestCreateUser:
             assert (
                 before_create_user <= getattr(db_email, attr) <= after_create_user
             ), f'db_email.{attr} is incorrect!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_create_user_with_two_custom_roles(
+        self,
+        sqlite_in_memory_database_with_custom_roles: DbWithCustomRoles,
+        drummer_custom_role: tuple[CustomRole, db.models.CustomRole, ModelData],
+        guitarist_custom_role: tuple[CustomRole, db.models.CustomRole, ModelData],
+    ) -> None:
+        r"""Test to create a user with two custom roles.
+
+        Custom roles of the user that have missing values for the `role_id` parameter
+        should be ignored when linking the custom roles to the user in the database.
+        """
+
+        # Setup
+        # ===========================================================
+        session, session_factory, _ = sqlite_in_memory_database_with_custom_roles
+        custom_role_1, _, _ = drummer_custom_role
+        custom_role_2, _, _ = guitarist_custom_role
+        custom_roles_exp = {custom_role_1.name: custom_role_1, custom_role_2.name: custom_role_2}
+        custom_roles = custom_roles_exp | {'role_id_none': CustomRole(name='test', rank=0)}
+        nr_exp_custom_roles = len(custom_roles_exp)
+        role_id = 1
+
+        user_to_create = User(
+            username='username',
+            role=Role(role_id=role_id, name='', rank=0),
+            custom_roles=custom_roles,
+        )
+        query = (
+            select(db.models.User)
+            .options(selectinload(db.models.User.custom_roles))
+            .where(db.models.User.user_id == user_to_create.user_id)
+        )
+
+        # Exercise
+        # ===========================================================
+        db.create_user(session=session, user=user_to_create, commit=True)
+
+        # Verify
+        # ===========================================================
+        with session_factory() as new_session:
+            db_user = new_session.scalars(query).one()
+
+        attributes_to_verify = (
+            ('user_id', user_to_create.user_id),
+            ('username', user_to_create.username),
+            ('ad_username', user_to_create.ad_username),
+            ('displayname', user_to_create.displayname),
+            ('role_id', role_id),
+            ('verified_at', user_to_create.verified_at),
+            ('disabled', user_to_create.disabled),
+            ('disabled_timestamp', user_to_create.disabled_timestamp),
+        )
+        for attr, exp_value in attributes_to_verify:
+            assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
+
+        assert isinstance(db_user.modified_at, datetime), 'modified_at is not a datetime object!'
+        assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
+
+        assert (
+            len(db_user.custom_roles) == nr_exp_custom_roles
+        ), f'User does not have {nr_exp_custom_roles} custom roles in db!'
+
+        for name, db_custom_role in db_user.custom_roles.items():
+            custom_role_exp = custom_roles_exp.get(name)
+
+            assert (
+                custom_role_exp is not None
+            ), f'{db_custom_role.name} not among the expected custom roles!'
+
+            custom_role_attributes_to_verify = (
+                ('role_id', custom_role_exp.role_id),
+                ('name', custom_role_exp.name),
+                ('rank', custom_role_exp.rank),
+                ('description', custom_role_exp.description),
+            )
+            for attr, exp_value in custom_role_attributes_to_verify:
+                assert (
+                    getattr(db_custom_role, attr) == exp_value
+                ), f'{db_custom_role.name} : db_custom_role.{attr} is incorrect!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_create_user_with_custom_role_where_role_id_is_none(
+        self, sqlite_in_memory_database_with_custom_roles: DbWithCustomRoles
+    ) -> None:
+        r"""Test to create a user with a custom role where the role_id is None.
+
+        The created user should have no custom roles in the database.
+        """
+
+        # Setup
+        # ===========================================================
+        session, session_factory, _ = sqlite_in_memory_database_with_custom_roles
+
+        user_to_create = User(
+            username='username',
+            role=Role(role_id=1, name='', rank=0),
+            custom_roles={'role_id_none': CustomRole(name='test', rank=0)},
+        )
+        query = (
+            select(db.models.User)
+            .options(selectinload(db.models.User.custom_roles))
+            .where(db.models.User.user_id == user_to_create.user_id)
+        )
+
+        # Exercise
+        # ===========================================================
+        db.create_user(session=session, user=user_to_create, commit=True)
+
+        # Verify
+        # ===========================================================
+        with session_factory() as new_session:
+            db_user = new_session.scalars(query).one()
+
+        assert not db_user.custom_roles, f'User {user_to_create.username} has custom roles!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_create_user_with_custom_roles_and_custom_roles_missing_in_db(
+        self,
+        sqlite_in_memory_database_with_roles: DbWithRoles,
+        drummer_custom_role: tuple[CustomRole, db.models.CustomRole, ModelData],
+        guitarist_custom_role: tuple[CustomRole, db.models.CustomRole, ModelData],
+    ) -> None:
+        r"""Test to create a user with custom roles.
+
+        The custom roles do not exist in the database and the
+        created user should have no custom roles in the database.
+        """
+
+        # Setup
+        # ===========================================================
+        session, session_factory, _ = sqlite_in_memory_database_with_roles
+        custom_role_1, _, _ = drummer_custom_role
+        custom_role_2, _, _ = guitarist_custom_role
+        custom_roles = {custom_role_1.name: custom_role_1, custom_role_2.name: custom_role_2}
+
+        user_to_create = User(
+            username='username', role=Role(role_id=1, name='', rank=0), custom_roles=custom_roles
+        )
+        query = (
+            select(db.models.User)
+            .options(selectinload(db.models.User.custom_roles))
+            .where(db.models.User.user_id == user_to_create.user_id)
+        )
+
+        # Exercise
+        # ===========================================================
+        db.create_user(session=session, user=user_to_create, commit=True)
+
+        # Verify
+        # ===========================================================
+        with session_factory() as new_session:
+            db_user = new_session.scalars(query).one()
+
+        assert not db_user.custom_roles, f'User {user_to_create.username} has custom roles!'
 
         # Clean up - None
         # ===========================================================
