@@ -338,7 +338,7 @@ class User(Base):
     disabled: Mapped[bool] = mapped_column(default=False)
     disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     role: Mapped[Role] = relationship(back_populates='users')
-    custom_roles: Mapped[dict[str, CustomRole] | None] = relationship(
+    custom_roles: Mapped[dict[str, CustomRole]] = relationship(
         secondary='stp_user_custom_role_link',
         collection_class=attribute_keyed_dict('name'),
         back_populates='users',

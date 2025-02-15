@@ -11,6 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 # Local
 from streamlit_passwordless import exceptions
+from streamlit_passwordless.database.crud.custom_role import get_custom_roles
 from streamlit_passwordless.models import User
 
 from .. import models
@@ -194,6 +195,11 @@ def create_user(session: Session, user: User, commit: bool = False) -> models.Us
         db_emails = [models.Email(**email.model_dump()) for email in emails]
         db_user.emails.extend(db_emails)
         session.add_all(db_emails)
+
+    if custom_roles := user.custom_roles:
+        role_ids = {role_id for cr in custom_roles.values() if (role_id := cr.role_id) is not None}
+        db_custom_roles = get_custom_roles(session=session, role_ids=role_ids)
+        db_user.custom_roles = {model.name: model for model in db_custom_roles}
 
     session.add(db_user)
 

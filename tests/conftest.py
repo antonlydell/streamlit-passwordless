@@ -18,7 +18,7 @@ from streamlit_passwordless import common, models
 from streamlit_passwordless.database import SessionFactory
 from streamlit_passwordless.database import models as db_models
 
-from .config import TZ_UTC, DbWithRoles, ModelData
+from .config import TZ_UTC, DbWithCustomRoles, DbWithRoles, ModelData
 
 # =============================================================================================
 # Models
@@ -150,13 +150,13 @@ def drummer_custom_role() -> tuple[models.CustomRole, db_models.CustomRole, Mode
 
     Returns
     -------
-    model : streamlit_passwordless.models.Role
+    model : streamlit_passwordless.CustomRole
         The model of the drummer role.
 
-    db_model : streamlit_passwordless.database.models.Role
+    db_model : streamlit_passwordless.db.models.CustomRole
         The database model of the drummer role.
 
-    data : ModelData
+    data : dict[str, Any]
         The input data that created `model`.
     """
 
@@ -165,6 +165,34 @@ def drummer_custom_role() -> tuple[models.CustomRole, db_models.CustomRole, Mode
         'name': 'Drummer',
         'rank': 4,
         'description': 'An epic drummer worthy of playing Beast and the Harlot super drum solo.',
+    }
+    model = models.CustomRole.model_validate(data)
+    db_model = db_models.CustomRole(**data)
+
+    return model, db_model, data
+
+
+@pytest.fixture(scope='session')
+def guitarist_custom_role() -> tuple[models.CustomRole, db_models.CustomRole, ModelData]:
+    r"""The role of a user that is a guitarist.
+
+    Returns
+    -------
+    model : streamlit_passwordless.CustomRole
+        The model of the guitarist role.
+
+    db_model : streamlit_passwordless.db.models.CustomRole
+        The database model of the guitarist role.
+
+    data : dict[str, Any]
+        The input data that created `model`.
+    """
+
+    data = {
+        'role_id': 2,
+        'name': 'Guitarist',
+        'rank': 4,
+        'description': 'An epic guitarist worthy of playing the legendary M.I.A solo.',
     }
     model = models.CustomRole.model_validate(data)
     db_model = db_models.CustomRole(**data)
@@ -596,3 +624,37 @@ def sqlite_in_memory_database_with_roles(
     session.commit()
 
     yield session, session_factory, roles
+
+
+@pytest.fixture()
+def sqlite_in_memory_database_with_custom_roles(
+    sqlite_in_memory_database_with_roles: DbWithRoles,
+    drummer_custom_role: tuple[models.CustomRole, db_models.CustomRole, ModelData],
+    guitarist_custom_role: tuple[models.CustomRole, db_models.CustomRole, ModelData],
+) -> Generator[DbWithCustomRoles, None, None]:
+    r"""A SQLite database with roles and custom roles defined.
+
+    The database has all tables created and foreign key constraints enabled.
+
+    Yields
+    ------
+    session : sqlalchemy.orm.Session
+        An open session to the database.
+
+    session_factory : sqlalchemy.orm.sessionmaker
+        The session factory that can produce new database sessions.
+
+    roles : tuple[streamlit_passwordless.db.models.CustomRole, streamlit_passwordless.db.models.CustomRole]
+        The custom roles that exist in the database.
+    """
+
+    session, session_factory, _ = sqlite_in_memory_database_with_roles
+
+    _, _, drummer_data = drummer_custom_role
+    _, _, guitarist_data = guitarist_custom_role
+    custom_roles = (db_models.CustomRole(**drummer_data), db_models.CustomRole(**guitarist_data))
+
+    session.add_all(custom_roles)
+    session.commit()
+
+    yield session, session_factory, custom_roles
