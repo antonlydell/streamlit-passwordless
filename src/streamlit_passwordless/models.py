@@ -296,7 +296,7 @@ class User(BaseModel):
         The role of the user. The role is used for check if the user is authorized
         to access certain pages within an application.
 
-    custom_roles : dict[str, CustomRole] or None, default None
+    custom_roles : dict[str, CustomRole], default {}
         The custom roles of the user. The role name is mapped to the :class:`CustomRole` model.
         A user may have none or many custom roles.
 
@@ -320,7 +320,7 @@ class User(BaseModel):
     disabled: bool = False
     disabled_timestamp: datetime | None = None
     role: Role = UserRole
-    custom_roles: dict[str, CustomRole] | None = None
+    custom_roles: dict[str, CustomRole] = Field(default_factory=dict)
     emails: list[Email] | None = None
     sign_in: UserSignIn | None = None
     aliases: tuple[str, ...] | str | None = Field(default=None, validate_default=True)

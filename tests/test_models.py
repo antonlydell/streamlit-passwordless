@@ -631,7 +631,7 @@ class TestUser:
             'disabled': False,
             'disabled_timestamp': None,
             'role': role_data,
-            'custom_roles': None,
+            'custom_roles': {},
             'emails': None,
             'sign_in': None,
             'aliases': None,
