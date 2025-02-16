@@ -10,3 +10,6 @@ exclude =
     temp,
     # Built distributions of the package.
     dist
+extend-ignore =
+    # Line too long
+    E501
