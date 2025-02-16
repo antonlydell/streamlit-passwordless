@@ -4,6 +4,7 @@ r"""The database functionality of streamlit-passwordless."""
 from . import models
 from .cache import create_session_factory, init
 from .core import URL, Session, SessionFactory, commit, create_db_url
+from .crud.custom_role import create_custom_role, get_all_custom_roles, get_custom_roles
 from .crud.role import (
     create_default_roles,
     create_role,
@@ -29,6 +30,10 @@ __all__ = [
     'SessionFactory',
     'commit',
     'create_db_url',
+    # custom_role
+    'create_custom_role',
+    'get_all_custom_roles',
+    'get_custom_roles',
     # role
     'create_default_roles',
     'create_role',
