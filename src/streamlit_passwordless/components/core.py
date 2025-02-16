@@ -4,7 +4,7 @@ r"""Helper functions and core components that can be used by other components.""
 import logging
 from enum import StrEnum
 from functools import partial
-from typing import Literal, TypeAlias
+from typing import Literal, Sequence, TypeAlias
 
 # Third party
 import streamlit as st
@@ -197,7 +197,11 @@ def get_user_from_database(
     return user, error_msg
 
 
-def create_user_in_database(session: db.Session, user: models.User) -> tuple[bool, str]:
+def create_user_in_database(
+    session: db.Session,
+    user: models.User,
+    custom_roles: Sequence[db.models.CustomRole] | None = None,
+) -> tuple[bool, str]:
     r"""Create a new user in the database.
 
     Parameters
@@ -207,6 +211,11 @@ def create_user_in_database(session: db.Session, user: models.User) -> tuple[boo
 
     user : models.User
         The user to save to the database.
+
+    custom_roles : Sequence[streamlit_passwordless.db.models.CustomRole] or None, default None
+        The custom roles from the active database `session` to associate with the user.
+        If provided these roles will take precedence over the custom roles defined on
+        `user` and avoids a database lookup since the custom roles already exist in the `session`.
 
     Returns
     -------
@@ -219,7 +228,7 @@ def create_user_in_database(session: db.Session, user: models.User) -> tuple[boo
     """
 
     try:
-        db.create_user(session=session, user=user, commit=True)
+        db.create_user(session=session, user=user, custom_roles=custom_roles, commit=True)
     except exceptions.DatabaseCreateUserError as e:
         logger.error(e.detailed_message)
         error_msg = e.displayable_message

@@ -529,3 +529,67 @@ class TestCreateUser:
 
         # Clean up - None
         # ===========================================================
+
+    def test_create_user_with_custom_roles_and_override_them(
+        self,
+        sqlite_in_memory_database_with_custom_roles: DbWithCustomRoles,
+        drummer_custom_role: tuple[CustomRole, db.models.CustomRole, ModelData],
+        guitarist_custom_role: tuple[CustomRole, db.models.CustomRole, ModelData],
+    ) -> None:
+        r"""Test to create a user with two custom roles and override them.
+
+        The `custom_roles` parameter is specified to use associate the provided custom
+        roles with the user rather than the custom roles defined on the user to create.
+        This avoids a database lookup since the custom roles already exist in the session.
+        """
+
+        # Setup
+        # ===========================================================
+        session, session_factory, db_roles = sqlite_in_memory_database_with_custom_roles
+        custom_role_1, _, _ = drummer_custom_role
+        custom_role_2, _, _ = guitarist_custom_role
+        custom_role_exp = db_roles[0]
+        custom_roles = {custom_role_1.name: custom_role_1, custom_role_2.name: custom_role_2}
+
+        user_to_create = User(
+            username='username',
+            role=Role(role_id=1, name='', rank=0),
+            custom_roles=custom_roles,
+        )
+        query = (
+            select(db.models.User)
+            .options(selectinload(db.models.User.custom_roles))
+            .where(db.models.User.user_id == user_to_create.user_id)
+        )
+
+        # Exercise
+        # ===========================================================
+        db.create_user(
+            session=session, user=user_to_create, custom_roles=(custom_role_exp,), commit=True
+        )
+
+        # Verify
+        # ===========================================================
+        with session_factory() as new_session:
+            db_user = new_session.scalars(query).one()
+
+        assert len(db_user.custom_roles) == 1, 'User does not have 1 custom role in db!'
+
+        db_custom_role = db_user.custom_roles.get(custom_role_exp.name)
+        assert (
+            db_custom_role is not None
+        ), f'Expected custom role {custom_role_exp.name} does not exist!'
+
+        custom_role_attributes_to_verify = (
+            ('role_id', custom_role_exp.role_id),
+            ('name', custom_role_exp.name),
+            ('rank', custom_role_exp.rank),
+            ('description', custom_role_exp.description),
+        )
+        for attr, exp_value in custom_role_attributes_to_verify:
+            assert (
+                getattr(db_custom_role, attr) == exp_value
+            ), f'{db_custom_role.name} : db_custom_role.{attr} is incorrect!'
+
+        # Clean up - None
+        # ===========================================================
