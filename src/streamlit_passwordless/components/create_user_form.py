@@ -72,7 +72,7 @@ def create_user_form(
     with_disabled_toggle: bool = True,
     email_is_username: bool = False,
     roles: Sequence[models.Role] | None = None,
-    custom_roles: Sequence[models.CustomRole] | None = None,
+    custom_roles: Sequence[db.models.CustomRole] | None = None,
     title: str = '#### Create a new user',
     border: bool = True,
     submit_button_label: str = 'Create User',
@@ -98,7 +98,9 @@ def create_user_form(
     custom_roles_label: str = 'Custom Roles',
     custom_roles_placeholder: str = 'Choose a custom role',
     custom_roles_max_selections: int | None = None,
-    custom_roles_default_selection: Sequence[models.CustomRole] | models.CustomRole | None = None,
+    custom_roles_default_selection: (
+        Sequence[db.models.CustomRole] | db.models.CustomRole | None
+    ) = None,
     custom_roles_help: str | None = 'The custom roles to associate with the user.',
     email_label: str = 'Email',
     email_max_length: int | None = 50,
@@ -150,9 +152,9 @@ def create_user_form(
         The available roles that can be assigned to the user. If None the
         default roles of Streamlit Passwordless will be used.
 
-    custom_roles : Sequence[streamlit_passwordless.CustomRole] or None, default None
-        The available custom roles that can be assigned to the user. If None
-        custom roles will not be assignable to the user.
+    custom_roles : Sequence[streamlit_passwordless.db.models.CustomRole] or None, default None
+        The available custom roles that can be assigned to the user. If None the defined
+        custom roles in the database will be loaded and made available for selection.
 
     title : str, default '#### Create a new user'
         The title of the create user form. Markdown is supported.
@@ -239,7 +241,7 @@ def create_user_form(
         The maximum number of custom roles that can be selected in the custom roles multiselectbox.
         If None there is no upper limit.
 
-    custom_roles_default_selection : Sequence[streamlit_passwordless.CustomRole] or streamlit_passwordless.CustomRole or None, default None
+    custom_roles_default_selection : Sequence[streamlit_passwordless.db.models.CustomRole] or streamlit_passwordless.models.db.CustomRole or None, default None
         The custom roles that will be preselected in the the custom roles mulitselectbox.
         If None no custom roles will be preselected on first render.
 
@@ -336,10 +338,14 @@ def create_user_form(
         else:
             role = models.UserRole
 
-        if with_custom_roles and custom_roles is not None:
-            selected_custom_roles = st.multiselect(
+        if with_custom_roles:
+            if custom_roles is None:
+                db_custom_roles = db.get_all_custom_roles(session=db_session)
+            else:
+                db_custom_roles = custom_roles
+            selected_custom_roles: Sequence[db.models.CustomRole] = st.multiselect(
                 label=custom_roles_label,
-                options=custom_roles,
+                options=db_custom_roles,
                 default=custom_roles_default_selection,
                 max_selections=custom_roles_max_selections,
                 placeholder=custom_roles_placeholder,
@@ -396,6 +402,7 @@ def create_user_form(
         disabled=disabled,
         disabled_timestamp=get_current_datetime() if disabled else None,
         role=models.UserRole if role is None else role,
+        custom_roles={m.name: models.CustomRole.model_validate(m) for m in selected_custom_roles},
     )
     success, error_msg = core.create_user_in_database(session=db_session, user=user)
     if not success:
