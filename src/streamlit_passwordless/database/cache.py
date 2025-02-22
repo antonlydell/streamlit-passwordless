@@ -94,5 +94,6 @@ def init(_session: core.Session) -> tuple[bool, str]:
         error = True
         error_msg = e.displayable_message
         logger.warning(e.detailed_message)
+        _session.rollback()
 
     return error, error_msg
