@@ -145,7 +145,12 @@ def get_user_by_user_id(
         ) from None
 
 
-def create_user(session: Session, user: User, commit: bool = False) -> models.User:
+def create_user(
+    session: Session,
+    user: User,
+    custom_roles: Sequence[models.CustomRole] | None = None,
+    commit: bool = False,
+) -> models.User:
     r"""Create a new user in the database.
 
     Parameters
@@ -155,6 +160,11 @@ def create_user(session: Session, user: User, commit: bool = False) -> models.Us
 
     user : streamlit_passwordless.User
         The user to create.
+
+    custom_roles : Sequence[streamlit_passwordless.db.models.CustomRole] or None, default None
+        The custom roles from the active database `session` to associate with the user.
+        If provided these roles will take precedence over the custom roles defined on
+        `user` and avoids a database lookup since the custom roles already exist in the `session`.
 
     commit : bool, default False
         True if the added user should be committed after being added to the session and False
@@ -196,8 +206,10 @@ def create_user(session: Session, user: User, commit: bool = False) -> models.Us
         db_user.emails.extend(db_emails)
         session.add_all(db_emails)
 
-    if custom_roles := user.custom_roles:
-        role_ids = {role_id for cr in custom_roles.values() if (role_id := cr.role_id) is not None}
+    if custom_roles:
+        db_user.custom_roles = {model.name: model for model in custom_roles}
+    elif _custom_roles := user.custom_roles:
+        role_ids = {role_id for cr in _custom_roles.values() if (role_id := cr.role_id) is not None}
         db_custom_roles = get_custom_roles(session=session, role_ids=role_ids)
         db_user.custom_roles = {model.name: model for model in db_custom_roles}
 
