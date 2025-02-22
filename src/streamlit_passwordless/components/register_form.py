@@ -355,6 +355,7 @@ def bitwarden_register_form(
     register_button_type: core.ButtonType = 'primary',
     clear_on_validate: bool = False,
     banner_container: core.BannerContainer | None = None,
+    redirect: core.Redirectable | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -453,6 +454,12 @@ def bitwarden_register_form(
         A container produced by :func:`streamlit.empty`, in which error or success messages about
         the register user process will be displayed. Useful to make the banner appear at the desired
         location on a page. If None the banner will be displayed right above the form.
+
+    redirect : str or streamlit.navigation.page.StreamlitPage or None, default None
+        The Streamlit page to redirect `user` to on successful registration. If str it should
+        be the path, relative to the file passed to the ``streamlit run`` command, to the
+        Python file containing the page to redirect to. See :func:`streamlit.switch_page`
+        for more info. If None no redirect is performed.
 
     Other Parameters
     ----------------
@@ -755,6 +762,8 @@ def bitwarden_register_form(
         core.display_banner_message(
             message=msg, message_type=core.BannerMessageType.SUCCESS, container=banner_container
         )
+        if redirect:
+            st.switch_page(redirect)
 
     elif not save_user_sign_in_to_db_ok:
         logger.warning(final_error_msg)
@@ -781,6 +790,7 @@ def bitwarden_register_form_existing_user(
     register_button_label: str = 'Register',
     register_button_type: core.ButtonType = 'primary',
     banner_container: core.BannerContainer | None = None,
+    redirect: core.Redirectable | None = None,
     credential_nickname_label: str = 'Credential Nickname',
     credential_nickname_max_length: int | None = 50,
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
@@ -845,6 +855,12 @@ def bitwarden_register_form_existing_user(
         A container produced by :func:`streamlit.empty`, in which error or success messages about
         the register user process will be displayed. Useful to make the banner appear at the desired
         location on a page. If None the banner will be displayed right above the form.
+
+    redirect : str or streamlit.navigation.page.StreamlitPage or None, default None
+        The Streamlit page to redirect `user` to on successful registration. If str it should
+        be the path, relative to the file passed to the ``streamlit run`` command, to the
+        Python file containing the page to redirect to. See :func:`streamlit.switch_page`
+        for more info. If None no redirect is performed.
 
     Other Parameters
     ----------------
@@ -994,6 +1010,8 @@ def bitwarden_register_form_existing_user(
         core.display_banner_message(
             message=msg, message_type=core.BannerMessageType.SUCCESS, container=banner_container
         )
+        if redirect:
+            st.switch_page(redirect)
     else:
         logger.warning(final_error_msg)
         core.display_banner_message(
