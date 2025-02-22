@@ -240,6 +240,44 @@ def create_user_in_database(
     return success, error_msg
 
 
+def get_email_from_database(
+    session: db.Session, email: str, load_user: bool = False
+) -> tuple[db.models.Email | None, str]:
+    r"""Get an email from the database.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    email : str
+        The email address to retrieve from the database.
+
+    load_user : bool, default False
+        If True the user that that the email belongs to will also be loaded from the database.
+
+    Returns
+    -------
+    db_email : streamlit_passwordless.db.models.Email or None
+        The email address matching `email` or None if an email was not found.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with retrieving
+        the email from the database. If no error occurred an empty string is returned.
+    """
+
+    try:
+        db_email = db.get_email(session=session, email=email, load_user=load_user)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        db_email = None
+    else:
+        error_msg = ''
+
+    return db_email, error_msg
+
+
 def display_banner_message(
     message: str,
     message_type: BannerMessageType = BannerMessageType.SUCCESS,

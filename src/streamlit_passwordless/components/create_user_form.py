@@ -17,7 +17,7 @@ from . import config, core, ids
 logger = logging.getLogger(__name__)
 
 
-def _validate_form(db_session: db.Session) -> None:
+def _validate_form(db_session: db.Session, email_is_username: bool) -> None:
     r"""Validate the input fields of the create user form.
 
     Updates the following session state keys:
@@ -31,34 +31,56 @@ def _validate_form(db_session: db.Session) -> None:
     ----------
     db_session : streamlit_passwordless.db.Session
         An active database session.
+
+    email_is_username : bool
+        If True the username is the email address of the user and if False
+        the username is distinct from an optional email address of the user.
     """
 
     form_is_valid = True
+    validation_errors = {}
 
-    username = st.session_state[ids.CREATE_USER_FORM_USERNAME_TEXT_INPUT]
-    if username:
+    validation_error_field = core.FormField.USERNAME
+    if username := st.session_state[ids.CREATE_USER_FORM_USERNAME_TEXT_INPUT]:
         db_user, error_msg = core.get_user_from_database(
-            session=db_session, username=username.casefold()
+            session=db_session, username=username.strip().casefold()
         )
 
         if error_msg:  # DatabaseError
-            st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = {
-                core.FormField.USERNAME: error_msg
-            }
+            form_is_valid = False
+            validation_errors[validation_error_field] = error_msg
         elif db_user is not None:
             form_is_valid = False
-            st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = {
-                core.FormField.USERNAME: f'User {username} already exist!'
-            }
+            validation_errors[validation_error_field] = f'User {username} already exists!'
         else:
             pass
 
     else:
-        form_is_valid = False
-        st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = {
-            core.FormField.USERNAME: 'The username field is required!',
-        }
+        validation_errors[validation_error_field] = 'The username field is required!'
 
+    if email_is_username:
+        email = username
+        validation_error_field = core.FormField.USERNAME
+    else:
+        email = st.session_state.get(ids.CREATE_USER_FORM_EMAIL_TEXT_INPUT)
+        validation_error_field = core.FormField.EMAIL
+
+    if email:
+        db_email, error_msg = core.get_email_from_database(
+            session=db_session, email=email.strip().casefold()
+        )
+        if error_msg:  # DatabaseError
+            form_is_valid = False
+            validation_errors[validation_error_field] = error_msg
+        elif db_email is not None:
+            form_is_valid = False
+            validation_errors[validation_error_field] = (
+                f'{"User" if email_is_username else "Email"} {email} already exists!'
+            )
+        else:
+            pass
+
+    st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = validation_errors
     st.session_state[config.SK_CREATE_USER_FORM_IS_VALID] = form_is_valid
 
 
@@ -353,16 +375,21 @@ def create_user_form(
                 help=custom_roles_help,
                 key=ids.CREATE_USER_FORM_CUSTOM_ROLES_MULTISELECTBOX,
             )
-        if with_email and not email_is_username:
-            email = st.text_input(
-                label=email_label,
-                placeholder=email_placeholder,
-                max_chars=email_max_length,
-                help=email_help,
-                key=ids.CREATE_USER_FORM_EMAIL_TEXT_INPUT,
-            )
+        if with_email:
+            if not email_is_username:
+                email_error_banner = st.empty()
+                banner_container_mapping[core.FormField.EMAIL] = email_error_banner
+                email = st.text_input(
+                    label=email_label,
+                    placeholder=email_placeholder,
+                    max_chars=email_max_length,
+                    help=email_help,
+                    key=ids.CREATE_USER_FORM_EMAIL_TEXT_INPUT,
+                )
+            else:
+                email = username
         else:
-            email = username
+            email = None
 
         if with_disabled_toggle:
             disabled = st.toggle(
@@ -378,7 +405,7 @@ def create_user_form(
             label=submit_button_label,
             type=submit_button_type,
             on_click=_validate_form,
-            kwargs={'db_session': db_session},
+            kwargs={'db_session': db_session, 'email_is_username': email_is_username},
         )
 
         if not clicked:
@@ -396,12 +423,13 @@ def create_user_form(
             return None
 
     user = models.User(
-        username=username,
-        ad_username=ad_username,
-        displayname=displayname,
+        username=username.strip(),
+        ad_username=None if ad_username is None else ad_username.strip(),
+        displayname=None if displayname is None else displayname.strip(),
         disabled=disabled,
         disabled_timestamp=get_current_datetime() if disabled else None,
         role=models.UserRole if role is None else role,
+        emails=[models.Email(email=email.strip().casefold(), rank=1)] if email else None,
         custom_roles={m.name: models.CustomRole.model_validate(m) for m in selected_custom_roles},
     )
     success, error_msg = core.create_user_in_database(session=db_session, user=user)
