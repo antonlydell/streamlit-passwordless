@@ -330,7 +330,7 @@ class User(Base):
     __tablename__ = 'stp_user'
 
     user_id: Mapped[str] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
+    username: Mapped[str] = mapped_column(unique=True, nullable=False)
     ad_username: Mapped[Optional[str]]
     displayname: Mapped[Optional[str]]
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.role_id))

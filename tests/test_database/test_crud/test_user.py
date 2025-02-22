@@ -6,6 +6,7 @@ from datetime import datetime
 # Third party
 import pytest
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 # Local
@@ -593,3 +594,41 @@ class TestCreateUser:
 
         # Clean up - None
         # ===========================================================
+
+    @pytest.mark.parametrize(
+        'user_id, username, error_msg_part',
+        (
+            pytest.param(None, 'username', 'stp_user.user_id', id='user_id is None'),
+            pytest.param('user_id', None, 'stp_user.username', id='username is None'),
+        ),
+    )
+    def test_not_null_constraints(
+        self,
+        user_id: str | None,
+        username: str | None,
+        error_msg_part: str,
+        sqlite_in_memory_database_with_roles: DbWithRoles,
+    ) -> None:
+        r"""Test that the not null constraints are triggered correctly."""
+
+        # Setup
+        # ===========================================================
+        session, _, exp_roles = sqlite_in_memory_database_with_roles
+        exp_role = exp_roles[3]
+        user_to_create = db.models.User(
+            user_id=user_id, username=username, role_id=exp_role.role_id
+        )
+        exp_error_msg = f'NOT NULL constraint failed: {error_msg_part}'
+        session.add(user_to_create)
+
+        # Exercise
+        # ===========================================================
+        with pytest.raises(IntegrityError) as exc_info:
+            session.commit()
+
+        # Verify
+        # ===========================================================
+        error_msg = exc_info.exconly()
+        print(error_msg)
+
+        assert exp_error_msg in error_msg
