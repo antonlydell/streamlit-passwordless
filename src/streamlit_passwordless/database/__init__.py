@@ -5,6 +5,7 @@ from . import models
 from .cache import create_session_factory, init
 from .core import URL, Session, SessionFactory, commit, create_db_url
 from .crud.custom_role import create_custom_role, get_all_custom_roles, get_custom_roles
+from .crud.email import get_email
 from .crud.role import (
     create_default_roles,
     create_role,
@@ -34,6 +35,8 @@ __all__ = [
     'create_custom_role',
     'get_all_custom_roles',
     'get_custom_roles',
+    # email
+    'get_email',
     # role
     'create_default_roles',
     'create_role',
