@@ -48,7 +48,7 @@ class TestGetAllRoles:
 
         # Verify
         # ===========================================================
-        assert not isinstance(roles, pd.DataFrame), 'roles should be list[Role]!'
+        assert not isinstance(roles, pd.DataFrame), 'roles should be list[Role]!'  # type: ignore
 
         for exp, role in zip_longest(exp_roles, roles):
             assert exp.role_id == role.role_id, 'name attribute is incorrect!'

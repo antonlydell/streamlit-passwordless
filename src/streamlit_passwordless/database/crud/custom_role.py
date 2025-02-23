@@ -1,7 +1,7 @@
 r"""Database operations on the stp_custom_role table."""
 
 # Standard library
-from typing import Iterable, Sequence
+from typing import Iterable, Literal, Sequence, overload
 
 # Third party
 import pandas as pd
@@ -13,6 +13,26 @@ from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.database.core import Session
 from streamlit_passwordless.database.core import commit as db_commit
 from streamlit_passwordless.database.models import CustomRole
+
+
+@overload
+def get_all_custom_roles(
+    session: Session,
+    skip: int = 0,
+    limit: int | None = None,
+    as_df: Literal[False] = False,
+    index_col: str | list[str] | None = 'role_id',
+) -> Sequence[CustomRole]: ...
+
+
+@overload
+def get_all_custom_roles(
+    session: Session,
+    skip: int = 0,
+    limit: int | None = None,
+    as_df: Literal[True] = True,
+    index_col: str | list[str] | None = 'role_id',
+) -> pd.DataFrame: ...
 
 
 def get_all_custom_roles(

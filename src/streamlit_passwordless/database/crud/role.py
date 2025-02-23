@@ -1,7 +1,7 @@
 r"""Database operations on the role table (:class:`streamlit_passwordless.db.models.Role`)."""
 
 # Standard library
-from typing import Sequence
+from typing import Literal, Sequence, overload
 
 # Third party
 import pandas as pd
@@ -14,6 +14,26 @@ from streamlit_passwordless.database.core import Session
 from streamlit_passwordless.database.core import commit as db_commit
 from streamlit_passwordless.database.models import Role
 from streamlit_passwordless.database.schemas.role import RoleCreate
+
+
+@overload
+def get_all_roles(
+    session: Session,
+    skip: int = 0,
+    limit: int | None = None,
+    as_df: Literal[False] = False,
+    index_col: str = 'role_id',
+) -> Sequence[Role]: ...
+
+
+@overload
+def get_all_roles(
+    session: Session,
+    skip: int = 0,
+    limit: int | None = None,
+    as_df: Literal[True] = True,
+    index_col: str = 'role_id',
+) -> pd.DataFrame: ...
 
 
 def get_all_roles(
