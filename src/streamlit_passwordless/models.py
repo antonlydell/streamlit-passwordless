@@ -374,3 +374,15 @@ class User(BaseModel):
             return self.is_authenticated
         else:
             return self.role >= role if self.is_authenticated else False
+
+    @property
+    def email(self) -> str:
+        r"""Get the primary email address of the user.
+
+        An empty string is returned if the user does not have any email addresses.
+        """
+
+        try:
+            return self.emails[0].email
+        except IndexError:
+            return ''

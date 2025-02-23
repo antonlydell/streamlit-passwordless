@@ -797,6 +797,44 @@ class TestUser:
         # Clean up - None
         # ===========================================================
 
+    def test_get_primary_email(self) -> None:
+        r"""Test to get the primary email of the user."""
+
+        # Setup
+        # ===========================================================
+        exp_email = 'test@example.com'
+        user = models.User(
+            username='username',
+            emails=[
+                models.Email(email=exp_email, rank=1),
+                models.Email(email='test2@example.com', rank=2),
+            ],
+        )
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.email == exp_email
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_get_primary_email_user_has_no_email_addresses(self) -> None:
+        r"""Test to get the primary email of the user.
+
+        If the user has no email addresses an empty string should be returned.
+        """
+
+        # Setup
+        # ===========================================================
+        user = models.User(username='username')
+
+        # Exercise & Verify
+        # ===========================================================
+        assert user.email == ''
+
+        # Clean up - None
+        # ===========================================================
+
     @pytest.mark.parametrize(
         'aliases, aliases_exp',
         (
