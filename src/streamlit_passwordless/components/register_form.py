@@ -147,8 +147,9 @@ def _render_discoverability_component(
 def _create_user(
     username: str,
     displayname: str | None = None,
-    aliases: str | None = None,
     role: models.Role | None = None,
+    email: str | None = None,
+    aliases: str | None = None,
 ) -> models.User:
     r"""Create a new user to register.
 
@@ -160,12 +161,15 @@ def _create_user(
     displayname : str or None, default None
         The optional displayname of the user.
 
-    aliases : str or None, default None
-        The optional aliases of the user as a semicolon separated string.
-
     role : models.Role or None, default None
         The role to assign to the user. If None the default role of
         :class:`streamlit_passwordless.User` is assigned.
+
+    email : str or None, default None
+        The optional email address to associate with the user.
+
+    aliases : str or None, default None
+        The optional aliases of the user as a semicolon separated string.
 
     Returns
     -------
@@ -173,13 +177,13 @@ def _create_user(
         The user to create.
     """
 
-    if role is None:
-        role = st.session_state.get(config.SK_ROLES, {}).get(db.models.UserRoleName.USER)
-
-    if role is None:
-        user = models.User(username=username, displayname=displayname, aliases=aliases)
-    else:
-        user = models.User(username=username, displayname=displayname, aliases=aliases, role=role)
+    user = models.User(
+        username=username.strip(),
+        displayname=None if displayname is None else displayname.strip(),
+        role=models.UserRole if role is None else role,
+        emails=[models.Email(email=email.strip().casefold(), rank=1)] if email else [],
+        aliases=aliases,
+    )
     logger.debug(f'Successfully created user: {user}')
 
     return user
@@ -232,38 +236,63 @@ def _create_register_token(
 
 def _validate_username_field(
     db_session: db.Session, client: BitwardenPasswordlessClient, origin: str, pre_authorized: bool
-) -> bool:
-    r"""Validate the username form input field of the register form."""
+) -> tuple[bool, bool]:
+    r"""Validate the username text input field of the register form.
 
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.database.Session
+        An active database session.
+
+    client : streamlit_passwordless.BitwardenPasswordlessClient
+        The Bitwarden Passwordless client to use for interacting with
+        the Bitwarden Passwordless backend API.
+
+    origin : str
+        The domain name of the application. Used to fetch existing passkey credentials of the
+        the user for the application. An authenticated user with existing credentials to the
+        application may create new credentials.
+
+    pre_authorized : bool
+        If True require a user with the input username to exist in the database to allow
+        the user to register a new passkey credential. If False omit this validation.
+
+    Returns
+    -------
+    bool
+        True if the username is valid for registration and False otherwise.
+
+    bool
+        True if the user that the supplied username is linked to is already authenticated
+        and False otherwise.
+    """
+
+    validation_errors = st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS]
+    validation_error_field = core.FormField.USERNAME
     username = st.session_state[ids.BP_REGISTER_FORM_USERNAME_TEXT_INPUT]
+
     if not username:
-        st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS] = {
-            core.FormField.USERNAME: 'The username field is required!',
-        }
-        return False
+        validation_errors[validation_error_field] = 'The username field is required!'
+        return False, False
 
     db_user, error_msg = core.get_user_from_database(
-        session=db_session, username=username.casefold()
+        session=db_session, username=username.strip().casefold()
     )
     st.session_state[config.SK_DB_USER] = db_user
 
     if db_user is None:
         if error_msg:  # DatabaseError
-            st.session_state[config.SK_CREATE_USER_FORM_VALIDATION_ERRORS] = {
-                core.FormField.USERNAME: error_msg
-            }
-            return False
+            validation_errors[validation_error_field] = error_msg
+            return False, False
         elif not pre_authorized:
-            return True
+            return True, False
 
         error_msg = (
             f'User {username} does not exist, but is required to exist to allow registration!'
         )
         logger.warning(error_msg)
-        st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS] = {
-            core.FormField.USERNAME: error_msg
-        }
-        return False
+        validation_errors[validation_error_field] = error_msg
+        return False, False
 
     if (user := config.get_current_user()) is None:
         is_authenticated = False
@@ -271,7 +300,7 @@ def _validate_username_field(
         is_authenticated = user.is_authenticated and db_user.user_id == user.user_id
 
     if is_authenticated:
-        return True
+        return True, True
 
     if origin:
         try:
@@ -284,21 +313,67 @@ def _validate_username_field(
             credentials = []
 
         if not credentials:
-            return True
+            return True, False
 
     error_msg = f'User {username} already exist! To add additional passkeys, please sign in first.'
-    st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS] = {
-        core.FormField.USERNAME: error_msg
-    }
+    validation_errors[validation_error_field] = error_msg
 
-    return False
+    return False, False
+
+
+def _validate_email_field(
+    db_session: db.Session, email_is_username: bool, username: str | None
+) -> bool:
+    r"""Validate the email text input field of the register form.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.database.Session
+        An active database session.
+
+    email_is_username : bool
+        If True the username is the email address of the user and if False
+        the username is distinct from an optional email address of the user.
+
+    username : str or None
+        The username of the user to create.
+
+    Returns
+    -------
+    bool
+        True if the email is valid for registration and False otherwise.
+    """
+
+    if email_is_username:
+        email = username
+        validation_error_field = core.FormField.USERNAME
+    else:
+        email = st.session_state.get(ids.BP_REGISTER_FORM_EMAIL_TEXT_INPUT)
+        validation_error_field = core.FormField.EMAIL
+
+    if email:
+        validation_errors = st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS]
+        db_email, error_msg = core.get_email_from_database(
+            session=db_session, email=email.strip().casefold()
+        )
+        if error_msg:  # DatabaseError
+            validation_errors[validation_error_field] = error_msg
+            return False
+        if db_email is not None:
+            error_msg = f'{"User" if email_is_username else "Email"} {email} already exists!'
+            validation_errors[validation_error_field] = error_msg
+            return False
+
+    return True
 
 
 def _validate_form(
     db_session: db.Session,
     client: BitwardenPasswordlessClient,
     origin: str,
-    pre_authorized: bool = False,
+    pre_authorized: bool,
+    email_is_username: bool,
+    username: str,
 ) -> None:
     r"""Validate the input fields of the register form.
 
@@ -327,15 +402,29 @@ def _validate_form(
         the user for the application. An authenticated user with existing credentials to the
         application may create new credentials.
 
-    pre_authorized : bool, default False
+    pre_authorized : bool
         If True require a user with the input username to exist in the database to allow
         the user to register a new passkey credential. If False omit this validation.
+
+    email_is_username : bool
+        If True the username is the email address of the user and if False
+        the username is distinct from an optional email address of the user.
+
+    username : str
+        The username of the user to create.
     """
 
-    form_is_valid = _validate_username_field(
+    username_is_valid, is_authenticated = _validate_username_field(
         db_session=db_session, client=client, origin=origin, pre_authorized=pre_authorized
     )
-    st.session_state[config.SK_REGISTER_FORM_IS_VALID] = form_is_valid
+
+    if is_authenticated:
+        email_is_valid = True
+    else:
+        email_is_valid = _validate_email_field(
+            db_session=db_session, email_is_username=email_is_username, username=username
+        )
+    st.session_state[config.SK_REGISTER_FORM_IS_VALID] = username_is_valid and email_is_valid
 
 
 def bitwarden_register_form(
@@ -344,6 +433,8 @@ def bitwarden_register_form(
     role: models.Role | None = None,
     pre_authorized: bool = False,
     with_displayname: bool = False,
+    with_email: bool = True,
+    email_is_username: bool = False,
     with_credential_nickname: bool = True,
     with_discoverability: bool = False,
     with_alias: bool = False,
@@ -355,6 +446,7 @@ def bitwarden_register_form(
     register_button_type: core.ButtonType = 'primary',
     clear_on_validate: bool = False,
     banner_container: core.BannerContainer | None = None,
+    redirect: core.Redirectable | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -363,6 +455,10 @@ def bitwarden_register_form(
     displayname_max_length: int | None = 50,
     displayname_placeholder: str | None = 'John Doe',
     displayname_help: str | None = '__default__',
+    email_label: str = 'Email',
+    email_max_length: int | None = 50,
+    email_placeholder: str | None = 'john.doe@example.com',
+    email_help: str | None = 'An email address to associate with the user.',
     credential_nickname_label: str = 'Credential Nickname',
     credential_nickname_max_length: int | None = 50,
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
@@ -404,6 +500,14 @@ def bitwarden_register_form(
     with_displayname : bool, default False
         If True the displayname field will be added to the form allowing
         the user to fill out a displayname for the account.
+
+    with_email : bool, default True
+        If True the email field is added to the form to enable to
+        enter an email address to associate with the user.
+
+    email_is_username : bool, default False
+        If True the username field will prompt to enter an email address, which will be used
+        as the username and be added as an email address of the user.
 
     with_credential_nickname : bool, default True
         If True the credential_nickname field will be added to the form allowing the user to
@@ -454,6 +558,12 @@ def bitwarden_register_form(
         the register user process will be displayed. Useful to make the banner appear at the desired
         location on a page. If None the banner will be displayed right above the form.
 
+    redirect : str or streamlit.navigation.page.StreamlitPage or None, default None
+        The Streamlit page to redirect `user` to on successful registration. If str it should
+        be the path, relative to the file passed to the ``streamlit run`` command, to the
+        Python file containing the page to redirect to. See :func:`streamlit.switch_page`
+        for more info. If None no redirect is performed.
+
     Other Parameters
     ----------------
     username_label : str, default 'Username'
@@ -483,6 +593,19 @@ def bitwarden_register_form(
     displayname_help : str or None, default '__default__'
         The help text to display for the displayname field. If '__default__' a sensible default
         help text will be used and if None the help text is removed.
+
+    email_label : str, default 'Email'
+        The label of the email field.
+
+    email_max_length : int or None, default 50
+        The maximum allowed number of characters of the email field.
+        If None the upper limit is removed.
+
+    email_placeholder : str or None, default 'john.doe@example.com'
+        The placeholder of the email field. If None the placeholder is removed.
+
+    email_help : str or None, default 'An email address to associate with the user.'
+        The help text to display for the email field. If None the help text is removed.
 
     credential_nickname_label : str, default 'Credential Nickname'
         The label of the credential_nickname field.
@@ -551,6 +674,11 @@ def bitwarden_register_form(
     with st.container(border=border):
         st.markdown(title)
         with st.form(key=ids.BP_REGISTER_FORM, clear_on_submit=clear_on_validate, border=False):
+            if email_is_username:
+                username_label = email_label
+                username_placeholder = email_placeholder
+                username_max_length = email_max_length
+
             username_error_banner = st.empty()
             banner_container_mapping[core.FormField.USERNAME] = username_error_banner
 
@@ -576,6 +704,22 @@ def bitwarden_register_form(
                 )
             else:
                 displayname = None
+
+            if with_email:
+                if not email_is_username:
+                    email_error_banner = st.empty()
+                    banner_container_mapping[core.FormField.EMAIL] = email_error_banner
+                    email = st.text_input(
+                        label=email_label,
+                        placeholder=email_placeholder,
+                        max_chars=email_max_length,
+                        help=email_help,
+                        key=ids.BP_REGISTER_FORM_EMAIL_TEXT_INPUT,
+                    )
+                else:
+                    email = username
+            else:
+                email = None
 
             if with_credential_nickname:
                 credential_nickname = st.text_input(
@@ -639,6 +783,8 @@ def bitwarden_register_form(
                     'client': client,
                     'origin': origin,
                     'pre_authorized': pre_authorized,
+                    'email_is_username': email_is_username,
+                    'username': username,
                 },
             )
 
@@ -652,8 +798,9 @@ def bitwarden_register_form(
                 user = _create_user(
                     username=username,
                     displayname=displayname,
-                    aliases=aliases,
                     role=role,
+                    email=email,
+                    aliases=aliases,
                 )
             register_token, error_msg = _create_register_token(
                 client=client, user=user, discoverable=discoverable
@@ -664,7 +811,7 @@ def bitwarden_register_form(
         token, error, clicked = register_button(
             register_token=register_token,
             public_key=client.public_key,
-            credential_nickname=credential_nickname,
+            credential_nickname=credential_nickname.strip(),
             disabled=form_is_not_valid,
             label=register_button_label,
             button_type=register_button_type,
@@ -755,6 +902,8 @@ def bitwarden_register_form(
         core.display_banner_message(
             message=msg, message_type=core.BannerMessageType.SUCCESS, container=banner_container
         )
+        if redirect:
+            st.switch_page(redirect)
 
     elif not save_user_sign_in_to_db_ok:
         logger.warning(final_error_msg)
@@ -781,6 +930,7 @@ def bitwarden_register_form_existing_user(
     register_button_label: str = 'Register',
     register_button_type: core.ButtonType = 'primary',
     banner_container: core.BannerContainer | None = None,
+    redirect: core.Redirectable | None = None,
     credential_nickname_label: str = 'Credential Nickname',
     credential_nickname_max_length: int | None = 50,
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
@@ -845,6 +995,12 @@ def bitwarden_register_form_existing_user(
         A container produced by :func:`streamlit.empty`, in which error or success messages about
         the register user process will be displayed. Useful to make the banner appear at the desired
         location on a page. If None the banner will be displayed right above the form.
+
+    redirect : str or streamlit.navigation.page.StreamlitPage or None, default None
+        The Streamlit page to redirect `user` to on successful registration. If str it should
+        be the path, relative to the file passed to the ``streamlit run`` command, to the
+        Python file containing the page to redirect to. See :func:`streamlit.switch_page`
+        for more info. If None no redirect is performed.
 
     Other Parameters
     ----------------
@@ -943,7 +1099,7 @@ def bitwarden_register_form_existing_user(
         token, error, clicked = register_button(
             register_token=register_token,
             public_key=client.public_key,
-            credential_nickname=credential_nickname,
+            credential_nickname=credential_nickname.strip(),
             disabled=disabled,
             label=register_button_label,
             button_type=register_button_type,
@@ -994,6 +1150,8 @@ def bitwarden_register_form_existing_user(
         core.display_banner_message(
             message=msg, message_type=core.BannerMessageType.SUCCESS, container=banner_container
         )
+        if redirect:
+            st.switch_page(redirect)
     else:
         logger.warning(final_error_msg)
         core.display_banner_message(
