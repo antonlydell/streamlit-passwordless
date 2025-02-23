@@ -2,7 +2,7 @@ r"""Fixtures for testing streamlit-passwordless."""
 
 # Standard library
 from datetime import datetime
-from typing import Generator
+from typing import Any, Generator
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
 
@@ -392,7 +392,7 @@ def user_1(
     disabled = False
     disabled_timestamp = None
 
-    data = {
+    data: dict[str, Any] = {
         'user_id': user_id,
         'username': username,
         'ad_username': ad_username,
@@ -402,7 +402,7 @@ def user_1(
         'disabled_timestamp': disabled_timestamp,
         'role': role_data,
         'custom_roles': {'Drummer': custom_role_data},
-        'emails': None,
+        'emails': [],
         'sign_in': None,
         'aliases': None,
     }

@@ -3,7 +3,7 @@ r"""Unit tests for the models' module."""
 # Standard library
 from copy import deepcopy
 from datetime import datetime
-from typing import ClassVar, Sequence
+from typing import Any, ClassVar, Sequence
 
 # Third party
 import pytest
@@ -622,7 +622,7 @@ class TestUser:
         _, _, role_data = user_role
 
         username = 'm.shadows'
-        data_exp = {
+        data_exp: dict[str, Any] = {
             'user_id': mocked_user_id,
             'username': username,
             'ad_username': None,
@@ -632,7 +632,7 @@ class TestUser:
             'disabled_timestamp': None,
             'role': role_data,
             'custom_roles': {},
-            'emails': None,
+            'emails': [],
             'sign_in': None,
             'aliases': None,
         }
