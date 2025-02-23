@@ -158,7 +158,7 @@ def create_user_form(
         `custom_roles` parameter is specified, to enable to set the desired custom roles
         for the new user.
 
-    with_email : bool, default False
+    with_email : bool, default True
         If True the email field is added to the form to enable to
         enter an email address to associate with the user.
 
@@ -362,7 +362,15 @@ def create_user_form(
 
         if with_custom_roles:
             if custom_roles is None:
-                db_custom_roles = db.get_all_custom_roles(session=db_session)
+                db_custom_roles, error_msg = core.get_all_custom_roles_from_database(
+                    session=db_session
+                )
+                if error_msg:
+                    core.display_banner_message(
+                        message=error_msg,
+                        message_type=core.BannerMessageType.ERROR,
+                        container=st.empty(),
+                    )
             else:
                 db_custom_roles = custom_roles
             selected_custom_roles: Sequence[db.models.CustomRole] = st.multiselect(

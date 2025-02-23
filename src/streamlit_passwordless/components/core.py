@@ -240,6 +240,38 @@ def create_user_in_database(
     return success, error_msg
 
 
+def get_all_custom_roles_from_database(
+    session: db.Session,
+) -> tuple[Sequence[db.models.CustomRole], str]:
+    r"""Get all custom roles from the database.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    Returns
+    -------
+    db_custom_roles : Sequence[streamlit_passwordless.db.models.CustomRole]
+        The custom roles from the database.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with retrieving
+        the custom roles from the database. If no error occurred an empty string is returned.
+    """
+
+    try:
+        db_custom_roles = db.get_all_custom_roles(session=session, as_df=False)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        db_custom_roles = []
+    else:
+        error_msg = ''
+
+    return db_custom_roles, error_msg
+
+
 def get_email_from_database(
     session: db.Session, email: str, load_user: bool = False
 ) -> tuple[db.models.Email | None, str]:
