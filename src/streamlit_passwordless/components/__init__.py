@@ -13,6 +13,7 @@ from .config import (
     SK_SESSION_STATE_INITIALIZED,
     SK_USER,
     SK_USER_SIGN_IN,
+    get_current_user,
     init_session_state,
 )
 from .core import (
@@ -41,6 +42,7 @@ __all__ = [
     'SK_SESSION_STATE_INITIALIZED',
     'SK_USER',
     'SK_USER_SIGN_IN',
+    'get_current_user',
     'init_session_state',
     # core
     'BannerContainer',
