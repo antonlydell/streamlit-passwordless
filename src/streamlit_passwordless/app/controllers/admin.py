@@ -4,6 +4,7 @@ r"""The controller of the admin page."""
 import streamlit_passwordless.database as db
 from streamlit_passwordless.app.views.admin import sidebar, title
 from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
+from streamlit_passwordless.components import create_user_form
 from streamlit_passwordless.models import User
 
 
@@ -25,3 +26,4 @@ def controller(client: BitwardenPasswordlessClient, db_session: db.Session, user
 
     title()
     sidebar(user=user)
+    create_user_form(db_session=db_session, with_ad_username=True)
