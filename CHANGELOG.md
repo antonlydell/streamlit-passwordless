@@ -13,6 +13,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.13.0] - 2025-02-27
+
+Create users through the Streamlit Passwordless admin app!
+
+The admin app now contains a form to create users in the database. The form allows
+to select the role and custom roles of the user as well as specifying an email address.
+
+
+### Added
+
+- `streamlit_passwordless.create_user_form` : Create a new user in the database without registering
+  a passkey.
+
+- `streamlit_passwordless.get_current_user` : Convenience function to get the current user from the
+  session state.
+
+- `streamlit_passwordless.process_form_validation_errors` : Process form validation errors and display
+  them in an error banner.
+
+- `streamlit_passwordless.User.email` : A property, which gets the primary email address of the user
+  as a string. An empty string is returned if the user does not have any email addresses.
+
+- `streamlit_passwordless.db` :
+
+  - `create_custom_role` : Create a new custom role in the database.
+
+  - `get_all_custom_roles` : Get all custom roles from the database.
+
+  - `get_custom_roles` : Get custom roles by `role_ids` or unique `names`.
+
+  - `get_email` : Get an email from the database.
+
+
+### Changed
+
+- `streamlit_passwordless.bitwarden_register_form` : Added parameter `banner_container` and
+  `redirect` to allow a custom container for error messages and an optional redirect page on
+  successful registration. Added support to register an email address for the user through the
+  parameters `with_email` and `email_is_username`.
+
+- `streamlit_passwordless.bitwarden_register_form_existing_user` : Added parameters
+  `banner_container` and `redirect` to allow a custom container for error messages
+  and an optional redirect page on successful registration.
+
+- `streamlit_passwordless.Email.user_id` : Added a default value of an empty string, which makes it
+  easier to create a new `streamlit_passwordless.User` with an email address, since the `user_id`
+  will be generated when `streamlit_passwordless.User` is initialized and will not be known in
+  advance. It is not necessary to specify `streamlit_passwordless.Email.user_id` when saving an
+  email to the database since the `user_id` will be derived from its user.
+
+- `streamlit_passwordless.User` :
+
+  - `custom_roles` : Changed the default value of the custom roles to be an empty dict instead of
+    None, which is more convenient from a typing perspective to avoid having to check for None.
+
+
+  - `emails` : Changed the default value to an empty list instead of None, which aligns with the
+    default value of `streamlit_passwordless.db.models.User.emails`.
+
+  - `user_id` : Changed the default value from None to an empty string.
+
+- `streamlit_passwordless.db` :
+
+    - `create_user` : Changed the `user` parameter to accept `streamlit_passwordless.User` instead
+    of `streamlit_passwordless.db.CreateUser`, since these are basically copies of each other.
+    Added support to save the emails of the user to the database.
+
+    - `get_user_by_username` : Changed the `disabled` parameter to accept bool or None. When None
+      filtering by disabled or enabled user is omitted.
+
+
+### Fixed
+
+- `streamlit_passwordless.authorized` : If the decorator was applied more than once in an application the
+  user object from the previous execution of the decorator would be used for the authorization of the
+  subsequent execution making an authorized user appear not authorized and vice versa. This is now fixed.
+
+- `streamlit_passwordless.db` :
+
+  - `init` : Added rolling back the session if an exception occurs because the default roles already exist
+    in the database. This is important otherwise you cannot execute another query using the same session.
+
+  - `models.Email` : Fixed the unique constraint of the `stp_email` table to cover the columns
+    (`user_id`, `rank`), not (`email`, `rank`) to ensure a user can have one, and only one,
+    primary email address (rank 1).
+
+
 ## [0.12.0] - 2025-01-18
 
 First draft of the Streamlit Passwordless admin app!
@@ -583,7 +670,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.13.0
 [0.12.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.12.0
 [0.11.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.11.0
 [0.10.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.10.0
