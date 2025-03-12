@@ -78,7 +78,7 @@ def get_user_by_username(
 
     disabled : bool or None, default False
         True if filtering for a disabled user and False for an enabled user.
-        If None filtering by disabled or enabled user is omitted.
+        If None filtering by a disabled or enabled user is omitted.
 
     Returns
     -------
@@ -97,7 +97,7 @@ def get_user_by_username(
 
 
 def get_user_by_user_id(
-    session: Session, user_id: str, disabled: bool = False, is_verified: bool | None = None
+    session: Session, user_id: str, disabled: bool | None = False, is_verified: bool | None = None
 ) -> models.User | None:
     r"""Get a user by user_id.
 
@@ -109,8 +109,9 @@ def get_user_by_user_id(
     user_id : str
         The user_id to filter by.
 
-    disabled : bool, default False
+    disabled : bool or None, default False
         True if filtering for a disabled user and False for an active user.
+        If None filtering by a disabled or enabled user is omitted.
 
     is_verified : bool or None, default None
         If True filter by verified users and if False by non-verified users.
@@ -127,9 +128,13 @@ def get_user_by_user_id(
         If an error occurs while loading the user from the database.
     """
 
-    query = select(models.User).where(
-        and_(models.User.user_id == user_id, models.User.disabled == disabled)
-    )
+    if disabled is None:
+        where_clause = models.User.user_id == user_id
+    else:
+        where_clause = and_(models.User.user_id == user_id, models.User.disabled == disabled)
+
+    query = select(models.User).where(where_clause)
+
     if is_verified is True:
         query = query.where(models.User.verified_at._is_not(None))
     elif is_verified is False:
