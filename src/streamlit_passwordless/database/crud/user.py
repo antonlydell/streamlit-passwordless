@@ -2,7 +2,7 @@ r"""Database operations on the user table."""
 
 # Standard library
 import logging
-from typing import Sequence
+from typing import Literal, Sequence, overload
 
 # Third party
 import pandas as pd
@@ -19,6 +19,26 @@ from ..core import Session
 from ..core import commit as db_commit
 
 logger = logging.getLogger(__name__)
+
+
+@overload
+def get_all_users(
+    session: Session,
+    skip: int = 0,
+    limit: int | None = None,
+    as_df: Literal[False] = False,
+    index_col: str = 'user_id',
+) -> Sequence[models.User]: ...
+
+
+@overload
+def get_all_users(
+    session: Session,
+    skip: int = 0,
+    limit: int | None = None,
+    as_df: Literal[True] = True,
+    index_col: str = 'user_id',
+) -> pd.DataFrame: ...
 
 
 def get_all_users(
