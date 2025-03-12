@@ -39,3 +39,29 @@ def sidebar(user: User) -> None:
     with st.sidebar:
         sign_out_button(user=user)
         st.markdown(user_info)
+
+
+def statistics_view(nr_users_database: int, nr_users_bwp: int, nr_passkeys: int) -> None:
+    r"""The statistics view of the admin page.
+
+    Display the number of users and the number of registered passkeys.
+
+    Parameters
+    ----------
+    nr_users_database : int
+        The number of users in the database.
+
+    nr_users_bwp : int
+        The number of registered users in Bitwarden Passwordless.dev.
+
+    nr_passkeys : int
+        The number of registered passkeys in Bitwarden Passwordless.dev.
+    """
+
+    nr_local_users_col, nr_bwp_users_col, nr_passkeys_col = st.columns([0.3, 0.4, 0.3])
+    with nr_local_users_col:
+        st.metric(label='Users in Database', value=nr_users_database)
+    with nr_bwp_users_col:
+        st.metric(label='Users Bitwarden Passwordless', value=nr_users_bwp)
+    with nr_passkeys_col:
+        st.metric(label='Registered Passkeys', value=nr_passkeys)
