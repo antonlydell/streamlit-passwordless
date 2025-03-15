@@ -922,7 +922,8 @@ def bitwarden_register_form(
 def bitwarden_register_form_existing_user(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
-    user: models.User | None = None,
+    user: models.User | db.models.User | None = None,
+    get_current_user: bool = True,
     with_credential_nickname: bool = True,
     with_discoverability: bool = False,
     title: str = '#### Register a new passkey with your device',
@@ -956,12 +957,18 @@ def bitwarden_register_form_existing_user(
     db_session : streamlit_passwordless.db.Session
         An active database session.
 
-    user : streamlit_passwordless.User or None, default None
+    user : streamlit_passwordless.User or streamlit_passwordless.db.User or None, default None
         The user for which to register a passkey credential. If None the user from the session
-        state `streamlit_passwordless.SK_USER` is used. If `user` is not signed in the
-        register button is disabled. `user.sign_in` is modified with the sign in entry with
-        the newly registered passkey after it has been created. The session state
-        `streamlit_passwordless.SK_USER` is updated with the modified `user`.
+        state `streamlit_passwordless.SK_USER` is used (if `get_current_user` is True). If `user`
+        is not signed in the register button is disabled. `user.sign_in` is modified with the sign
+        in entry with the newly registered passkey after it has been created. The session state
+        :attr:`streamlit_passwordless.SK_USER` is updated with the modified `user`. An instance of
+        :class:`streamlit_passwordless.db.User` should be supplied for the use case when an admin
+        needs to register a passkey for a selected user.
+
+    get_current_user : bool, default True
+        If True the current user will be retrieved from the session state if `user` is None.
+        If set to False it will ensure that the form is disabled if `user` is None.
 
     with_credential_nickname : bool, default True
         If True the credential_nickname field will be added to the form allowing the user to
@@ -1052,7 +1059,8 @@ def bitwarden_register_form_existing_user(
 
     error_msg = ''
     banner_container = st.empty() if banner_container is None else banner_container
-    user = st.session_state.get(config.SK_USER) if user is None else user
+    if get_current_user:
+        user = st.session_state.get(config.SK_USER) if user is None else user
     username, components_disabled = ('', True) if user is None else (user.username, False)
 
     with st.container(border=border):
@@ -1087,7 +1095,15 @@ def bitwarden_register_form_existing_user(
         else:
             discoverable = None
 
-        if user is not None and user.is_authenticated:
+        if isinstance(user, db.models.User):
+            from_db_user = True
+            is_authenticated = True
+            user = models.User.model_validate(user)
+        else:
+            from_db_user = False
+            is_authenticated = False if user is None else user.is_authenticated
+
+        if user is not None and is_authenticated:
             disabled = False
             register_token, error_msg = _create_register_token(
                 client=client, user=user, discoverable=discoverable
@@ -1124,7 +1140,8 @@ def bitwarden_register_form_existing_user(
     # The passkey is still registered even though the sign in may fail!
     user_sign_in, _ = core.verify_sign_in(client=client, token=token)
     user.sign_in = user_sign_in
-    st.session_state[config.SK_USER] = user
+    if not from_db_user:
+        st.session_state[config.SK_USER] = user
 
     final_error_msg = ''
     sign_in_failed_error_msg = (
