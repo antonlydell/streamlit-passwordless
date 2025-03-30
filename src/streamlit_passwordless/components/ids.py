@@ -52,3 +52,16 @@ BP_SIGN_IN_FORM_SUBMIT_BUTTON = 'bp-sign-in-form-submit-button'
 # =====================================================================================
 
 KEY_SIGN_OUT_BUTTON = 'stp-sign-out-button'
+
+# =====================================================================================
+# Update user form
+# =====================================================================================
+
+UPDATE_USER_FORM = 'update-user-form'
+UPDATE_USER_FORM_USERNAME_TEXT_INPUT = 'create-user-form-username-text-input'
+UPDATE_USER_FORM_DISPLAYNAME_TEXT_INPUT = 'update-user-form-displayname-text-input'
+UPDATE_USER_FORM_AD_USERNAME_TEXT_INPUT = 'update-user-form-ad-username-text-input'
+UPDATE_USER_FORM_ROLE_SELECTBOX = 'update-user-form-role-selectbox'
+UPDATE_USER_FORM_CUSTOM_ROLES_MULTISELECTBOX = 'update-user-form-custom-roles-multiselectbox'
+UPDATE_USER_FORM_DISABLED_TOGGLE = 'update-user-form-disabled-toggle'
+UPDATE_USER_FORM_SUBMIT_BUTTON = 'update-user-form-submit-button'

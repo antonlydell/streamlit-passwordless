@@ -24,9 +24,13 @@ from .core import (
     process_form_validation_errors,
 )
 from .create_user_form import create_user_form
-from .register_form import bitwarden_register_form, bitwarden_register_form_existing_user
+from .register_form import (
+    bitwarden_register_form,
+    bitwarden_register_form_existing_user,
+)
 from .sign_in_form import bitwarden_sign_in_button, bitwarden_sign_in_form
 from .sign_out import sign_out_button
+from .update_user_form import update_user_form
 
 # The Public API
 __all__ = [
@@ -60,4 +64,6 @@ __all__ = [
     'bitwarden_sign_in_form',
     # sign_out
     'sign_out_button',
+    # update_user_form
+    'update_user_form',
 ]

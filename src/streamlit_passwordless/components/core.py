@@ -14,7 +14,9 @@ from streamlit.navigation.page import StreamlitPage
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless.backend import (
+    BitwardenPasswordlessClient,
+)
 
 from . import config
 
@@ -238,6 +240,70 @@ def create_user_in_database(
         success = True
 
     return success, error_msg
+
+
+def update_user_in_database(session: db.Session, user: db.models.User) -> tuple[bool, str]:
+    r"""Update an existing user in the database.
+
+    Parameters
+    ----------
+    session : streamlit_passwordless.db.Session
+        An active database session.
+
+    user : models.User
+        The user to update.
+
+    Returns
+    -------
+    success : bool
+        True if the user was successfully updated and False otherwise.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with updating
+        the user in the database. If no error occurred an empty string is returned.
+    """
+
+    try:
+        db.commit(session, error_msg=f'Could not update {user.username}!')
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        success = False
+    else:
+        error_msg = ''
+        success = True
+
+    return success, error_msg
+
+
+def get_all_roles_from_database(session: db.Session) -> tuple[Sequence[db.models.Role], str]:
+    r"""Get all roles from the database.
+
+    Parameters
+    ----------
+    db_session : streamlit_passwordless.db.Session
+        An active database session.
+
+    Returns
+    -------
+    db_roles : Sequence[streamlit_passwordless.db.models.Role]
+        The roles loaded from the database.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with retrieving
+        the roles from the database. If no error occurred an empty string is returned.
+    """
+
+    try:
+        db_roles = db.get_all_roles(session=session, as_df=False)
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        db_roles = []
+    else:
+        error_msg = ''
+
+    return db_roles, error_msg
 
 
 def get_all_custom_roles_from_database(
