@@ -1,6 +1,8 @@
 r"""The views of the admin page."""
 
 # Standard library
+import logging
+import time
 from typing import Sequence
 
 # Third party
@@ -17,15 +19,22 @@ from streamlit_passwordless.app.components.admin import (
     user_selectbox,
     user_state_radio_button,
 )
-from streamlit_passwordless.app.logic.admin import filter_selectable_users
+from streamlit_passwordless.app.logic.admin import (
+    filter_selectable_users,
+    get_selectable_users_from_database,
+)
+from streamlit_passwordless.app.session_state import SK_SELECTED_USER
 from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
 from streamlit_passwordless.components import (
     BannerMessageType,
     bitwarden_register_form_existing_user,
     display_banner_message,
+    update_user_form,
 )
 from streamlit_passwordless.components.sign_out import sign_out_button
 from streamlit_passwordless.models import User
+
+logger = logging.getLogger(__name__)
 
 
 def title() -> None:
@@ -91,8 +100,10 @@ def statistics_view(nr_users_database: int, nr_users_bwp: int, nr_passkeys: int)
 def manage_users_view(
     df: pd.DataFrame,
     roles: Sequence[db.models.Role],
+    custom_roles: Sequence[db.models.CustomRole],
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
+    on_update_refresh_after_n_seconds: float = 1.5,
 ) -> None:
     r"""Manage the users of the application.
 
@@ -103,8 +114,11 @@ def manage_users_view(
     df : pandas.DataFrame
         The selectable users to manage.
 
-    roles: Sequence[streamlit_passwordless.db.models.Role]
+    roles : Sequence[streamlit_passwordless.db.models.Role]
         The roles of the users to use for filtering the selectable users.
+
+    custom_roles : Sequence[db.models.CustomRole],
+        The custom roles that can be assigned to a user.
 
     client : streamlit_passwordless.BitwardenPasswordlessClient
         An instance of the Bitwarden Passwordless client to
@@ -112,7 +126,14 @@ def manage_users_view(
 
     db_session : streamlit_passwordless.db.Session
         An active session to the Streamlit Passwordless database.
+
+    on_update_refresh_after_n_seconds : float, default 1.5
+        The number of seconds to wait before refreshing the page after a
+        user has been successfully updated. Allows the user to have time
+        to see the success banner before the page refreshes.
     """
+
+    db_user = st.session_state.get(SK_SELECTED_USER)
 
     filter_col, space_col, button_col, statistics_col = st.columns(
         [0.3, 0.1, 0.3, 0.3],
@@ -122,7 +143,9 @@ def manage_users_view(
     with filter_col:
         left_col, right_col = st.columns([0.4, 0.6])
         with left_col:
-            selected_user_state = user_state_radio_button()
+            selected_user_state = user_state_radio_button(
+                default_disabled=False if db_user is None else db_user.disabled
+            )
         with right_col:
             selected_roles = user_role_multiselect(roles=roles)
 
@@ -143,16 +166,29 @@ def manage_users_view(
         df = filter_selectable_users(
             df=df, disabled=selected_user_state, roles={r.role_id for r in selected_roles}
         )
-    selected_user_id = user_selectbox(df=df)
+
+    if db_user is None:
+        preselected_user = None
+    else:
+        try:
+            preselected_user = df.index.get_loc(db_user.user_id)
+        except KeyError:  # If the user role was updated to a role that is not in the filter.
+            preselected_user = None
+
+    selected_user_id = user_selectbox(df=df, preselected_user=preselected_user)
 
     st.divider()  # User and email
 
     if selected_user_id:
-        db_user = db.get_user_by_user_id(session=db_session, user_id=selected_user_id)
+        db_user = db.get_user_by_user_id(
+            session=db_session, user_id=selected_user_id, disabled=None
+        )
+        st.session_state[SK_SELECTED_USER] = db_user
     else:
         db_user = None
 
     left_col, right_col = st.columns([0.5, 0.5], vertical_alignment='top')
+    user_is_updated = False
     with left_col:
         title_col, delete_button_col = st.columns([0.7, 0.3], vertical_alignment='bottom')
         with title_col:
@@ -172,6 +208,10 @@ def manage_users_view(
                 message_type=BannerMessageType.ERROR,
             )
         else:
+            db_user, user_is_updated = update_user_form(
+                db_session=db_session, user=db_user, roles=roles, custom_roles=custom_roles
+            )
+            st.session_state[SK_SELECTED_USER] = db_user
             st.write(db_user)
             emails = db_user.emails
 
@@ -184,7 +224,13 @@ def manage_users_view(
     left_col, right_col = st.columns([0.5, 0.5], vertical_alignment='top')
     with left_col:
         bitwarden_register_form_existing_user(
-            client=client, db_session=db_session, user=st.session_state['stp-user']
+            client=client, db_session=db_session, user=db_user, get_current_user=False
         )
     with right_col:
         st.metric(label='Passkeys', value=3)
+
+    if user_is_updated and db_user is not None:
+        logger.info(f'Successfully updated user: {db_user.username}!')
+        get_selectable_users_from_database(db_session=db_session)
+        time.sleep(on_update_refresh_after_n_seconds)
+        st.rerun()
