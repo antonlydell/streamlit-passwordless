@@ -45,7 +45,9 @@ def create_user_dialog_form(
 
 
 def user_state_radio_button(
-    label: str = 'User State', key: str = keys.ADMIN_USER_STATE_RADIO_BUTTON
+    label: str = 'User State',
+    default_disabled: bool = False,
+    key: str = keys.ADMIN_USER_STATE_RADIO_BUTTON,
 ) -> bool:
     r"""Render the user state radio button.
 
@@ -56,6 +58,10 @@ def user_state_radio_button(
     label : str, default 'User State'
         The label of the radio button.
 
+    default_enabled : bool, default True
+        True if the radio button will be set to 'enabled' on first render and
+        False for 'disabled'.
+
     key : str, default streamlit_passwordless.app.keys.ADMIN_USER_STATE_RADIO_BUTTON
         The unique identifier of the component. Each component on a page must have a unique key.
     """
@@ -63,6 +69,7 @@ def user_state_radio_button(
     return st.radio(
         label=label,
         options=(False, True),
+        index=1 if default_disabled else 0,
         format_func=lambda x: 'Enabled' if x is False else 'Disabled',
         horizontal=True,
         key=key,
@@ -226,7 +233,7 @@ def user_role_multiselect(
 
 def user_selectbox(
     df: pd.DataFrame, preselected_user: int | None = None, placeholder: str = 'Choose a user'
-) -> str:
+) -> str | None:
     r"""Render the selectbox for selecting the user to process.
 
     Parameters
@@ -248,8 +255,8 @@ def user_selectbox(
 
     Returns
     -------
-    str
-        The selected user.
+    str or None
+        The selected user. None is returned if a user was not selected.
     """
 
     def format_user_display_text(user_id: str) -> str:

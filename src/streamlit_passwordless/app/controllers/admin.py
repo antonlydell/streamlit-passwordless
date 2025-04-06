@@ -34,7 +34,13 @@ def controller(client: BitwardenPasswordlessClient, db_session: db.Session, user
     df_users, roles, custom_roles = load_users_and_roles_from_database(db_session=db_session)
 
     with users_tab:
-        manage_users_view(df=df_users, roles=roles, client=client, db_session=db_session)
+        manage_users_view(
+            df=df_users,
+            roles=roles,
+            custom_roles=custom_roles,
+            client=client,
+            db_session=db_session,
+        )
     with roles_tab:
         pass
     with custom_roles_tab:
