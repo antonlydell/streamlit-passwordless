@@ -233,7 +233,7 @@ def user_role_multiselect(
 
 def user_selectbox(
     df: pd.DataFrame, preselected_user: int | None = None, placeholder: str = 'Choose a user'
-) -> str:
+) -> str | None:
     r"""Render the selectbox for selecting the user to process.
 
     Parameters
@@ -255,8 +255,8 @@ def user_selectbox(
 
     Returns
     -------
-    str
-        The selected user.
+    str or None
+        The selected user. None is returned if a user was not selected.
     """
 
     def format_user_display_text(user_id: str) -> str:
