@@ -17,7 +17,7 @@ from streamlit_passwordless.components import create_user_form
 
 @st.dialog(title='Create User')
 def create_user_dialog_form(
-    db_session: db.Session, on_success_exit_after_n_seconds: int | None = 2
+    db_session: db.Session, on_success_exit_after_n_seconds: int | None = 1
 ) -> None:
     r"""Render the form for creating a new user in a dialog frame.
 
@@ -26,7 +26,7 @@ def create_user_dialog_form(
     db_session : streamlit_passwordless.db.Session
         An active session to the Streamlit Passwordless database.
 
-    on_success_exit_after_n_seconds : int, default 2
+    on_success_exit_after_n_seconds : int, default 1
         The dialog form will close automatically after n number of seconds after a successful
         user creation. If None the dialog form will not close automatically.
     """
