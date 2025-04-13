@@ -347,7 +347,9 @@ class User(Base):
     emails: Mapped[list['Email']] = relationship(
         back_populates='user', cascade='delete, delete-orphan', order_by='Email.rank'
     )
-    sign_ins: Mapped[list['UserSignIn']] = relationship(back_populates='user')
+    sign_ins: Mapped[list['UserSignIn']] = relationship(
+        back_populates='user', cascade='delete, delete-orphan'
+    )
 
 
 Index(f'{User.__tablename__}_username_ix', User.username)
