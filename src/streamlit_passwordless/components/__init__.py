@@ -24,10 +24,8 @@ from .core import (
     process_form_validation_errors,
 )
 from .create_user_form import create_user_form
-from .register_form import (
-    bitwarden_register_form,
-    bitwarden_register_form_existing_user,
-)
+from .delete_user_button import delete_user_button
+from .register_form import bitwarden_register_form, bitwarden_register_form_existing_user
 from .sign_in_form import bitwarden_sign_in_button, bitwarden_sign_in_form
 from .sign_out import sign_out_button
 from .update_user_form import update_user_form
@@ -56,6 +54,8 @@ __all__ = [
     'process_form_validation_errors',
     # create_user_form
     'create_user_form',
+    # delete_user_button
+    'delete_user_button',
     # register_form
     'bitwarden_register_form',
     'bitwarden_register_form_existing_user',

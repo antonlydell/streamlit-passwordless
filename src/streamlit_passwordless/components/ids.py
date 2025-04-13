@@ -14,6 +14,11 @@ CREATE_USER_FORM_EMAIL_TEXT_INPUT = 'create-user-form-email-text-input'
 CREATE_USER_FORM_DISABLED_TOGGLE = 'create-user-form-disabled-toggle'
 CREATE_USER_FORM_SUBMIT_BUTTON = 'create-user-form-submit-button'
 
+# =====================================================================================
+# Delete user
+# =====================================================================================
+
+DELETE_USER_BUTTON = 'delete-user-button'
 
 # =====================================================================================
 # Register form
@@ -58,7 +63,7 @@ KEY_SIGN_OUT_BUTTON = 'stp-sign-out-button'
 # =====================================================================================
 
 UPDATE_USER_FORM = 'update-user-form'
-UPDATE_USER_FORM_USERNAME_TEXT_INPUT = 'create-user-form-username-text-input'
+UPDATE_USER_FORM_USERNAME_TEXT_INPUT = 'update-user-form-username-text-input'
 UPDATE_USER_FORM_DISPLAYNAME_TEXT_INPUT = 'update-user-form-displayname-text-input'
 UPDATE_USER_FORM_AD_USERNAME_TEXT_INPUT = 'update-user-form-ad-username-text-input'
 UPDATE_USER_FORM_ROLE_SELECTBOX = 'update-user-form-role-selectbox'

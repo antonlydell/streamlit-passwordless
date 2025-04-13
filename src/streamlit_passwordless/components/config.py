@@ -22,6 +22,8 @@ SK_CUSTOM_ROLES = 'stp-custom-roles'
 SK_SESSION_STATE_INITIALIZED = 'stp-session-state-initialized'
 SK_CREATE_USER_FORM_IS_VALID = 'stp-create-user-form-is-valid'
 SK_CREATE_USER_FORM_VALIDATION_ERRORS = 'stp-create-user-form-validation-errors'
+SK_DELETE_USER_VALIDATION_ERRORS = 'stp-delete-user-validation-errors'
+SK_DELETE_USER_SELF = 'stp-delete-user-self'
 SK_UPDATE_USER_FORM_IS_VALID = 'stp-update-user-form-is-valid'
 SK_UPDATE_USER_FORM_VALIDATION_ERRORS = 'stp-update-user-form-validation-errors'
 

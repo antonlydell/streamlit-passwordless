@@ -13,7 +13,6 @@ import streamlit as st
 import streamlit_passwordless.database as db
 from streamlit_passwordless.app.components.admin import (
     create_user_button,
-    delete_user_button,
     refresh_users_button,
     user_role_multiselect,
     user_selectbox,
@@ -28,6 +27,7 @@ from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessC
 from streamlit_passwordless.components import (
     BannerMessageType,
     bitwarden_register_form_existing_user,
+    delete_user_button,
     display_banner_message,
     update_user_form,
 )
@@ -191,10 +191,14 @@ def manage_users_view(
     user_is_updated = False
     with left_col:
         title_col, delete_button_col = st.columns([0.7, 0.3], vertical_alignment='bottom')
+
         with title_col:
             st.markdown('### Update User')
         with delete_button_col:
-            delete_user_button(client=client, db_session=db_session, disabled=db_user is None)
+            clicked, success = delete_user_button(
+                client=client, db_session=db_session, user=db_user
+            )
+            user_is_deleted = clicked and success
 
         if selected_user_id is None:
             emails = []
@@ -203,10 +207,11 @@ def manage_users_view(
             )
         elif db_user is None:
             emails = []
-            display_banner_message(
-                message='Selected user not found in database!',
-                message_type=BannerMessageType.ERROR,
-            )
+            if not user_is_deleted:
+                display_banner_message(
+                    message='Selected user not found in database!',
+                    message_type=BannerMessageType.ERROR,
+                )
         else:
             db_user, user_is_updated = update_user_form(
                 db_session=db_session, user=db_user, roles=roles, custom_roles=custom_roles
@@ -229,8 +234,10 @@ def manage_users_view(
     with right_col:
         st.metric(label='Passkeys', value=3)
 
-    if user_is_updated and db_user is not None:
-        logger.info(f'Successfully updated user: {db_user.username}!')
+    if (user_is_updated or user_is_deleted) and db_user is not None:
+        logger.info(
+            f'Successfully {'updated' if user_is_updated else 'deleted'} user: {db_user.user_id}!'
+        )
         get_selectable_users_from_database(db_session=db_session)
         time.sleep(on_update_refresh_after_n_seconds)
         st.rerun()
