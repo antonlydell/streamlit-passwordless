@@ -14,9 +14,7 @@ from streamlit.navigation.page import StreamlitPage
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless.backend import (
-    BitwardenPasswordlessClient,
-)
+from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessClient
 
 from . import config
 
@@ -115,6 +113,43 @@ def verify_sign_in(
     st.session_state[config.SK_USER_SIGN_IN] = user_sign_in
 
     return user_sign_in, error_msg
+
+
+def delete_user_from_bitwarden_passwordless(
+    client: BitwardenPasswordlessClient, user_id: str
+) -> tuple[bool, str]:
+    r"""Delete a user from Bitwarden Passwordless.
+
+    Parameters
+    ----------
+    client : streamlit_passwordless.BitwardenPasswordlessClient
+        The Bitwarden Passwordless client to use for interacting with
+        the Bitwarden Passwordless API.
+
+    user_id : str
+        The unique ID of the user to delete.
+
+    Returns
+    -------
+    success : bool
+        True if the user was successfully deleted and False otherwise.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with deleting
+        the user. If no error occurred an empty string is returned.
+    """
+
+    try:
+        client.delete_user(user_id=user_id)
+    except exceptions.StreamlitPasswordlessError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        success = False
+    else:
+        error_msg = ''
+        success = True
+
+    return success, error_msg
 
 
 def save_user_sign_in_to_database(
@@ -265,6 +300,41 @@ def update_user_in_database(session: db.Session, user: db.models.User) -> tuple[
 
     try:
         db.commit(session, error_msg=f'Could not update {user.username}!')
+    except exceptions.DatabaseError as e:
+        logger.error(e.detailed_message)
+        error_msg = e.displayable_message
+        success = False
+    else:
+        error_msg = ''
+        success = True
+
+    return success, error_msg
+
+
+def delete_user_in_database(session: db.Session, user: db.models.User) -> tuple[bool, str]:
+    r"""Delete an existing user in the database.
+
+    Parameters
+    ----------
+    session : streamlit_passwordless.db.Session
+        An active database session.
+
+    user : streamlit_passwordless.db.models.User
+        The user to delete.
+
+    Returns
+    -------
+    success : bool
+        True if the user was successfully deleted and False otherwise.
+
+    error_msg : str
+        An error message to display to the user if there was an issue with deleting
+        the user in the database. If no error occurred an empty string is returned.
+    """
+
+    try:
+        session.delete(user)
+        db.commit(session, error_msg=f'Could not delete {user.username}!')
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
         error_msg = e.displayable_message
