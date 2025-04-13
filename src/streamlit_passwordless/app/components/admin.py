@@ -12,7 +12,6 @@ import streamlit as st
 import streamlit_passwordless.database as db
 from streamlit_passwordless.app.components import keys
 from streamlit_passwordless.app.logic.admin import get_selectable_users_from_database
-from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
 from streamlit_passwordless.components import create_user_form
 
 
@@ -149,47 +148,6 @@ def refresh_users_button(
         help='Load users from the database.',
         on_click=get_selectable_users_from_database,  # type: ignore
         kwargs={'db_session': db_session},
-    )
-
-
-def delete_user_button(
-    client: BitwardenPasswordlessClient,
-    db_session: db.Session,
-    label: str = 'Delete User',
-    disabled: bool = False,
-    key=keys.ADMIN_DELETE_USER_BUTTON,
-) -> bool:
-    r"""Render the button for deleting a user.
-
-    Parameters
-    ----------
-    client : streamlit_passwordless.BitwardenPasswordlessClient
-        An instance of the Bitwarden Passwordless client to
-        communicate with the backend API.
-
-    db_session : streamlit_passwordless.db.Session
-        An active session to the Streamlit Passwordless database.
-
-    label : str, default 'Delete User'
-        The label of the button.
-
-    disabled : bool, default False
-        If True the component is disabled from user interaction.
-
-    key : str, default streamlit_passwordless.app.keys.ADMIN_DELETE_USER_BUTTON
-        The unique identifier of the component. Each component on a page must have a unique key.
-
-    Returns
-    -------
-    bool
-        True if the button was clicked and False otherwise.
-    """
-
-    return st.button(
-        label=label,
-        key=key,
-        disabled=disabled,
-        help='Delete a user from the database and Bitwarden Passwordless.dev.',
     )
 
 
