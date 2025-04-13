@@ -8,6 +8,7 @@ from typing import Any, Literal, TypeAlias
 # Third party
 from passwordless import (
     Credential,
+    DeleteUser,
     PasswordlessClient,
     PasswordlessClientBuilder,
     PasswordlessError,
@@ -204,10 +205,6 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
         Parameters
         ----------
-        client : BackendClient
-            The Bitwarden Passwordless backend client to communicate
-            with the Bitwarden Passwordless backend.
-
         user_id : str
             The unique ID of the user.
 
@@ -239,3 +236,27 @@ class BitwardenPasswordlessClient(models.BaseModel):
             raise exceptions.StreamlitPasswordlessError(error_msg, data=data) from None
 
         return [c for c in credentials if c.origin == origin] if origin else credentials
+
+    def delete_user(self, user_id: str) -> None:
+        r"""Delete a user from Bitwarden Passwordless.
+
+        Parameters
+        ----------
+        user_id : str
+            The unique ID of the user to delete.
+
+        Raises
+        ------
+        streamlit_passwordless.StreamlitPasswordlessError
+            If there is an error with deleting the user from Bitwarden Passwordless.
+        """
+
+        try:
+            self._backend_client.delete_user(DeleteUser(user_id=user_id))
+        except PasswordlessError as e:
+            error_msg = f'Error deleting {user_id=}!\nproblem_details: {e.problem_details}'
+            data = {
+                'user_id': user_id,
+                'problem_details': e.problem_details,
+            }
+            raise exceptions.StreamlitPasswordlessError(error_msg, data=data, e=e) from None
