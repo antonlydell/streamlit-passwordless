@@ -13,6 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.14.0] - 2025-04-24
+
+Update and delete users from the Streamlit Passwordless admin app!
+
+
+### Added
+
+- `streamlit_passwordless.update_user_form` : Update information about an existing user in the database.
+
+- `streamlit_passwordless.delete_user_button` : Delete a user from the database and Bitwarden Passwordless.
+
+
+### Changed
+
+- `streamlit_passwordless.BitwardenPasswordlessClient.delete_user`: Delete a user from Bitwarden Passwordless.
+
+- `streamlit_passwordless.bitwarden_register_form_existing_user` :  Added support to supply a
+  `streamlit_passwordless.db.models.User` in addition to `streamlit_passwordless.User`, which will
+  bypass the is authenticated check. This allows the admin user(s) to register passkeys for a selected
+  user from the admin page. Added boolean parameter `get_current_user`, which will get the current user
+  from the session state if the supplied user is None. If set to False it will ensure that the form is
+  disabled if `user` is None.
+
+- `streamlit_passwordless.db` :
+
+  - `get_all_users` : Added typing overloads for better type checking.
+
+  - `get_user_by_user_id` : Updated `disabled` parameter to also accept None, which omits filtering
+    by a disabled or enabled user.
+
+
+
 ## [0.13.0] - 2025-02-27
 
 Create users through the Streamlit Passwordless admin app!
@@ -670,7 +702,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.14.0
 [0.13.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.13.0
 [0.12.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.12.0
 [0.11.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.11.0
