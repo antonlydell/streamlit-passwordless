@@ -8,8 +8,9 @@ src/streamlit_passwordless/bitwarden_passwordless/frontend/node_modules/
 src/streamlit_passwordless/bitwarden_passwordless/frontend/build/
 
 # Custom
-.streamlit
+.streamlit/
 temp/
+streamlit*passwordless*.db
 
 # C extensions
 *.so
