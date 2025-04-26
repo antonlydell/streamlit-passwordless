@@ -236,7 +236,7 @@ def manage_users_view(
 
     if (user_is_updated or user_is_deleted) and db_user is not None:
         logger.info(
-            f'Successfully {'updated' if user_is_updated else 'deleted'} user: {db_user.user_id}!'
+            f'Successfully {"updated" if user_is_updated else "deleted"} user: {db_user.user_id}!'
         )
         get_selectable_users_from_database(db_session=db_session)
         time.sleep(on_update_refresh_after_n_seconds)
