@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Verifying user email addresses.
 
+## [0.14.1] - 2025-04-26
+
+Bug fix for Python 3.11!
+
+
+### Fixed
+
+- `streamlit_passwordless` could not be imported using Python 3.11 due to an unsupported f-string
+   syntax (`f'{''}'`). This is now resolved.
+
 
 ## [0.14.0] - 2025-04-24
 
@@ -702,7 +712,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.14.1
 [0.14.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.14.0
 [0.13.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.13.0
 [0.12.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.12.0
