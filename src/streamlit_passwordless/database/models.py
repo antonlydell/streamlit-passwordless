@@ -19,14 +19,21 @@ from sqlalchemy.orm import (
 SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
 metadata_obj = MetaData(schema=SCHEMA)
 
+modified_at_column: Mapped[Optional[datetime]] = mapped_column(
+    TIMESTAMP(), onupdate=func.current_timestamp()
+)
+created_at_column: Mapped[datetime] = mapped_column(
+    TIMESTAMP(), server_default=func.current_timestamp()
+)
 
-def _timestamp_col_to_str(col: datetime | None) -> str | None:
-    r"""Convert an optional datetime column to an iso-formatted string.
+
+def _column_to_str(col: object) -> str:
+    r"""Convert a column value to string format.
 
     To be used for the `__repr__` methods of the models.
     """
 
-    return col if col is None else col.isoformat()
+    return col.isoformat() if isinstance(col, datetime) else repr(col)
 
 
 class Base(DeclarativeBase):
@@ -37,62 +44,32 @@ class Base(DeclarativeBase):
 
     Class variables
     ---------------
-    _columns__repr__: ClassVar[tuple[str, ...]], default tuple()
+    columns__repr__ : ClassVar[tuple[str, ...]], default tuple()
         The names of the columns that should be part of the `__repr__` method output.
-        Each model should define this variable. The columns defined on `Base` should
-        not be part of `_columns__repr__`.
+        Each model should define this variable. If columns are defined on :class:`Base`
+        they should not be part of `columns__repr__`.
 
-    _indent_space__repr__ : ClassVar[str], default ' ' * 4
+    indent_space__repr__ : ClassVar[str], default ' ' * 4
         The indentation space used for each column in the `__repr__` method.
-
-    Parameters
-    ----------
-    modified_at : datetime
-        The timestamp at which the table record was latest modified (UTC).
-
-    created_at : datetime
-        The timestamp at which the table record was created (UTC).
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = tuple()
-    _indent_space__repr__: ClassVar[str] = ' ' * 4
+    columns__repr__: ClassVar[tuple[str, ...]] = tuple()
+    indent_space__repr__: ClassVar[str] = ' ' * 4
 
     metadata = metadata_obj
-
-    modified_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(),
-        server_default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(), server_default=func.current_timestamp()
-    )
-
-    @property
-    def _modified_at_created_at_as_str(self) -> str:
-        r"""Stringify the timestamp columns modified_at and created_at.
-
-        To be used in the `__repr__` methods of the models.
-        """
-
-        indent = self._indent_space__repr__
-        return (
-            f'{indent}modified_at={_timestamp_col_to_str(self.modified_at)},\n'
-            f'{indent}created_at={_timestamp_col_to_str(self.created_at)},'
-        )
 
     def __repr__(self) -> str:
         r"""A string representation of the model."""
 
-        indent = self._indent_space__repr__
+        indent = self.indent_space__repr__
         output = f'{self.__class__.__name__}(\n'
 
-        for col in self._columns__repr__:
+        for col in self.columns__repr__:
             value = getattr(self, col)
-            value = _timestamp_col_to_str(value) if isinstance(value, datetime) else repr(value)
+            value = _column_to_str(value)
             output += f'{indent}{col}={value},\n'
 
-        output += f'{self._modified_at_created_at_as_str}\n)'
+        output += ')'
 
         return output
 
