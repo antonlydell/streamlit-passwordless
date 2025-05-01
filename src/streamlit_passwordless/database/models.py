@@ -74,6 +74,39 @@ class Base(DeclarativeBase):
         return output
 
 
+class ModifiedAndCreatedColumnMixin:
+    r"""Add columns for when a record was last modified and created in a table.
+
+    Parameters
+    ----------
+    modified_at : datetime or None
+        The timestamp at which the record was last modified (UTC).
+
+    modified_by : str or None
+        The ID of the user that last modified the record.
+
+    created_at : datetime
+        The timestamp at which the record was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the record.
+
+    A table model should inherit from this class prior to :class:`Base`.
+    E.g. creating the user model:
+
+    .. code-block:: python
+
+        class User(ModifiedAndCreatedColumnMixin, Base):
+            pass
+    """
+
+    modified_at: Mapped[Optional[datetime]] = modified_at_column
+    modified_by: Mapped[Optional[str]]
+    created_at: Mapped[datetime] = created_at_column
+    created_by: Mapped[Optional[str]]
+
+
 class UserRoleName(StrEnum):
     r"""The predefined user role names of streamlit-passwordless.
 
@@ -104,7 +137,7 @@ class UserRoleName(StrEnum):
     ADMIN = 'Admin'
 
 
-class Role(Base):
+class Role(ModifiedAndCreatedColumnMixin, Base):
     r"""The role of a user.
 
     A :class:`User` is associated with a role to manage its privileges within an application.
@@ -125,11 +158,33 @@ class Role(Base):
     description : str or None, default None
         A description of the role.
 
+    modified_at : datetime or None
+        The timestamp at which the role was last modified (UTC).
+
+    modified_by : str or None
+        The ID of the user that last modified the role.
+
+    created_at : datetime
+        The timestamp at which the role was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the role.
+
     users : list[User]
         The users that have the role assigned.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = ('role_id', 'name', 'rank', 'description')
+    columns__repr__: ClassVar[tuple[str, ...]] = (
+        'role_id',
+        'name',
+        'rank',
+        'description',
+        'modified_at',
+        'modified_by',
+        'created_at',
+        'created_by',
+    )
 
     __tablename__ = 'stp_role'
 
@@ -196,7 +251,7 @@ class Role(Base):
 Index(f'{Role.__tablename__}_name_ix', Role.name)
 
 
-class CustomRole(Base):
+class CustomRole(ModifiedAndCreatedColumnMixin, Base):
     r"""The custom roles of a user.
 
     Custom roles can be defined specifically for each application.
@@ -218,12 +273,34 @@ class CustomRole(Base):
     description : str or None, default None
         A description of the role.
 
+    modified_at : datetime or None
+        The timestamp at which the custom role was last modified (UTC).
+
+    modified_by : str or None
+        The ID of the user that last modified the custom role.
+
+    created_at : datetime
+        The timestamp at which the custom role was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the custom role.
+
     users : dict[str, User]
         A mapping of the users that have the custom role assigned.
         The key is the username of the user.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = ('role_id', 'name', 'rank', 'description')
+    columns__repr__: ClassVar[tuple[str, ...]] = (
+        'role_id',
+        'name',
+        'rank',
+        'description',
+        'modified_at',
+        'modified_by',
+        'created_at',
+        'created_by',
+    )
 
     __tablename__ = 'stp_custom_role'
 
@@ -249,7 +326,7 @@ user_custom_role_link = Table(
 )
 
 
-class User(Base):
+class User(ModifiedAndCreatedColumnMixin, Base):
     r"""The user table.
 
     Parameters
@@ -280,6 +357,19 @@ class User(Base):
     disabled_timestamp : Optional[datetime]
         The timestamp in UTC when the user was disabled.
 
+    modified_at : datetime or None
+        The timestamp at which the user was last modified (UTC).
+
+    modified_by : str or None
+        The ID of the user that last modified the user.
+
+    created_at : datetime
+        The timestamp at which the user was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the user.
+
     role : Role
         The role of the user.
 
@@ -293,7 +383,7 @@ class User(Base):
         Info about when the user has signed in to the application.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = (
+    columns__repr__: ClassVar[tuple[str, ...]] = (
         'user_id',
         'username',
         'ad_username',
@@ -302,6 +392,10 @@ class User(Base):
         'verified_at',
         'disabled',
         'disabled_timestamp',
+        'modified_at',
+        'modified_by',
+        'created_at',
+        'created_by',
     )
 
     __tablename__ = 'stp_user'
@@ -334,7 +428,7 @@ Index(f'{User.__tablename__}_ad_username_ix', User.ad_username)
 Index(f'{User.__tablename__}_disabled_ix', User.disabled)
 
 
-class Email(Base):
+class Email(ModifiedAndCreatedColumnMixin, Base):
     r"""Email addresses of a user.
 
     Parameters
@@ -361,11 +455,24 @@ class Email(Base):
     disabled_timestamp : Optional[datetime]
         The timestamp in UTC when the email address was disabled.
 
+    modified_at : datetime or None
+        The timestamp at which the email was last modified (UTC).
+
+    modified_by : str or None
+        The ID of the user that last modified the email.
+
+    created_at : datetime
+        The timestamp at which the email was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the email.
+
     user : User
         The user object the email address belongs to.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = (
+    columns__repr__: ClassVar[tuple[str, ...]] = (
         'email_id',
         'user_id',
         'email',
@@ -373,6 +480,10 @@ class Email(Base):
         'verified_at',
         'disabled',
         'disabled_timestamp',
+        'modified_at',
+        'modified_by',
+        'created_at',
+        'created_by',
     )
 
     __tablename__ = 'stp_email'
@@ -431,11 +542,15 @@ class UserSignIn(Base):
         The ID of the relaying party, which is the server that
         verifies the credentials during the sign in process.
 
+    created_at : datetime
+        The timestamp at which the user sign in record was created (UTC).
+        Defaults to current timestamp.
+
     user : User
         The user object the sign in entry belongs to.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = (
+    columns__repr__: ClassVar[tuple[str, ...]] = (
         'user_sign_in_id',
         'user_id',
         'sign_in_timestamp',
@@ -447,6 +562,7 @@ class UserSignIn(Base):
         'credential_id',
         'sign_in_type',
         'rp_id',
+        'created_at',
     )
 
     __tablename__ = 'stp_user_sign_in'
@@ -462,6 +578,7 @@ class UserSignIn(Base):
     credential_id: Mapped[str]
     sign_in_type: Mapped[str]
     rp_id: Mapped[Optional[str]]
+    created_at: Mapped[datetime] = created_at_column
     user: Mapped['User'] = relationship(back_populates='sign_ins')
 
 

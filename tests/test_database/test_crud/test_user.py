@@ -63,7 +63,7 @@ class TestCreateUser:
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
 
-        assert isinstance(db_user.modified_at, datetime), 'modified_at is not a datetime object!'
+        assert db_user.modified_at is None, 'modified_at is not None!'
         assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
@@ -295,7 +295,7 @@ class TestCreateUser:
     ) -> None:
         r"""Test that the columns `created_at` and `modified_at` are correctly set.
 
-        When creating a new user the columns `created_at` and `modified_at`
+        When creating a new user the column `modified_at` should be None and `created_at`
         should be set to the UTC timestamp when the record was inserted into the database.
         """
 
@@ -319,10 +319,10 @@ class TestCreateUser:
         with session_factory() as new_session:
             db_user = new_session.scalars(query).one()
 
-        for attr in ('modified_at', 'created_at'):
-            assert (
-                before_create_user <= getattr(db_user, attr) <= after_create_user
-            ), f'db_user.{attr} is incorrect!'
+        assert db_user.modified_at is None, 'modified_at is not None!'
+        assert (
+            before_create_user <= db_user.created_at <= after_create_user
+        ), 'db_user.created_at is incorrect!'
 
         # Clean up - None
         # ===========================================================
@@ -332,7 +332,7 @@ class TestCreateUser:
     ) -> None:
         r"""Test that the columns `created_at` and `modified_at` are correctly set.
 
-        When creating a new email the columns `created_at` and `modified_at`
+        When creating a new email the column `modified_at` should be None and `created_at`
         should be set to the UTC timestamp when the record was inserted into the database.
         """
 
@@ -361,10 +361,10 @@ class TestCreateUser:
         with session_factory() as new_session:
             db_email = new_session.scalars(query).one()
 
-        for attr in ('modified_at', 'created_at'):
-            assert (
-                before_create_user <= getattr(db_email, attr) <= after_create_user
-            ), f'db_email.{attr} is incorrect!'
+        assert db_email.modified_at is None, 'modified_at is not None!'
+        assert (
+            before_create_user <= db_email.created_at <= after_create_user
+        ), 'db_email.created_at is incorrect!'
 
         # Clean up - None
         # ===========================================================
@@ -424,7 +424,7 @@ class TestCreateUser:
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
 
-        assert isinstance(db_user.modified_at, datetime), 'modified_at is not a datetime object!'
+        assert db_user.modified_at is None, 'modified_at is not None!'
         assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
 
         assert (

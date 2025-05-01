@@ -234,7 +234,7 @@ class TestGetCustomRoles:
         assert exp_role.name == role.name, 'name attribute is incorrect!'
         assert exp_role.rank == role.rank, 'rank attribute is incorrect!'
         assert exp_role.description == role.description, 'description attribute is incorrect!'
-        assert isinstance(exp_role.modified_at, datetime), 'modified_at is not a datetime object!'
+        assert role.modified_at is None, 'modified_at is not None!'
         assert isinstance(exp_role.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
@@ -366,7 +366,7 @@ class TestCreateCustomRole:
         assert role.name == role_to_create.name, 'name attribute is incorrect!'
         assert role.rank == role_to_create.rank, 'rank attribute is incorrect!'
         assert role.description == role_to_create.description, 'description attribute is incorrect!'
-        assert isinstance(role.modified_at, datetime), 'modified_at is not a datetime object!'
+        assert role.modified_at is None, 'modified_at is not None!'
         assert isinstance(role.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
@@ -411,7 +411,7 @@ class TestCreateCustomRole:
     ) -> None:
         r"""Test that the columns `created_at` and `modified_at` are correctly set.
 
-        When creating a new custom role the columns `created_at` and `modified_at`
+        When creating a new custom role the column `modified_at` should be None and `created_at`
         should be set to the UTC timestamp when the record was inserted into the database.
         """
 
@@ -434,10 +434,10 @@ class TestCreateCustomRole:
         with session_factory() as new_session:
             db_custom_role = new_session.scalars(query).one()
 
-        for attr in ('modified_at', 'created_at'):
-            assert (
-                before_create_role <= getattr(db_custom_role, attr) <= after_create_role
-            ), f'db_custom_role.{attr} is incorrect!'
+        assert db_custom_role.modified_at is None, 'modified_at is not None!'
+        assert (
+            before_create_role <= db_custom_role.created_at <= after_create_role
+        ), 'custom_role.created_at is incorrect!'
 
         # Clean up - None
         # ===========================================================

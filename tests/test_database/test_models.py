@@ -128,7 +128,9 @@ class TestRole:
         rank = 4
         description = 'An admin user.'
         modified_at, modified_at_str = modified_at_column
+        modified_by = 'user_1'
         created_at, created_at_str = created_at_column
+        created_by = 'user_2'
 
         repr_str_exp = f"""Role(
     role_id={role_id},
@@ -136,7 +138,9 @@ class TestRole:
     rank={rank},
     description='{description}',
     modified_at={modified_at_str},
+    modified_by='{modified_by}',
     created_at={created_at_str},
+    created_by='{created_by}',
 )"""
 
         admin = db_models.Role(
@@ -145,7 +149,9 @@ class TestRole:
             rank=rank,
             description=description,
             modified_at=modified_at,
+            modified_by=modified_by,
             created_at=created_at,
+            created_by=created_by,
         )
 
         # Exercise
@@ -181,7 +187,9 @@ class TestCustomRole:
     rank={rank},
     description=None,
     modified_at=None,
+    modified_by=None,
     created_at=None,
+    created_by=None,
 )"""
 
         custom_role = db_models.CustomRole(role_id=role_id, name=name, rank=rank)
@@ -213,6 +221,7 @@ class TestUser:
         # ===========================================================
         modified_at, modified_at_str = modified_at_column
         created_at, created_at_str = created_at_column
+        modified_by = 'user_1'
 
         repr_str_exp = f"""User(
     user_id='user_id',
@@ -224,7 +233,9 @@ class TestUser:
     disabled=True,
     disabled_timestamp=2024-10-19T13:59:00,
     modified_at={modified_at_str},
+    modified_by='{modified_by}',
     created_at={created_at_str},
+    created_by=None,
 )"""
 
         user = db_models.User(
@@ -237,6 +248,7 @@ class TestUser:
             disabled=True,
             disabled_timestamp=datetime(2024, 10, 19, 13, 59, 0),
             modified_at=modified_at,
+            modified_by=modified_by,
             created_at=created_at,
         )
 
@@ -274,7 +286,9 @@ class TestEmail:
     disabled=None,
     disabled_timestamp=None,
     modified_at=None,
+    modified_by=None,
     created_at={created_at_str},
+    created_by=None,
 )"""
 
         email = db_models.Email(
@@ -299,12 +313,12 @@ class TestEmail:
 class TestUserSignIn:
     r"""Tests for the model `UserSignIn`."""
 
-    def test__repr__(self, modified_at_column: tuple[datetime, str]) -> None:
+    def test__repr__(self, created_at_column: tuple[datetime, str]) -> None:
         r"""Test the `__repr__` method."""
 
         # Setup
         # ===========================================================
-        modified_at, modified_at_str = modified_at_column
+        created_at, created_at_str = created_at_column
 
         repr_str_exp = f"""UserSignIn(
     user_sign_in_id=1,
@@ -318,8 +332,7 @@ class TestUserSignIn:
     credential_id='credential_id',
     sign_in_type='passkey_signin',
     rp_id='rp_id',
-    modified_at={modified_at_str},
-    created_at=None,
+    created_at={created_at_str},
 )"""
 
         user_sign_in = db_models.UserSignIn(
@@ -334,7 +347,7 @@ class TestUserSignIn:
             credential_id='credential_id',
             sign_in_type='passkey_signin',
             rp_id='rp_id',
-            modified_at=modified_at,
+            created_at=created_at,
         )
 
         # Exercise
