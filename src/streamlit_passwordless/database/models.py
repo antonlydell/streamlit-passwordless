@@ -451,13 +451,16 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
         The rank of the email, where 1 defines the primary email, 2 the secondary
         and 3 the tertiary etc ... A user can only have one email of each rank.
 
+    verified : bool, default False
+        True if the email address is verified and False otherwise.
+
     verified_at : Optional[datetime]
         The timestamp in UTC when the email address was verified by the user.
 
     disabled : bool, default False
         If the email address is disabled or not.
 
-    disabled_timestamp : Optional[datetime]
+    disabled_at : Optional[datetime]
         The timestamp in UTC when the email address was disabled.
 
     modified_at : datetime or None
@@ -482,9 +485,10 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
         'user_id',
         'email',
         'rank',
+        'verified',
         'verified_at',
         'disabled',
-        'disabled_timestamp',
+        'disabled_at',
         'modified_at',
         'modified_by',
         'created_at',
@@ -498,9 +502,10 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
     user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     email: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
+    verified: Mapped[bool] = mapped_column(default=False)
     verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
-    disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    disabled_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     user: Mapped['User'] = relationship(back_populates='emails')
 
 

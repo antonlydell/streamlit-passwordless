@@ -33,9 +33,10 @@ def sqlite_in_memory_database_with_user_and_email(
     exp_email = Email(
         email='test@example.com',
         rank=1,
+        verified=True,
         verified_at=datetime(2025, 1, 20, 9, 8, 7),
         disabled=1,
-        disabled_timestamp=datetime(2025, 2, 22, 13, 37, 37),
+        disabled_at=datetime(2025, 2, 22, 13, 37, 37),
         modified_at=datetime(2025, 2, 18, 13, 37, 38),
         created_at=datetime(2025, 1, 1, 0, 0, 0),
     )
@@ -90,9 +91,10 @@ class TestGetEmail:
             ('user_id', exp_user.user_id),
             ('email', exp_email.email),
             ('rank', exp_email.rank),
+            ('verified', exp_email.verified),
             ('verified_at', exp_email.verified_at),
             ('disabled', exp_email.disabled),
-            ('disabled_timestamp', exp_email.disabled_timestamp),
+            ('disabled_at', exp_email.disabled_at),
             ('modified_at', exp_email.modified_at),
             ('created_at', exp_email.created_at),
         )
@@ -154,9 +156,10 @@ class TestGetEmail:
             ('user_id', exp_user.user_id),
             ('email', exp_email.email),
             ('rank', exp_email.rank),
+            ('verified', exp_email.verified),
             ('verified_at', exp_email.verified_at),
             ('disabled', exp_email.disabled),
-            ('disabled_timestamp', exp_email.disabled_timestamp),
+            ('disabled_at', exp_email.disabled_at),
             ('modified_at', exp_email.modified_at),
             ('created_at', exp_email.created_at),
         )

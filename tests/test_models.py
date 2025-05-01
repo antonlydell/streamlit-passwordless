@@ -394,8 +394,9 @@ class TestEmail:
 
         data_exp = input_data.copy()
         data_exp['email_id'] = None
+        data_exp['verified'] = False
         data_exp['verified_at'] = None
-        data_exp['disabled_timestamp'] = None
+        data_exp['disabled_at'] = None
 
         # Exercise
         # ===========================================================
@@ -418,9 +419,10 @@ class TestEmail:
             'user_id': 'user_id',
             'email': 'test@email.com',
             'rank': 3,
+            'verified': True,
             'verified_at': '2024-09-17T21:04:05',
             'disabled': True,
-            'disabled_timestamp': datetime(2024, 9, 9, 13, 37, 37),
+            'disabled_at': datetime(2024, 9, 9, 13, 37, 37),
         }
 
         data_exp = input_data.copy()

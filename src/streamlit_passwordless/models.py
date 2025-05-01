@@ -186,13 +186,16 @@ class Email(BaseModel):
         The rank of the email, where 1 defines the primary email, 2 the secondary
         and 3 the tertiary etc ... A user can only have one email of each rank.
 
+    verified : bool, default False
+        True if the email address is verified and False otherwise.
+
     verified_at : datetime or None, default None
         The timestamp in UTC when the email address was verified by the user.
 
     disabled : bool, default False
         If the email address is disabled or not.
 
-    disabled_timestamp : datetime or None, default None
+    disabled_at : datetime or None, default None
         The timestamp in UTC when the email address was disabled.
     """
 
@@ -200,9 +203,10 @@ class Email(BaseModel):
     user_id: str = ''
     email: str
     rank: int
+    verified: bool = False
     verified_at: datetime | None = None
     disabled: bool = False
-    disabled_timestamp: datetime | None = None
+    disabled_at: datetime | None = None
 
 
 class UserSignIn(BaseModel):

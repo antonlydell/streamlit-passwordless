@@ -225,9 +225,10 @@ class TestCreateUser:
                 ('user_id', user_to_create.user_id),
                 ('email', email_exp.email),
                 ('rank', email_exp.rank),
+                ('verified', email_exp.verified),
                 ('verified_at', email_exp.verified_at),
                 ('disabled', email_exp.disabled),
-                ('disabled_timestamp', email_exp.disabled_timestamp),
+                ('disabled_at', email_exp.disabled_at),
             )
             for attr, exp_value in email_attributes_to_verify:
                 assert (
