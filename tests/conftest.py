@@ -388,18 +388,20 @@ def user_1(
     username = 'rev'
     ad_username = 'the.rev'
     displayname = 'Jimmy'
+    verified = True
     verified_at = None
     disabled = False
-    disabled_timestamp = None
+    disabled_at = None
 
     data: dict[str, Any] = {
         'user_id': user_id,
         'username': username,
         'ad_username': ad_username,
         'displayname': displayname,
+        'verified': verified,
         'verified_at': verified_at,
         'disabled': disabled,
-        'disabled_timestamp': disabled_timestamp,
+        'disabled_at': disabled_at,
         'role': role_data,
         'custom_roles': {'Drummer': custom_role_data},
         'emails': [],
@@ -414,9 +416,10 @@ def user_1(
         ad_username=ad_username,
         displayname=displayname,
         role_id=db_superuser_role_model.role_id,
+        verified=verified,
         verified_at=verified_at,
         disabled=disabled,
-        disabled_timestamp=disabled_timestamp,
+        disabled_at=disabled_at,
         role=db_superuser_role_model,
         custom_roles={db_drummer_custom_role_model.name: db_drummer_custom_role_model},
     )
@@ -593,7 +596,7 @@ def empty_sqlite_in_memory_database() -> Generator[tuple[Session, SessionFactory
 
 @pytest.fixture()
 def sqlite_in_memory_database_with_roles(
-    empty_sqlite_in_memory_database: tuple[Session, SessionFactory]
+    empty_sqlite_in_memory_database: tuple[Session, SessionFactory],
 ) -> Generator[DbWithRoles, None, None]:
     r"""A SQLite database with roles defined.
 

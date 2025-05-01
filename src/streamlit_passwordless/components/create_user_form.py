@@ -435,7 +435,7 @@ def create_user_form(
         ad_username=None if ad_username is None else ad_username.strip(),
         displayname=None if displayname is None else displayname.strip(),
         disabled=disabled,
-        disabled_timestamp=get_current_datetime() if disabled else None,
+        disabled_at=get_current_datetime() if disabled else None,
         role=models.UserRole if role is None else role,
         emails=[models.Email(email=email.strip().casefold(), rank=1)] if email else [],
         custom_roles={m.name: models.CustomRole.model_validate(m) for m in selected_custom_roles},

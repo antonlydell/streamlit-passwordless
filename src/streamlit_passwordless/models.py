@@ -281,15 +281,18 @@ class User(BaseModel):
     displayname : str or None, default None
         A descriptive name of the user that is easy to understand for a human.
 
-    verified_at : datetime or None, default None
-        The timestamp in UTC when the user was verified. A user is verified when
+    verified : bool, default False
+        True if a user is verified and False otherwise. A user is verified when
         at least one verified email address is associated with the user.
+
+    verified_at : datetime or None, default None
+        The timestamp in UTC when the user was verified.
 
     disabled : bool, default False
         If False the user is enabled and if True the user is disabled.
         A disabled user is not able to register credentials or sign in.
 
-    disabled_timestamp : datetime or None, default None
+    disabled_at : datetime or None, default None
         The timestamp in UTC when the user was disabled.
 
     role : streamlit_passwordless.Role, default streamlit_passwordless.UserRole
@@ -316,9 +319,10 @@ class User(BaseModel):
     username: str
     ad_username: str | None = None
     displayname: str | None = None
+    verified: bool = False
     verified_at: datetime | None = None
     disabled: bool = False
-    disabled_timestamp: datetime | None = None
+    disabled_at: datetime | None = None
     role: Role = UserRole
     custom_roles: dict[str, CustomRole] = Field(default_factory=dict)
     emails: list[Email] = Field(default_factory=list)

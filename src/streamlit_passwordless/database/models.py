@@ -346,15 +346,18 @@ class User(ModifiedAndCreatedColumnMixin, Base):
     role_id : int
         The unique id of the role associated with the user.
 
-    verified_at : Optional[datetime]
-        The timestamp in UTC when the user was verified. A user is verified, when
+    verified : bool, default False
+        True if a user is verified and False otherwise. A user is verified when
         at least one verified email address is associated with the user.
+
+    verified_at : Optional[datetime]
+        The timestamp in UTC when the user was verified.
 
     disabled : bool, default False
         If False the user is enabled and if True the user is disabled.
         A disabled user is not able to register credentials or sign in.
 
-    disabled_timestamp : Optional[datetime]
+    disabled_at : Optional[datetime]
         The timestamp in UTC when the user was disabled.
 
     modified_at : datetime or None
@@ -389,9 +392,10 @@ class User(ModifiedAndCreatedColumnMixin, Base):
         'ad_username',
         'displayname',
         'role_id',
+        'verified',
         'verified_at',
         'disabled',
-        'disabled_timestamp',
+        'disabled_at',
         'modified_at',
         'modified_by',
         'created_at',
@@ -405,9 +409,10 @@ class User(ModifiedAndCreatedColumnMixin, Base):
     ad_username: Mapped[Optional[str]]
     displayname: Mapped[Optional[str]]
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.role_id))
+    verified: Mapped[bool] = mapped_column(default=False)
     verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
-    disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    disabled_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     role: Mapped[Role] = relationship(back_populates='users')
     custom_roles: Mapped[dict[str, CustomRole]] = relationship(
         secondary='stp_user_custom_role_link',

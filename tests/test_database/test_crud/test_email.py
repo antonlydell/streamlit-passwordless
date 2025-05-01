@@ -172,7 +172,7 @@ class TestGetEmail:
             ('role_id', exp_user.role_id),
             ('verified_at', exp_user.verified_at),
             ('disabled', exp_user.disabled),
-            ('disabled_timestamp', exp_user.disabled_timestamp),
+            ('disabled_at', exp_user.disabled_at),
             ('modified_at', exp_user.modified_at),
             ('created_at', exp_user.created_at),
         )

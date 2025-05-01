@@ -36,7 +36,7 @@ class TestCreateUser:
             displayname='Displayname',
             verified_at=datetime(2025, 2, 1, 18, 55, 23),
             disabled=True,
-            disabled_timestamp=datetime(2025, 2, 1, 19, 56, 0),
+            disabled_at=datetime(2025, 2, 1, 19, 56, 0),
             role=Role(role_id=exp_role.role_id, name='', rank=0),
         )
         query = select(db.models.User).where(db.models.User.user_id == user_to_create.user_id)
@@ -58,7 +58,7 @@ class TestCreateUser:
             ('role_id', exp_role.role_id),
             ('verified_at', user_to_create.verified_at),
             ('disabled', user_to_create.disabled),
-            ('disabled_timestamp', user_to_create.disabled_timestamp),
+            ('disabled_at', user_to_create.disabled_at),
         )
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
@@ -106,7 +106,7 @@ class TestCreateUser:
             ('role_id', exp_role.role_id),
             ('verified_at', user_to_create.verified_at),
             ('disabled', user_to_create.disabled),
-            ('disabled_timestamp', user_to_create.disabled_timestamp),
+            ('disabled_at', user_to_create.disabled_at),
         )
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
@@ -242,7 +242,7 @@ class TestCreateUser:
             ('role_id', exp_role.role_id),
             ('verified_at', user_to_create.verified_at),
             ('disabled', user_to_create.disabled),
-            ('disabled_timestamp', user_to_create.disabled_timestamp),
+            ('disabled_at', user_to_create.disabled_at),
         )
         for attr, exp_value in user_attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr} is incorrect!'
@@ -419,7 +419,7 @@ class TestCreateUser:
             ('role_id', role_id),
             ('verified_at', user_to_create.verified_at),
             ('disabled', user_to_create.disabled),
-            ('disabled_timestamp', user_to_create.disabled_timestamp),
+            ('disabled_at', user_to_create.disabled_at),
         )
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
