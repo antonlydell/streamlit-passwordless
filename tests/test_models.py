@@ -394,8 +394,9 @@ class TestEmail:
 
         data_exp = input_data.copy()
         data_exp['email_id'] = None
+        data_exp['verified'] = False
         data_exp['verified_at'] = None
-        data_exp['disabled_timestamp'] = None
+        data_exp['disabled_at'] = None
 
         # Exercise
         # ===========================================================
@@ -418,9 +419,10 @@ class TestEmail:
             'user_id': 'user_id',
             'email': 'test@email.com',
             'rank': 3,
+            'verified': True,
             'verified_at': '2024-09-17T21:04:05',
             'disabled': True,
-            'disabled_timestamp': datetime(2024, 9, 9, 13, 37, 37),
+            'disabled_at': datetime(2024, 9, 9, 13, 37, 37),
         }
 
         data_exp = input_data.copy()
@@ -627,9 +629,10 @@ class TestUser:
             'username': username,
             'ad_username': None,
             'displayname': None,
+            'verified': False,
             'verified_at': None,
             'disabled': False,
-            'disabled_timestamp': None,
+            'disabled_at': None,
             'role': role_data,
             'custom_roles': {},
             'emails': [],
@@ -667,9 +670,10 @@ class TestUser:
             'username': 'username',
             'ad_username': 'ad_username',
             'displayname': 'displayname',
+            'verified': False,
             'verified_at': '2024-09-17T20:48:16',
             'disabled': True,
-            'disabled_timestamp': '2024-09-18T21:48:16',
+            'disabled_at': '2024-09-18T21:48:16',
             'role': {'role_id': 1, 'name': 'role', 'rank': 1, 'description': None},
             'custom_roles': {
                 'custom_role_1': {
@@ -686,7 +690,7 @@ class TestUser:
 
         data_exp = deepcopy(input_data)
         data_exp['verified_at'] = datetime(2024, 9, 17, 20, 48, 16)
-        data_exp['disabled_timestamp'] = datetime(2024, 9, 18, 21, 48, 16)
+        data_exp['disabled_at'] = datetime(2024, 9, 18, 21, 48, 16)
         data_exp['aliases'] = ('Matt', 'Shadows')
 
         # Exercise

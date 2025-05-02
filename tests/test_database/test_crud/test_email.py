@@ -33,10 +33,11 @@ def sqlite_in_memory_database_with_user_and_email(
     exp_email = Email(
         email='test@example.com',
         rank=1,
+        verified=True,
         verified_at=datetime(2025, 1, 20, 9, 8, 7),
         disabled=1,
-        disabled_timestamp=datetime(2025, 2, 22, 13, 37, 37),
-        modified_at=datetime(2025, 2, 18, 13, 37, 38),
+        disabled_at=datetime(2025, 2, 22, 13, 37, 37),
+        updated_at=datetime(2025, 2, 18, 13, 37, 38),
         created_at=datetime(2025, 1, 1, 0, 0, 0),
     )
     user = User(
@@ -44,7 +45,7 @@ def sqlite_in_memory_database_with_user_and_email(
         username='username',
         role_id=role.role_id,
         emails=[exp_email],
-        modified_at=datetime(2024, 7, 17, 13, 37, 37),
+        updated_at=datetime(2024, 7, 17, 13, 37, 37),
         created_at=datetime(2024, 6, 6, 13, 37, 38),
     )
 
@@ -90,10 +91,11 @@ class TestGetEmail:
             ('user_id', exp_user.user_id),
             ('email', exp_email.email),
             ('rank', exp_email.rank),
+            ('verified', exp_email.verified),
             ('verified_at', exp_email.verified_at),
             ('disabled', exp_email.disabled),
-            ('disabled_timestamp', exp_email.disabled_timestamp),
-            ('modified_at', exp_email.modified_at),
+            ('disabled_at', exp_email.disabled_at),
+            ('updated_at', exp_email.updated_at),
             ('created_at', exp_email.created_at),
         )
         for attr, exp_value in attributes_to_verify:
@@ -154,10 +156,11 @@ class TestGetEmail:
             ('user_id', exp_user.user_id),
             ('email', exp_email.email),
             ('rank', exp_email.rank),
+            ('verified', exp_email.verified),
             ('verified_at', exp_email.verified_at),
             ('disabled', exp_email.disabled),
-            ('disabled_timestamp', exp_email.disabled_timestamp),
-            ('modified_at', exp_email.modified_at),
+            ('disabled_at', exp_email.disabled_at),
+            ('updated_at', exp_email.updated_at),
             ('created_at', exp_email.created_at),
         )
         for attr, exp_value in email_attributes_to_verify:
@@ -172,8 +175,8 @@ class TestGetEmail:
             ('role_id', exp_user.role_id),
             ('verified_at', exp_user.verified_at),
             ('disabled', exp_user.disabled),
-            ('disabled_timestamp', exp_user.disabled_timestamp),
-            ('modified_at', exp_user.modified_at),
+            ('disabled_at', exp_user.disabled_at),
+            ('updated_at', exp_user.updated_at),
             ('created_at', exp_user.created_at),
         )
         for attr, exp_value in user_attributes_to_verify:

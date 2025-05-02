@@ -173,7 +173,7 @@ def _updated_user(
 
         if disabled_updated:
             user.disabled = disabled
-            user.disabled_timestamp = datetime.now(tz=ZoneInfo('UTC')) if disabled else None
+            user.disabled_at = datetime.now(tz=ZoneInfo('UTC')) if disabled else None
     else:
         disabled_updated = False
 

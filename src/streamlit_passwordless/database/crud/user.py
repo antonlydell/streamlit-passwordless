@@ -223,7 +223,7 @@ def create_user(
         role_id=role_id,
         verified_at=user.verified_at,
         disabled=user.disabled,
-        disabled_timestamp=user.disabled_timestamp,
+        disabled_at=user.disabled_at,
     )
 
     if emails := user.emails:

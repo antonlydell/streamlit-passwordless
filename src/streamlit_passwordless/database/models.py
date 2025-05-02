@@ -19,14 +19,21 @@ from sqlalchemy.orm import (
 SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
 metadata_obj = MetaData(schema=SCHEMA)
 
+updated_at_column: Mapped[Optional[datetime]] = mapped_column(
+    TIMESTAMP(), onupdate=func.current_timestamp()
+)
+created_at_column: Mapped[datetime] = mapped_column(
+    TIMESTAMP(), server_default=func.current_timestamp()
+)
 
-def _timestamp_col_to_str(col: datetime | None) -> str | None:
-    r"""Convert an optional datetime column to an iso-formatted string.
+
+def _column_to_str(col: object) -> str:
+    r"""Convert a column value to string format.
 
     To be used for the `__repr__` methods of the models.
     """
 
-    return col if col is None else col.isoformat()
+    return col.isoformat() if isinstance(col, datetime) else repr(col)
 
 
 class Base(DeclarativeBase):
@@ -37,64 +44,67 @@ class Base(DeclarativeBase):
 
     Class variables
     ---------------
-    _columns__repr__: ClassVar[tuple[str, ...]], default tuple()
+    columns__repr__ : ClassVar[tuple[str, ...]], default tuple()
         The names of the columns that should be part of the `__repr__` method output.
-        Each model should define this variable. The columns defined on `Base` should
-        not be part of `_columns__repr__`.
+        Each model should define this variable. If columns are defined on :class:`Base`
+        they should not be part of `columns__repr__`.
 
-    _indent_space__repr__ : ClassVar[str], default ' ' * 4
+    indent_space__repr__ : ClassVar[str], default ' ' * 4
         The indentation space used for each column in the `__repr__` method.
-
-    Parameters
-    ----------
-    modified_at : datetime
-        The timestamp at which the table record was latest modified (UTC).
-
-    created_at : datetime
-        The timestamp at which the table record was created (UTC).
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = tuple()
-    _indent_space__repr__: ClassVar[str] = ' ' * 4
+    columns__repr__: ClassVar[tuple[str, ...]] = tuple()
+    indent_space__repr__: ClassVar[str] = ' ' * 4
 
     metadata = metadata_obj
-
-    modified_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(),
-        server_default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(), server_default=func.current_timestamp()
-    )
-
-    @property
-    def _modified_at_created_at_as_str(self) -> str:
-        r"""Stringify the timestamp columns modified_at and created_at.
-
-        To be used in the `__repr__` methods of the models.
-        """
-
-        indent = self._indent_space__repr__
-        return (
-            f'{indent}modified_at={_timestamp_col_to_str(self.modified_at)},\n'
-            f'{indent}created_at={_timestamp_col_to_str(self.created_at)},'
-        )
 
     def __repr__(self) -> str:
         r"""A string representation of the model."""
 
-        indent = self._indent_space__repr__
+        indent = self.indent_space__repr__
         output = f'{self.__class__.__name__}(\n'
 
-        for col in self._columns__repr__:
+        for col in self.columns__repr__:
             value = getattr(self, col)
-            value = _timestamp_col_to_str(value) if isinstance(value, datetime) else repr(value)
+            value = _column_to_str(value)
             output += f'{indent}{col}={value},\n'
 
-        output += f'{self._modified_at_created_at_as_str}\n)'
+        output += ')'
 
         return output
+
+
+class ModifiedAndCreatedColumnMixin:
+    r"""Add columns for when a record was last updated and created in a table.
+
+    Parameters
+    ----------
+    updated_at : datetime or None
+        The timestamp at which the record was last updated (UTC).
+
+    updated_by : str or None
+        The ID of the user that last updated the record.
+
+    created_at : datetime
+        The timestamp at which the record was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the record.
+
+    A table model should inherit from this class prior to :class:`Base`.
+    E.g. creating the user model:
+
+    .. code-block:: python
+
+        class User(ModifiedAndCreatedColumnMixin, Base):
+            pass
+    """
+
+    updated_at: Mapped[Optional[datetime]] = updated_at_column
+    updated_by: Mapped[Optional[str]]
+    created_at: Mapped[datetime] = created_at_column
+    created_by: Mapped[Optional[str]]
 
 
 class UserRoleName(StrEnum):
@@ -127,7 +137,7 @@ class UserRoleName(StrEnum):
     ADMIN = 'Admin'
 
 
-class Role(Base):
+class Role(ModifiedAndCreatedColumnMixin, Base):
     r"""The role of a user.
 
     A :class:`User` is associated with a role to manage its privileges within an application.
@@ -148,11 +158,33 @@ class Role(Base):
     description : str or None, default None
         A description of the role.
 
+    updated_at : datetime or None
+        The timestamp at which the role was last updated (UTC).
+
+    updated_by : str or None
+        The ID of the user that last updated the role.
+
+    created_at : datetime
+        The timestamp at which the role was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the role.
+
     users : list[User]
         The users that have the role assigned.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = ('role_id', 'name', 'rank', 'description')
+    columns__repr__: ClassVar[tuple[str, ...]] = (
+        'role_id',
+        'name',
+        'rank',
+        'description',
+        'updated_at',
+        'updated_by',
+        'created_at',
+        'created_by',
+    )
 
     __tablename__ = 'stp_role'
 
@@ -219,7 +251,7 @@ class Role(Base):
 Index(f'{Role.__tablename__}_name_ix', Role.name)
 
 
-class CustomRole(Base):
+class CustomRole(ModifiedAndCreatedColumnMixin, Base):
     r"""The custom roles of a user.
 
     Custom roles can be defined specifically for each application.
@@ -241,12 +273,34 @@ class CustomRole(Base):
     description : str or None, default None
         A description of the role.
 
+    updated_at : datetime or None
+        The timestamp at which the custom role was last updated (UTC).
+
+    updated_by : str or None
+        The ID of the user that last updated the custom role.
+
+    created_at : datetime
+        The timestamp at which the custom role was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the custom role.
+
     users : dict[str, User]
         A mapping of the users that have the custom role assigned.
         The key is the username of the user.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = ('role_id', 'name', 'rank', 'description')
+    columns__repr__: ClassVar[tuple[str, ...]] = (
+        'role_id',
+        'name',
+        'rank',
+        'description',
+        'updated_at',
+        'updated_by',
+        'created_at',
+        'created_by',
+    )
 
     __tablename__ = 'stp_custom_role'
 
@@ -272,7 +326,7 @@ user_custom_role_link = Table(
 )
 
 
-class User(Base):
+class User(ModifiedAndCreatedColumnMixin, Base):
     r"""The user table.
 
     Parameters
@@ -292,16 +346,32 @@ class User(Base):
     role_id : int
         The unique id of the role associated with the user.
 
-    verified_at : Optional[datetime]
-        The timestamp in UTC when the user was verified. A user is verified, when
+    verified : bool, default False
+        True if a user is verified and False otherwise. A user is verified when
         at least one verified email address is associated with the user.
+
+    verified_at : Optional[datetime]
+        The timestamp in UTC when the user was verified.
 
     disabled : bool, default False
         If False the user is enabled and if True the user is disabled.
         A disabled user is not able to register credentials or sign in.
 
-    disabled_timestamp : Optional[datetime]
+    disabled_at : Optional[datetime]
         The timestamp in UTC when the user was disabled.
+
+    updated_at : datetime or None
+        The timestamp at which the user was last updated (UTC).
+
+    updated_by : str or None
+        The ID of the user that last updated the user.
+
+    created_at : datetime
+        The timestamp at which the user was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the user.
 
     role : Role
         The role of the user.
@@ -316,15 +386,20 @@ class User(Base):
         Info about when the user has signed in to the application.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = (
+    columns__repr__: ClassVar[tuple[str, ...]] = (
         'user_id',
         'username',
         'ad_username',
         'displayname',
         'role_id',
+        'verified',
         'verified_at',
         'disabled',
-        'disabled_timestamp',
+        'disabled_at',
+        'updated_at',
+        'updated_by',
+        'created_at',
+        'created_by',
     )
 
     __tablename__ = 'stp_user'
@@ -334,9 +409,10 @@ class User(Base):
     ad_username: Mapped[Optional[str]]
     displayname: Mapped[Optional[str]]
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.role_id))
+    verified: Mapped[bool] = mapped_column(default=False)
     verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
-    disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    disabled_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     role: Mapped[Role] = relationship(back_populates='users')
     custom_roles: Mapped[dict[str, CustomRole]] = relationship(
         secondary='stp_user_custom_role_link',
@@ -357,7 +433,7 @@ Index(f'{User.__tablename__}_ad_username_ix', User.ad_username)
 Index(f'{User.__tablename__}_disabled_ix', User.disabled)
 
 
-class Email(Base):
+class Email(ModifiedAndCreatedColumnMixin, Base):
     r"""Email addresses of a user.
 
     Parameters
@@ -375,27 +451,48 @@ class Email(Base):
         The rank of the email, where 1 defines the primary email, 2 the secondary
         and 3 the tertiary etc ... A user can only have one email of each rank.
 
+    verified : bool, default False
+        True if the email address is verified and False otherwise.
+
     verified_at : Optional[datetime]
         The timestamp in UTC when the email address was verified by the user.
 
     disabled : bool, default False
         If the email address is disabled or not.
 
-    disabled_timestamp : Optional[datetime]
+    disabled_at : Optional[datetime]
         The timestamp in UTC when the email address was disabled.
+
+    updated_at : datetime or None
+        The timestamp at which the email was last updated (UTC).
+
+    updated_by : str or None
+        The ID of the user that last updated the email.
+
+    created_at : datetime
+        The timestamp at which the email was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : str or None
+        The ID of the user that created the email.
 
     user : User
         The user object the email address belongs to.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = (
+    columns__repr__: ClassVar[tuple[str, ...]] = (
         'email_id',
         'user_id',
         'email',
         'rank',
+        'verified',
         'verified_at',
         'disabled',
-        'disabled_timestamp',
+        'disabled_at',
+        'updated_at',
+        'updated_by',
+        'created_at',
+        'created_by',
     )
 
     __tablename__ = 'stp_email'
@@ -405,9 +502,10 @@ class Email(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     email: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
+    verified: Mapped[bool] = mapped_column(default=False)
     verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
-    disabled_timestamp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    disabled_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
     user: Mapped['User'] = relationship(back_populates='emails')
 
 
@@ -454,11 +552,15 @@ class UserSignIn(Base):
         The ID of the relaying party, which is the server that
         verifies the credentials during the sign in process.
 
+    created_at : datetime
+        The timestamp at which the user sign in record was created (UTC).
+        Defaults to current timestamp.
+
     user : User
         The user object the sign in entry belongs to.
     """
 
-    _columns__repr__: ClassVar[tuple[str, ...]] = (
+    columns__repr__: ClassVar[tuple[str, ...]] = (
         'user_sign_in_id',
         'user_id',
         'sign_in_timestamp',
@@ -470,6 +572,7 @@ class UserSignIn(Base):
         'credential_id',
         'sign_in_type',
         'rp_id',
+        'created_at',
     )
 
     __tablename__ = 'stp_user_sign_in'
@@ -485,6 +588,7 @@ class UserSignIn(Base):
     credential_id: Mapped[str]
     sign_in_type: Mapped[str]
     rp_id: Mapped[Optional[str]]
+    created_at: Mapped[datetime] = created_at_column
     user: Mapped['User'] = relationship(back_populates='sign_ins')
 
 

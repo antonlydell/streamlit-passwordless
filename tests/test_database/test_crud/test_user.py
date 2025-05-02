@@ -36,7 +36,7 @@ class TestCreateUser:
             displayname='Displayname',
             verified_at=datetime(2025, 2, 1, 18, 55, 23),
             disabled=True,
-            disabled_timestamp=datetime(2025, 2, 1, 19, 56, 0),
+            disabled_at=datetime(2025, 2, 1, 19, 56, 0),
             role=Role(role_id=exp_role.role_id, name='', rank=0),
         )
         query = select(db.models.User).where(db.models.User.user_id == user_to_create.user_id)
@@ -58,12 +58,12 @@ class TestCreateUser:
             ('role_id', exp_role.role_id),
             ('verified_at', user_to_create.verified_at),
             ('disabled', user_to_create.disabled),
-            ('disabled_timestamp', user_to_create.disabled_timestamp),
+            ('disabled_at', user_to_create.disabled_at),
         )
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
 
-        assert isinstance(db_user.modified_at, datetime), 'modified_at is not a datetime object!'
+        assert db_user.updated_at is None, 'updated_at is not None!'
         assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
@@ -106,7 +106,7 @@ class TestCreateUser:
             ('role_id', exp_role.role_id),
             ('verified_at', user_to_create.verified_at),
             ('disabled', user_to_create.disabled),
-            ('disabled_timestamp', user_to_create.disabled_timestamp),
+            ('disabled_at', user_to_create.disabled_at),
         )
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
@@ -225,9 +225,10 @@ class TestCreateUser:
                 ('user_id', user_to_create.user_id),
                 ('email', email_exp.email),
                 ('rank', email_exp.rank),
+                ('verified', email_exp.verified),
                 ('verified_at', email_exp.verified_at),
                 ('disabled', email_exp.disabled),
-                ('disabled_timestamp', email_exp.disabled_timestamp),
+                ('disabled_at', email_exp.disabled_at),
             )
             for attr, exp_value in email_attributes_to_verify:
                 assert (
@@ -242,7 +243,7 @@ class TestCreateUser:
             ('role_id', exp_role.role_id),
             ('verified_at', user_to_create.verified_at),
             ('disabled', user_to_create.disabled),
-            ('disabled_timestamp', user_to_create.disabled_timestamp),
+            ('disabled_at', user_to_create.disabled_at),
         )
         for attr, exp_value in user_attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr} is incorrect!'
@@ -290,12 +291,12 @@ class TestCreateUser:
         # Clean up - None
         # ===========================================================
 
-    def test_user_created_at_and_modified_at(
+    def test_user_created_at_and_updated_at(
         self, sqlite_in_memory_database_with_roles: DbWithRoles
     ) -> None:
-        r"""Test that the columns `created_at` and `modified_at` are correctly set.
+        r"""Test that the columns `created_at` and `updated_at` are correctly set.
 
-        When creating a new user the columns `created_at` and `modified_at`
+        When creating a new user the column `updated_at` should be None and `created_at`
         should be set to the UTC timestamp when the record was inserted into the database.
         """
 
@@ -319,20 +320,20 @@ class TestCreateUser:
         with session_factory() as new_session:
             db_user = new_session.scalars(query).one()
 
-        for attr in ('modified_at', 'created_at'):
-            assert (
-                before_create_user <= getattr(db_user, attr) <= after_create_user
-            ), f'db_user.{attr} is incorrect!'
+        assert db_user.updated_at is None, 'updated_at is not None!'
+        assert (
+            before_create_user <= db_user.created_at <= after_create_user
+        ), 'db_user.created_at is incorrect!'
 
         # Clean up - None
         # ===========================================================
 
-    def test_user_email_created_at_and_modified_at(
+    def test_user_email_created_at_and_updated_at(
         self, sqlite_in_memory_database_with_roles: DbWithRoles
     ) -> None:
-        r"""Test that the columns `created_at` and `modified_at` are correctly set.
+        r"""Test that the columns `created_at` and `updated_at` are correctly set.
 
-        When creating a new email the columns `created_at` and `modified_at`
+        When creating a new email the column `updated_at` should be None and `created_at`
         should be set to the UTC timestamp when the record was inserted into the database.
         """
 
@@ -361,10 +362,10 @@ class TestCreateUser:
         with session_factory() as new_session:
             db_email = new_session.scalars(query).one()
 
-        for attr in ('modified_at', 'created_at'):
-            assert (
-                before_create_user <= getattr(db_email, attr) <= after_create_user
-            ), f'db_email.{attr} is incorrect!'
+        assert db_email.updated_at is None, 'updated_at is not None!'
+        assert (
+            before_create_user <= db_email.created_at <= after_create_user
+        ), 'db_email.created_at is incorrect!'
 
         # Clean up - None
         # ===========================================================
@@ -419,12 +420,12 @@ class TestCreateUser:
             ('role_id', role_id),
             ('verified_at', user_to_create.verified_at),
             ('disabled', user_to_create.disabled),
-            ('disabled_timestamp', user_to_create.disabled_timestamp),
+            ('disabled_at', user_to_create.disabled_at),
         )
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
 
-        assert isinstance(db_user.modified_at, datetime), 'modified_at is not a datetime object!'
+        assert db_user.updated_at is None, 'updated_at is not None!'
         assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
 
         assert (
