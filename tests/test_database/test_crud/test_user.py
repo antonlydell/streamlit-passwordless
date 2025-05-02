@@ -63,7 +63,7 @@ class TestCreateUser:
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
 
-        assert db_user.modified_at is None, 'modified_at is not None!'
+        assert db_user.updated_at is None, 'updated_at is not None!'
         assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
@@ -291,12 +291,12 @@ class TestCreateUser:
         # Clean up - None
         # ===========================================================
 
-    def test_user_created_at_and_modified_at(
+    def test_user_created_at_and_updated_at(
         self, sqlite_in_memory_database_with_roles: DbWithRoles
     ) -> None:
-        r"""Test that the columns `created_at` and `modified_at` are correctly set.
+        r"""Test that the columns `created_at` and `updated_at` are correctly set.
 
-        When creating a new user the column `modified_at` should be None and `created_at`
+        When creating a new user the column `updated_at` should be None and `created_at`
         should be set to the UTC timestamp when the record was inserted into the database.
         """
 
@@ -320,7 +320,7 @@ class TestCreateUser:
         with session_factory() as new_session:
             db_user = new_session.scalars(query).one()
 
-        assert db_user.modified_at is None, 'modified_at is not None!'
+        assert db_user.updated_at is None, 'updated_at is not None!'
         assert (
             before_create_user <= db_user.created_at <= after_create_user
         ), 'db_user.created_at is incorrect!'
@@ -328,12 +328,12 @@ class TestCreateUser:
         # Clean up - None
         # ===========================================================
 
-    def test_user_email_created_at_and_modified_at(
+    def test_user_email_created_at_and_updated_at(
         self, sqlite_in_memory_database_with_roles: DbWithRoles
     ) -> None:
-        r"""Test that the columns `created_at` and `modified_at` are correctly set.
+        r"""Test that the columns `created_at` and `updated_at` are correctly set.
 
-        When creating a new email the column `modified_at` should be None and `created_at`
+        When creating a new email the column `updated_at` should be None and `created_at`
         should be set to the UTC timestamp when the record was inserted into the database.
         """
 
@@ -362,7 +362,7 @@ class TestCreateUser:
         with session_factory() as new_session:
             db_email = new_session.scalars(query).one()
 
-        assert db_email.modified_at is None, 'modified_at is not None!'
+        assert db_email.updated_at is None, 'updated_at is not None!'
         assert (
             before_create_user <= db_email.created_at <= after_create_user
         ), 'db_email.created_at is incorrect!'
@@ -425,7 +425,7 @@ class TestCreateUser:
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
 
-        assert db_user.modified_at is None, 'modified_at is not None!'
+        assert db_user.updated_at is None, 'updated_at is not None!'
         assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
 
         assert (

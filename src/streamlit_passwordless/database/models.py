@@ -19,7 +19,7 @@ from sqlalchemy.orm import (
 SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
 metadata_obj = MetaData(schema=SCHEMA)
 
-modified_at_column: Mapped[Optional[datetime]] = mapped_column(
+updated_at_column: Mapped[Optional[datetime]] = mapped_column(
     TIMESTAMP(), onupdate=func.current_timestamp()
 )
 created_at_column: Mapped[datetime] = mapped_column(
@@ -75,15 +75,15 @@ class Base(DeclarativeBase):
 
 
 class ModifiedAndCreatedColumnMixin:
-    r"""Add columns for when a record was last modified and created in a table.
+    r"""Add columns for when a record was last updated and created in a table.
 
     Parameters
     ----------
-    modified_at : datetime or None
-        The timestamp at which the record was last modified (UTC).
+    updated_at : datetime or None
+        The timestamp at which the record was last updated (UTC).
 
-    modified_by : str or None
-        The ID of the user that last modified the record.
+    updated_by : str or None
+        The ID of the user that last updated the record.
 
     created_at : datetime
         The timestamp at which the record was created (UTC).
@@ -101,8 +101,8 @@ class ModifiedAndCreatedColumnMixin:
             pass
     """
 
-    modified_at: Mapped[Optional[datetime]] = modified_at_column
-    modified_by: Mapped[Optional[str]]
+    updated_at: Mapped[Optional[datetime]] = updated_at_column
+    updated_by: Mapped[Optional[str]]
     created_at: Mapped[datetime] = created_at_column
     created_by: Mapped[Optional[str]]
 
@@ -158,11 +158,11 @@ class Role(ModifiedAndCreatedColumnMixin, Base):
     description : str or None, default None
         A description of the role.
 
-    modified_at : datetime or None
-        The timestamp at which the role was last modified (UTC).
+    updated_at : datetime or None
+        The timestamp at which the role was last updated (UTC).
 
-    modified_by : str or None
-        The ID of the user that last modified the role.
+    updated_by : str or None
+        The ID of the user that last updated the role.
 
     created_at : datetime
         The timestamp at which the role was created (UTC).
@@ -180,8 +180,8 @@ class Role(ModifiedAndCreatedColumnMixin, Base):
         'name',
         'rank',
         'description',
-        'modified_at',
-        'modified_by',
+        'updated_at',
+        'updated_by',
         'created_at',
         'created_by',
     )
@@ -273,11 +273,11 @@ class CustomRole(ModifiedAndCreatedColumnMixin, Base):
     description : str or None, default None
         A description of the role.
 
-    modified_at : datetime or None
-        The timestamp at which the custom role was last modified (UTC).
+    updated_at : datetime or None
+        The timestamp at which the custom role was last updated (UTC).
 
-    modified_by : str or None
-        The ID of the user that last modified the custom role.
+    updated_by : str or None
+        The ID of the user that last updated the custom role.
 
     created_at : datetime
         The timestamp at which the custom role was created (UTC).
@@ -296,8 +296,8 @@ class CustomRole(ModifiedAndCreatedColumnMixin, Base):
         'name',
         'rank',
         'description',
-        'modified_at',
-        'modified_by',
+        'updated_at',
+        'updated_by',
         'created_at',
         'created_by',
     )
@@ -360,11 +360,11 @@ class User(ModifiedAndCreatedColumnMixin, Base):
     disabled_at : Optional[datetime]
         The timestamp in UTC when the user was disabled.
 
-    modified_at : datetime or None
-        The timestamp at which the user was last modified (UTC).
+    updated_at : datetime or None
+        The timestamp at which the user was last updated (UTC).
 
-    modified_by : str or None
-        The ID of the user that last modified the user.
+    updated_by : str or None
+        The ID of the user that last updated the user.
 
     created_at : datetime
         The timestamp at which the user was created (UTC).
@@ -396,8 +396,8 @@ class User(ModifiedAndCreatedColumnMixin, Base):
         'verified_at',
         'disabled',
         'disabled_at',
-        'modified_at',
-        'modified_by',
+        'updated_at',
+        'updated_by',
         'created_at',
         'created_by',
     )
@@ -463,11 +463,11 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
     disabled_at : Optional[datetime]
         The timestamp in UTC when the email address was disabled.
 
-    modified_at : datetime or None
-        The timestamp at which the email was last modified (UTC).
+    updated_at : datetime or None
+        The timestamp at which the email was last updated (UTC).
 
-    modified_by : str or None
-        The ID of the user that last modified the email.
+    updated_by : str or None
+        The ID of the user that last updated the email.
 
     created_at : datetime
         The timestamp at which the email was created (UTC).
@@ -489,8 +489,8 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
         'verified_at',
         'disabled',
         'disabled_at',
-        'modified_at',
-        'modified_by',
+        'updated_at',
+        'updated_by',
         'created_at',
         'created_by',
     )

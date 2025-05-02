@@ -149,7 +149,7 @@ class TestGetRoleByName:
         assert exp_role.name == role.name, 'name attribute is incorrect!'
         assert exp_role.rank == role.rank, 'rank attribute is incorrect!'
         assert exp_role.description == role.description, 'description attribute is incorrect!'
-        assert role.modified_at is None, 'modified_at is not None!'
+        assert role.updated_at is None, 'updated_by is not None!'
         assert isinstance(exp_role.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
@@ -234,7 +234,7 @@ class TestGetRoleByRoleId:
         assert exp_role.name == role.name, 'name attribute is incorrect!'
         assert exp_role.rank == role.rank, 'rank attribute is incorrect!'
         assert exp_role.description == role.description, 'description attribute is incorrect!'
-        assert role.modified_at is None, 'modified_at is not None!'
+        assert role.updated_at is None, 'updated_by is not None!'
         assert isinstance(exp_role.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
@@ -334,7 +334,7 @@ class TestCreateRole:
         assert role.name == role_to_create.name, 'name attribute is incorrect!'
         assert role.rank == role_to_create.rank, 'rank attribute is incorrect!'
         assert role.description == role_to_create.description, 'description attribute is incorrect!'
-        assert role.modified_at is None, 'modified_at is not None!'
+        assert role.updated_by is None, 'updated_by is not None!'
         assert isinstance(role.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None

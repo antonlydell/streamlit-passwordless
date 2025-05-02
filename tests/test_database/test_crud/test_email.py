@@ -37,7 +37,7 @@ def sqlite_in_memory_database_with_user_and_email(
         verified_at=datetime(2025, 1, 20, 9, 8, 7),
         disabled=1,
         disabled_at=datetime(2025, 2, 22, 13, 37, 37),
-        modified_at=datetime(2025, 2, 18, 13, 37, 38),
+        updated_at=datetime(2025, 2, 18, 13, 37, 38),
         created_at=datetime(2025, 1, 1, 0, 0, 0),
     )
     user = User(
@@ -45,7 +45,7 @@ def sqlite_in_memory_database_with_user_and_email(
         username='username',
         role_id=role.role_id,
         emails=[exp_email],
-        modified_at=datetime(2024, 7, 17, 13, 37, 37),
+        updated_at=datetime(2024, 7, 17, 13, 37, 37),
         created_at=datetime(2024, 6, 6, 13, 37, 38),
     )
 
@@ -95,7 +95,7 @@ class TestGetEmail:
             ('verified_at', exp_email.verified_at),
             ('disabled', exp_email.disabled),
             ('disabled_at', exp_email.disabled_at),
-            ('modified_at', exp_email.modified_at),
+            ('updated_at', exp_email.updated_at),
             ('created_at', exp_email.created_at),
         )
         for attr, exp_value in attributes_to_verify:
@@ -160,7 +160,7 @@ class TestGetEmail:
             ('verified_at', exp_email.verified_at),
             ('disabled', exp_email.disabled),
             ('disabled_at', exp_email.disabled_at),
-            ('modified_at', exp_email.modified_at),
+            ('updated_at', exp_email.updated_at),
             ('created_at', exp_email.created_at),
         )
         for attr, exp_value in email_attributes_to_verify:
@@ -176,7 +176,7 @@ class TestGetEmail:
             ('verified_at', exp_user.verified_at),
             ('disabled', exp_user.disabled),
             ('disabled_at', exp_user.disabled_at),
-            ('modified_at', exp_user.modified_at),
+            ('updated_at', exp_user.updated_at),
             ('created_at', exp_user.created_at),
         )
         for attr, exp_value in user_attributes_to_verify:

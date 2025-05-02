@@ -16,16 +16,16 @@ from tests.config import TZ_UTC
 
 
 @pytest.fixture(scope='module')
-def modified_at_column() -> tuple[datetime, str]:
-    r"""The value for the modified_at column and its iso-formatted string.
+def updated_at_column() -> tuple[datetime, str]:
+    r"""The value for the updated_at column and its iso-formatted string.
 
     Returns
     -------
     datetime
-        The datetime value of the modified_at column.
+        The datetime value of the updated_at column.
 
     str
-        The iso-formatted string of the modified_at column.
+        The iso-formatted string of the updated_at column.
     """
 
     return datetime(2024, 10, 16, 18, 31, 31, tzinfo=TZ_UTC), '2024-10-16T18:31:31+00:00'
@@ -73,14 +73,14 @@ class TestRole:
         assert viewer.name == name, 'name is incorrect!'  # type: ignore
         assert viewer.rank == rank, 'rank is incorrect!'
         assert viewer.description is None, 'description is incorrect!'
-        assert viewer.modified_at is None, 'modified_at is incorrect!'
+        assert viewer.updated_at is None, 'updated_at is incorrect!'
         assert viewer.created_at is None, 'created_at is incorrect!'
 
         # Clean up - None
         # ===========================================================
 
     def test_init_with_all_parameters(
-        self, created_at_column: tuple[datetime, str], modified_at_column: tuple[datetime, str]
+        self, created_at_column: tuple[datetime, str], updated_at_column: tuple[datetime, str]
     ) -> None:
         r"""Test to supply values for all parameters."""
 
@@ -90,7 +90,7 @@ class TestRole:
         name = 'USER'
         rank = 2
         description = 'A regular user.'
-        modified_at, _ = modified_at_column
+        updated_at, _ = updated_at_column
         created_at, _ = created_at_column
 
         # Exercise
@@ -100,7 +100,7 @@ class TestRole:
             name=name,
             rank=rank,
             description=description,
-            modified_at=modified_at,
+            updated_at=updated_at,
             created_at=created_at,
         )
 
@@ -110,14 +110,14 @@ class TestRole:
         assert viewer.name == name, 'name is incorrect!'
         assert viewer.rank == rank, 'rank is incorrect!'
         assert viewer.description == description, 'description is incorrect!'
-        assert viewer.modified_at == modified_at, 'modified_at is incorrect!'
+        assert viewer.updated_at == updated_at, 'updated_at is incorrect!'
         assert viewer.created_at == created_at, 'created_at is incorrect!'
 
         # Clean up - None
         # ===========================================================
 
     def test__repr__(
-        self, created_at_column: tuple[datetime, str], modified_at_column: tuple[datetime, str]
+        self, created_at_column: tuple[datetime, str], updated_at_column: tuple[datetime, str]
     ) -> None:
         r"""Test the `__repr__` method."""
 
@@ -127,8 +127,8 @@ class TestRole:
         name = 'ADMIN'
         rank = 4
         description = 'An admin user.'
-        modified_at, modified_at_str = modified_at_column
-        modified_by = 'user_1'
+        updated_at, updated_at_str = updated_at_column
+        updated_by = 'user_1'
         created_at, created_at_str = created_at_column
         created_by = 'user_2'
 
@@ -137,8 +137,8 @@ class TestRole:
     name='{name}',
     rank={rank},
     description='{description}',
-    modified_at={modified_at_str},
-    modified_by='{modified_by}',
+    updated_at={updated_at_str},
+    updated_by='{updated_by}',
     created_at={created_at_str},
     created_by='{created_by}',
 )"""
@@ -148,8 +148,8 @@ class TestRole:
             name=name,
             rank=rank,
             description=description,
-            modified_at=modified_at,
-            modified_by=modified_by,
+            updated_at=updated_at,
+            updated_by=updated_by,
             created_at=created_at,
             created_by=created_by,
         )
@@ -186,8 +186,8 @@ class TestCustomRole:
     name='{name}',
     rank={rank},
     description=None,
-    modified_at=None,
-    modified_by=None,
+    updated_at=None,
+    updated_by=None,
     created_at=None,
     created_by=None,
 )"""
@@ -213,15 +213,15 @@ class TestUser:
     r"""Tests for the model `User`."""
 
     def test__repr__(
-        self, created_at_column: tuple[datetime, str], modified_at_column: tuple[datetime, str]
+        self, created_at_column: tuple[datetime, str], updated_at_column: tuple[datetime, str]
     ) -> None:
         r"""Test the `__repr__` method."""
 
         # Setup
         # ===========================================================
-        modified_at, modified_at_str = modified_at_column
+        updated_at, updated_at_str = updated_at_column
         created_at, created_at_str = created_at_column
-        modified_by = 'user_1'
+        updated_by = 'user_1'
 
         repr_str_exp = f"""User(
     user_id='user_id',
@@ -233,8 +233,8 @@ class TestUser:
     verified_at=2024-10-19T13:56:56,
     disabled=True,
     disabled_at=2024-10-19T13:59:00,
-    modified_at={modified_at_str},
-    modified_by='{modified_by}',
+    updated_at={updated_at_str},
+    updated_by='{updated_by}',
     created_at={created_at_str},
     created_by=None,
 )"""
@@ -249,8 +249,8 @@ class TestUser:
             verified_at=datetime(2024, 10, 19, 13, 56, 56),
             disabled=True,
             disabled_at=datetime(2024, 10, 19, 13, 59, 0),
-            modified_at=modified_at,
-            modified_by=modified_by,
+            updated_at=updated_at,
+            updated_by=updated_by,
             created_at=created_at,
         )
 
@@ -288,8 +288,8 @@ class TestEmail:
     verified_at=None,
     disabled=None,
     disabled_at=None,
-    modified_at=None,
-    modified_by=None,
+    updated_at=None,
+    updated_by=None,
     created_at={created_at_str},
     created_by=None,
 )"""
