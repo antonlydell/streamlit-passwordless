@@ -73,6 +73,7 @@ def _updated_user(
     custom_roles: Sequence[db.models.CustomRole] | None,
     with_disabled: bool,
     disabled: bool,
+    updated_by_user_id: str | None,
 ) -> bool:
     r"""Update the fields of the user.
 
@@ -113,6 +114,9 @@ def _updated_user(
 
     disabled : bool
         The new state of the disabled field of the user.
+
+    updated_by_user_id : str or None
+        The ID of the user that is updating the `user` to update.
 
     Returns
     -------
@@ -177,6 +181,8 @@ def _updated_user(
     else:
         disabled_updated = False
 
+    user.updated_by = updated_by_user_id
+
     return any(
         [
             username_updated,
@@ -205,6 +211,7 @@ def update_user_form(
     submit_button_type: core.ButtonType = 'primary',
     clear_on_submit: bool = True,
     banner_container: core.BannerContainer | None = None,
+    updated_by_user_id: str | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -286,6 +293,10 @@ def update_user_form(
         A container produced by :func:`streamlit.empty`, in which error or success messages about
         the update user process will be displayed. Useful to make the banner appear at the desired
         location on a page. If None the banner will be displayed right above the form.
+
+    updated_by_user_id : str or None, default None
+        The ID of the user that is updating the `user` to update.
+        If None the ID of the currently signed in user is used.
 
     Other Parameters
     ----------------
@@ -497,6 +508,12 @@ def update_user_form(
 
             return user, False
 
+    if updated_by_user_id is None:
+        signed_in_user = config.get_current_user()
+        updated_by = signed_in_user.user_id if signed_in_user else None
+    else:
+        updated_by = updated_by_user_id
+
     is_updated = _updated_user(
         user=user,
         username=username,
@@ -512,6 +529,7 @@ def update_user_form(
         ),
         with_disabled=with_disabled_toggle,
         disabled=disabled,
+        updated_by_user_id=updated_by,
     )
 
     if is_updated:
