@@ -238,6 +238,7 @@ def create_user_in_database(
     session: db.Session,
     user: models.User,
     custom_roles: Sequence[db.models.CustomRole] | None = None,
+    created_by_user_id: str | None = None,
 ) -> tuple[bool, str]:
     r"""Create a new user in the database.
 
@@ -254,6 +255,9 @@ def create_user_in_database(
         If provided these roles will take precedence over the custom roles defined on
         `user` and avoids a database lookup since the custom roles already exist in the `session`.
 
+    created_by_user_id : str or None, default None
+        The ID of the user that is creating the new user.
+
     Returns
     -------
     success : bool
@@ -265,7 +269,13 @@ def create_user_in_database(
     """
 
     try:
-        db.create_user(session=session, user=user, custom_roles=custom_roles, commit=True)
+        db.create_user(
+            session=session,
+            user=user,
+            custom_roles=custom_roles,
+            created_by_user_id=created_by_user_id,
+            commit=True,
+        )
     except exceptions.DatabaseCreateUserError as e:
         logger.error(e.detailed_message)
         error_msg = e.displayable_message

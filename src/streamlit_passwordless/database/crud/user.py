@@ -174,6 +174,7 @@ def create_user(
     session: Session,
     user: User,
     custom_roles: Sequence[models.CustomRole] | None = None,
+    created_by_user_id: str | None = None,
     commit: bool = False,
 ) -> models.User:
     r"""Create a new user in the database.
@@ -190,6 +191,9 @@ def create_user(
         The custom roles from the active database `session` to associate with the user.
         If provided these roles will take precedence over the custom roles defined on
         `user` and avoids a database lookup since the custom roles already exist in the `session`.
+
+    created_by_user_id : str or None, default None
+        The ID of the user that is creating the new user.
 
     commit : bool, default False
         True if the added user should be committed after being added to the session and False
@@ -224,6 +228,7 @@ def create_user(
         verified_at=user.verified_at,
         disabled=user.disabled,
         disabled_at=user.disabled_at,
+        created_by=created_by_user_id,
     )
 
     if emails := user.emails:

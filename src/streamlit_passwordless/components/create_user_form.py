@@ -101,6 +101,7 @@ def create_user_form(
     submit_button_type: core.ButtonType = 'primary',
     clear_on_submit: bool = False,
     banner_container: core.BannerContainer | None = None,
+    created_by_user_id: str | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -197,6 +198,10 @@ def create_user_form(
         A container produced by :func:`streamlit.empty`, in which error or success messages about
         the create user process will be displayed. Useful to make the banner appear at the desired
         location on a page. If None the banner will be displayed right above the form.
+
+    created_by_user_id : str or None, default None
+        The ID of the user that is creating the new user.
+        If None the ID of the currently signed in user is used.
 
     Other Parameters
     ----------------
@@ -440,7 +445,16 @@ def create_user_form(
         emails=[models.Email(email=email.strip().casefold(), rank=1)] if email else [],
         custom_roles={m.name: models.CustomRole.model_validate(m) for m in selected_custom_roles},
     )
-    success, error_msg = core.create_user_in_database(session=db_session, user=user)
+
+    if created_by_user_id is None:
+        signed_in_user = config.get_current_user()
+        created_by = signed_in_user.user_id if signed_in_user else None
+    else:
+        created_by = created_by_user_id
+
+    success, error_msg = core.create_user_in_database(
+        session=db_session, user=user, created_by_user_id=created_by
+    )
     if not success:
         core.display_banner_message(
             message=error_msg, message_type=core.BannerMessageType.ERROR, container=banner_container
