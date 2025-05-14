@@ -447,6 +447,7 @@ def bitwarden_register_form(
     clear_on_validate: bool = False,
     banner_container: core.BannerContainer | None = None,
     redirect: core.Redirectable | None = None,
+    created_by_user_id: str | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -563,6 +564,10 @@ def bitwarden_register_form(
         be the path, relative to the file passed to the ``streamlit run`` command, to the
         Python file containing the page to redirect to. See :func:`streamlit.switch_page`
         for more info. If None no redirect is performed.
+
+    created_by_user_id : str or None, default None
+        The ID of the user that is creating the new user. If None the ID of
+        the created user will be used if the user does not already exist.
 
     Other Parameters
     ----------------
@@ -853,7 +858,9 @@ def bitwarden_register_form(
     final_error_msg = ''
     if not db_user:
         can_save_sign_in_to_db, error_msg = core.create_user_in_database(
-            session=db_session, user=user
+            session=db_session,
+            user=user,
+            created_by_user_id=created_by_user_id if created_by_user_id else user.user_id,
         )
         if not can_save_sign_in_to_db:
             final_error_msg = (
