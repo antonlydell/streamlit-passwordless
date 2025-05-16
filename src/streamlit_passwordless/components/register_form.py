@@ -460,7 +460,7 @@ def bitwarden_register_form(
     email_max_length: int | None = 50,
     email_placeholder: str | None = 'john.doe@example.com',
     email_help: str | None = 'An email address to associate with the user.',
-    credential_nickname_label: str = 'Credential Nickname',
+    credential_nickname_label: str = 'Passkey Nickname',
     credential_nickname_max_length: int | None = 50,
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
     credential_nickname_help: str | None = '__default__',
@@ -612,7 +612,7 @@ def bitwarden_register_form(
     email_help : str or None, default 'An email address to associate with the user.'
         The help text to display for the email field. If None the help text is removed.
 
-    credential_nickname_label : str, default 'Credential Nickname'
+    credential_nickname_label : str, default 'Passkey Nickname'
         The label of the credential_nickname field.
 
     credential_nickname_max_length : int or None, default 50
@@ -939,7 +939,7 @@ def bitwarden_register_form_existing_user(
     register_button_type: core.ButtonType = 'primary',
     banner_container: core.BannerContainer | None = None,
     redirect: core.Redirectable | None = None,
-    credential_nickname_label: str = 'Credential Nickname',
+    credential_nickname_label: str = 'Passkey Nickname',
     credential_nickname_max_length: int | None = 50,
     credential_nickname_placeholder: str | None = 'Bitwarden or YubiKey-5C-NFC',
     credential_nickname_help: str | None = '__default__',
@@ -1018,7 +1018,7 @@ def bitwarden_register_form_existing_user(
 
     Other Parameters
     ----------------
-    credential_nickname_label : str, default 'Credential Nickname'
+    credential_nickname_label : str, default 'Passkey Nickname'
         The label of the credential_nickname field.
 
     credential_nickname_max_length : int or None, default 50
