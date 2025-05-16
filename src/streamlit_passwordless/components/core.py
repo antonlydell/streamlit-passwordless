@@ -40,12 +40,16 @@ class FormField(StrEnum):
 
     EMAIL
         An email address of a user.
+
+    CREDENTIAL_NICKNAME
+        The nickname for a passkey credential to register.
     """
 
     USERNAME = 'username'
     DISPLAYNAME = 'displayname'
     AD_USERNAME = 'ad_username'
     EMAIL = 'email'
+    CREDENTIAL_NICKNAME = 'credential_nickname'
 
 
 class BannerMessageType(StrEnum):

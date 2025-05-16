@@ -367,6 +367,27 @@ def _validate_email_field(
     return True
 
 
+def _validate_credential_nickname_field() -> bool:
+    r"""Validate the credential nickname text input field of the register form.
+
+    Returns
+    -------
+    bool
+        True if the credential nickname is valid for registration and False otherwise.
+    """
+
+    credential_nickname = st.session_state[ids.BP_REGISTER_FORM_CREDENTIAL_NICKNAME_TEXT_INPUT]
+
+    if not credential_nickname.strip():
+        error_msg = 'A passkey nickname is required!'
+        validation_errors = st.session_state[config.SK_REGISTER_FORM_VALIDATION_ERRORS]
+        validation_errors[core.FormField.CREDENTIAL_NICKNAME] = error_msg
+
+        return False
+
+    return True
+
+
 def _validate_form(
     db_session: db.Session,
     client: BitwardenPasswordlessClient,
@@ -374,6 +395,7 @@ def _validate_form(
     pre_authorized: bool,
     email_is_username: bool,
     username: str,
+    require_credential_nickname: bool,
 ) -> None:
     r"""Validate the input fields of the register form.
 
@@ -412,6 +434,10 @@ def _validate_form(
 
     username : str
         The username of the user to create.
+
+    require_credential_nickname : bool, default True
+        If True the user is required to enter a value for the credential_nickname
+        field to be able to register a passkey. If False the validation is omitted.
     """
 
     username_is_valid, is_authenticated = _validate_username_field(
@@ -424,7 +450,15 @@ def _validate_form(
         email_is_valid = _validate_email_field(
             db_session=db_session, email_is_username=email_is_username, username=username
         )
-    st.session_state[config.SK_REGISTER_FORM_IS_VALID] = username_is_valid and email_is_valid
+
+    if require_credential_nickname:
+        credential_nickname_is_valid = _validate_credential_nickname_field()
+    else:
+        credential_nickname_is_valid = True
+
+    st.session_state[config.SK_REGISTER_FORM_IS_VALID] = (
+        username_is_valid and email_is_valid and credential_nickname_is_valid
+    )
 
 
 def bitwarden_register_form(
@@ -436,6 +470,7 @@ def bitwarden_register_form(
     with_email: bool = True,
     email_is_username: bool = False,
     with_credential_nickname: bool = True,
+    require_credential_nickname: bool = True,
     with_discoverability: bool = False,
     with_alias: bool = False,
     title: str = '#### Register a new passkey with your device',
@@ -514,6 +549,10 @@ def bitwarden_register_form(
         If True the credential_nickname field will be added to the form allowing the user to
         specify a nickname for the passkey credential to create e.g. "YubiKey-5C-NFC".
         If False the username will be used as the `credential_nickname`.
+
+    require_credential_nickname : bool, default True
+        If True the user is required to enter a value for the credential_nickname
+        field to be able to register a passkey. If False the validation is omitted.
 
     with_discoverability : bool, default False
         If True the discoverability component is added to the form allowing the user to toggle
@@ -684,9 +723,7 @@ def bitwarden_register_form(
                 username_placeholder = email_placeholder
                 username_max_length = email_max_length
 
-            username_error_banner = st.empty()
-            banner_container_mapping[core.FormField.USERNAME] = username_error_banner
-
+            banner_container_mapping[core.FormField.USERNAME] = st.empty()
             username = st.text_input(
                 label=username_label,
                 placeholder=username_placeholder,
@@ -712,8 +749,7 @@ def bitwarden_register_form(
 
             if with_email:
                 if not email_is_username:
-                    email_error_banner = st.empty()
-                    banner_container_mapping[core.FormField.EMAIL] = email_error_banner
+                    banner_container_mapping[core.FormField.EMAIL] = st.empty()
                     email = st.text_input(
                         label=email_label,
                         placeholder=email_placeholder,
@@ -727,6 +763,7 @@ def bitwarden_register_form(
                 email = None
 
             if with_credential_nickname:
+                banner_container_mapping[core.FormField.CREDENTIAL_NICKNAME] = st.empty()
                 credential_nickname = st.text_input(
                     label=credential_nickname_label,
                     placeholder=credential_nickname_placeholder,
@@ -738,6 +775,7 @@ def bitwarden_register_form(
                     ),
                     key=ids.BP_REGISTER_FORM_CREDENTIAL_NICKNAME_TEXT_INPUT,
                 )
+                credential_nickname = credential_nickname.strip()
             else:
                 credential_nickname = username
 
@@ -790,6 +828,7 @@ def bitwarden_register_form(
                     'pre_authorized': pre_authorized,
                     'email_is_username': email_is_username,
                     'username': username,
+                    'require_credential_nickname': require_credential_nickname,
                 },
             )
 
@@ -816,7 +855,7 @@ def bitwarden_register_form(
         token, error, clicked = register_button(
             register_token=register_token,
             public_key=client.public_key,
-            credential_nickname=credential_nickname.strip(),
+            credential_nickname=credential_nickname,
             disabled=form_is_not_valid,
             label=register_button_label,
             button_type=register_button_type,
@@ -932,6 +971,7 @@ def bitwarden_register_form_existing_user(
     user: models.User | db.models.User | None = None,
     get_current_user: bool = True,
     with_credential_nickname: bool = True,
+    require_credential_nickname: bool = True,
     with_discoverability: bool = False,
     title: str = '#### Register a new passkey with your device',
     border: bool = True,
@@ -981,6 +1021,10 @@ def bitwarden_register_form_existing_user(
         If True the credential_nickname field will be added to the form allowing the user to
         specify a nickname for the passkey credential to create e.g. "YubiKey-5C-NFC".
         If False the username will be used as the `credential_nickname`.
+
+    require_credential_nickname : bool, default True
+        If True the user is required to enter a value for the credential_nickname
+        field to be able to register a passkey. If False the validation is omitted.
 
     with_discoverability : bool, default False
         If True the discoverability component is added to the form allowing the user to toggle
@@ -1085,6 +1129,7 @@ def bitwarden_register_form_existing_user(
                 disabled=components_disabled,
                 key=ids.BP_REGISTER_FORM_EXISTING_USER_CREDENTIAL_NICKNAME_TEXT_INPUT,
             )
+            credential_nickname = credential_nickname.strip()
         else:
             credential_nickname = username
 
@@ -1119,10 +1164,13 @@ def bitwarden_register_form_existing_user(
             disabled = True
             register_token = ''
 
+        if require_credential_nickname and not credential_nickname:
+            disabled = True
+
         token, error, clicked = register_button(
             register_token=register_token,
             public_key=client.public_key,
-            credential_nickname=credential_nickname.strip(),
+            credential_nickname=credential_nickname,
             disabled=disabled,
             label=register_button_label,
             button_type=register_button_type,
