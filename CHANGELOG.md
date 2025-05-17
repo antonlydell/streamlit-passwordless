@@ -8,9 +8,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- The admin console to manage users and credentials.
+- Step up authentication.
 
 - Verifying user email addresses.
+
+
+## [0.15.0] - 2025-05-17
+
+Updated database model!
+
+Added columns `updated_by`, `created_by` to be able to better track which user has created or
+updated a record. Renamed several columns to get better consistency in the naming across
+multiple models.
+
+
+### Added
+
+- `streamlit_passwordless.db.models`
+
+  - `created_at_column` : A table column for the timestamp at which a record was created.
+
+  - `updated_at_column` : A table column for the timestamp at which the record was last modified.
+
+  - `ModifiedAndCreatedColumnMixin` : A table model should inherit from this class prior to
+    `streamlit_passwordless.db.models.Base` to add the columns `updated_at`, `modified_by`,
+    `created_at` and `created_by`.
+
+  - `CustomRole`, `Email`, `Role`, `User` : Added columns `updated_by`, `created_by`
+
+  - `Email`, `User` : Added column `verified`, which is set to True if an email/user is verified
+    and False otherwise.
+
+
+### Changed
+
+- `streamlit_passwordless` :
+
+  - `bitwarden_register_form`, `bitwarden_register_form_existing_user` : Renamed the default label
+    of parameter `credential_nickname_label` from "Credential Nickname" to "Passkey Nickname", which
+    is easier to understand for a user. Added parameter `require_credential_nickname`, which is True
+    by default and disables the register button if the user has not entered a nickname for the passkey
+    credential. It is easy to enter a credential nickname and forget to press Enter to apply the value,
+    meaning that a passkey without a nickname will be registered.
+
+  - `bitwarden_register_form`, `create_user_form` : Added parameter `created_by_user_id`, which is the ID
+    of the user that is creating the new user.
+
+  - `update_user_form` : Added parameter `updated_by_user_id`, which is the ID of the user that is
+    updating the user to update.
+
+- `streamlit_passwordless.db.models` :
+
+  - Removed columns `modified_at` and `created_at` from `Base` database model. If a user of
+    `streamlit_passwordless` bases its tables on `Base` he may not want the columns `modified_at`
+    and `created_at` added by default to his tables. Moved these columns to the variables
+    `updated_at_column` and `created_at_column`, which can be use used in database models as desired.
+
+  - Renamed common table columns `modified_at` --> `updated_at` and `modified_by` --> `updated_by`.
+
+  - `UserSignIn` : Removed column `modified_at`, because records in this table should not be modified
+    after creation.
+
+  - `Email`, `User` : Renamed column `disabled_timestamp` -> `disabled_at`,
+    which conforms better with the other datetime columns.
+
 
 ## [0.14.1] - 2025-04-26
 
@@ -712,7 +773,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.15.0
 [0.14.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.14.1
 [0.14.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.14.0
 [0.13.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.13.0
