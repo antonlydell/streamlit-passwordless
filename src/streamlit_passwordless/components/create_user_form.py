@@ -352,7 +352,6 @@ def create_user_form(
         if with_role:
             if roles is None:
                 roles = (models.ViewerRole, models.UserRole, models.SuperUserRole, models.AdminRole)
-                role_preselected = 1
             role = st.selectbox(
                 label=role_label,
                 options=roles,
@@ -388,6 +387,8 @@ def create_user_form(
                 help=custom_roles_help,
                 key=ids.CREATE_USER_FORM_CUSTOM_ROLES_MULTISELECTBOX,
             )
+        else:
+            selected_custom_roles = tuple()
         if with_email:
             if not email_is_username:
                 email_error_banner = st.empty()
