@@ -78,5 +78,5 @@ warn_return_any = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["streamlit_passwordless.*", "passwordless.*"]
+module = ["passwordless.*"]
 ignore_missing_imports = true
