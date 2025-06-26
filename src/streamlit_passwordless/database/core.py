@@ -3,15 +3,15 @@ r"""The core database functionality."""
 # Standard library
 import logging
 import sqlite3
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 # Third party
 from sqlalchemy import URL as _URL
 from sqlalchemy import Engine as _Engine
 from sqlalchemy import create_engine, event, make_url
 from sqlalchemy.exc import SQLAlchemyError, StatementError
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.orm import Session as _Session
-from sqlalchemy.orm import sessionmaker
 
 # Local
 from streamlit_passwordless import exceptions
@@ -52,8 +52,10 @@ def create_session_factory(
     autoflush: bool = False,
     expire_on_commit: bool = False,
     create_database: bool = True,
-    **engine_config,
-) -> tuple[SessionFactory, Engine]:
+    base: type[DeclarativeBase] | None = None,
+    connect_args: dict[Any, Any] | None = None,
+    **engine_config: Any,
+) -> SessionFactory:
     r"""Create the database session factory, which can produce database sessions.
 
     The database engine is bound to each session produced by the factory.
@@ -75,28 +77,38 @@ def create_session_factory(
     create_database : bool, default True
         If True the database table schema will be created if it does not exist.
 
-    **engine_config : dict
+    base : type[sqlalchemy.orm.DeclarativeBase] or None, default None
+        The declarative base class that contains the metadata about the
+        database table schema to create if `create_database` is True. If
+        None :class:`streamlit_passwordless.db.models.Base` will be used.
+        :class:`streamlit_passwordless.db.models.Base` can be subclassed
+        to include additional tables in the database.
+
+    connect_args : dict[Any, Any] or None, default None
+        Additional arguments sent to the driver upon connection that further
+        customizes the connection.
+
+    **engine_config : Any
         Additional keyword arguments passed to the :func:`sqlalchemy.create_engine` function.
 
     Returns
     -------
     session_factory : streamlit_passwordless.db.SessionFactory
         The session factory that can produce new database sessions.
-
-    engine : streamlit_passwordless.db.Engine
-        The database engine that manages the database connections and is bound
-        to `session_factory`.
     """
 
-    engine = create_engine(url=url, **engine_config)
+    engine = create_engine(
+        url=url, connect_args=connect_args if connect_args else {}, **engine_config
+    )
     session_factory = sessionmaker(
         bind=engine, autoflush=autoflush, expire_on_commit=expire_on_commit
     )
 
     if create_database:
-        Base.metadata.create_all(bind=engine)
+        _base = Base if base is None else base
+        _base.metadata.create_all(bind=engine)
 
-    return session_factory, engine
+    return session_factory
 
 
 def commit(session: Session, error_msg: str = 'Error committing transaction!') -> None:
