@@ -13,6 +13,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.16.0] - 2025-06-27
+
+Typing support and improvements to database creation!
+
+`streamlit_passwordless` now supports the `py.typed` file to play nicely with type checkers.
+Creating the database through `streamlit_passwordless.db.create_session_factory` has received
+more customization options.
+
+
+### Added
+
+- `streamlit_passwordless.db`
+
+  - `create_session_factory_cached` : The cached version of  `create_session_factory`.
+
+
+### Changed
+
+- `streamlit_passwordless.db`
+
+  - `create_session_factory` : Is now a non-cached function. It also supports using a custom
+    declarative base class (`sqlalchemy.orm.DeclarativeBase`) when creating the database. This
+    is done through the new `base` parameter. The new parameter `connect_args` allows the user
+    to pass arguments that will be passed along to the `connect_args` parameter of the
+    `sqlalchemy.create_engine` function.
+
+
+### Fixed
+
+- `streamlit_passwordless.create_user_form` : Fixed allowing to set the desired pre-selected role
+  if the default selectable roles are used. Fixed error when `with_custom_roles` was set to False.
+
+
 ## [0.15.0] - 2025-05-17
 
 Updated database model!
@@ -773,7 +806,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.16.0
 [0.15.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.15.0
 [0.14.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.14.1
 [0.14.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.14.0
