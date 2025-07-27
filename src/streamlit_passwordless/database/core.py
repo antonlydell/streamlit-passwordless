@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def enable_sqlite_foreign_keys(dbapi_connection, connection_record) -> None:
     r"""Enable foreign key constraints in SQLite when a new connection is established."""
 
-    if dbapi_connection.__module__ != 'sqlite3':
+    if type(dbapi_connection).__module__ != 'sqlite3':
         return
 
     cursor = dbapi_connection.cursor()
