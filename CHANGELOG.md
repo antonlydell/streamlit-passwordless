@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.16.1] - 2025-07-27
+
+Bugfix for connecting to other databases than SQLite!
+
+
+### Fixed
+
+- `streamlit_passwordless.database.core.enable_sqlite_foreign_keys` : The function can now
+  correctly handle connection objects from other database drivers than SQLite without crashing.
+
+
 ## [0.16.0] - 2025-06-27
 
 Typing support and improvements to database creation!
@@ -806,7 +817,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.16.1
 [0.16.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.16.0
 [0.15.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.15.0
 [0.14.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.14.1
