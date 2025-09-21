@@ -4,6 +4,7 @@ r"""Fixtures for testing streamlit-passwordless."""
 from datetime import datetime
 from typing import Any, Generator
 from unittest.mock import Mock
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 # Third party
@@ -201,29 +202,16 @@ def guitarist_custom_role() -> tuple[models.CustomRole, db_models.CustomRole, Mo
 
 
 @pytest.fixture(scope='session')
-def user_1_user_id() -> str:
+def user_1_user_id() -> UUID:
     r"""The user ID for test user 1 of the test suite."""
 
-    return 'user_1_user_id'
+    return UUID('24ba6b71-a766-4bf7-82e5-1f0ae16eeb5b')
 
 
-@pytest.fixture()
-def mocked_user_id(user_1_user_id: str, monkeypatch: pytest.MonkeyPatch) -> str:
-    r"""Mock the user ID that is generated if a user ID is not supplied to the `User` model.
-
-    Returns
-    -------
-    user_id : str
-        The user_id that is returned from the mock.
-    """
-
-    monkeypatch.setattr(models.uuid, 'uuid4', Mock(return_value=user_1_user_id))
-
-    return user_1_user_id
 
 
 @pytest.fixture(scope='session')
-def user_1_email_primary(user_1_user_id: str) -> tuple[models.Email, db_models.Email, ModelData]:
+def user_1_email_primary(user_1_user_id: UUID) -> tuple[models.Email, db_models.Email, ModelData]:
     r"""The primary email of test user 1.
 
     Returns
@@ -256,7 +244,7 @@ def user_1_email_primary(user_1_user_id: str) -> tuple[models.Email, db_models.E
 
 
 @pytest.fixture(scope='session')
-def user_1_email_secondary(user_1_user_id: str) -> tuple[models.Email, db_models.Email, ModelData]:
+def user_1_email_secondary(user_1_user_id: UUID) -> tuple[models.Email, db_models.Email, ModelData]:
     r"""The secondary email of test user 1.
 
     Returns
@@ -290,7 +278,7 @@ def user_1_email_secondary(user_1_user_id: str) -> tuple[models.Email, db_models
 
 @pytest.fixture(scope='session')
 def user_1_sign_in_successful(
-    user_1_user_id: str,
+    user_1_user_id: UUID,
 ) -> tuple[models.UserSignIn, db_models.UserSignIn, ModelData]:
     r"""A successful passkey sign in for test user 1.
 
@@ -328,7 +316,7 @@ def user_1_sign_in_successful(
 
 @pytest.fixture(scope='session')
 def user_1_sign_in_unsuccessful(
-    user_1_user_id: str,
+    user_1_user_id: UUID,
 ) -> tuple[models.UserSignIn, db_models.UserSignIn, ModelData]:
     r"""An unsuccessful passkey sign in for test user 1.
 
@@ -366,7 +354,7 @@ def user_1_sign_in_unsuccessful(
 
 @pytest.fixture(scope='session')
 def user_1(
-    user_1_user_id: str,
+    user_1_user_id: UUID,
     superuser_role: tuple[models.Role, db_models.Role, ModelData],
     drummer_custom_role: tuple[models.CustomRole, db_models.CustomRole, ModelData],
 ) -> tuple[models.User, db_models.User, ModelData]:
@@ -510,7 +498,7 @@ def passwordless_verified_user() -> tuple[VerifiedUser, models.UserSignIn, Model
 
     data = {
         'success': True,
-        'user_id': 'user_id',
+        'user_id': 'c1c77594-39d3-46e6-a17e-89251cd256bb',
         'timestamp': datetime(2024, 4, 27, 18, 23, 52, tzinfo=ZoneInfo('CET')),
         'origin': 'https://ax7.com',
         'device': 'My device',

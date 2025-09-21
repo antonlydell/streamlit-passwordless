@@ -11,8 +11,11 @@ import streamlit as st
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless.backend import (
+    BitwardenPasswordlessClient,
+)
 from streamlit_passwordless.bitwarden_passwordless.frontend import register_button
+from streamlit_passwordless.models import UserID
 from streamlit_passwordless.web import get_origin_header
 
 from . import config, core, ids
@@ -482,7 +485,7 @@ def bitwarden_register_form(
     clear_on_validate: bool = False,
     banner_container: core.BannerContainer | None = None,
     redirect: core.Redirectable | None = None,
-    created_by_user_id: str | None = None,
+    created_by_user_id: UserID | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -604,7 +607,7 @@ def bitwarden_register_form(
         Python file containing the page to redirect to. See :func:`streamlit.switch_page`
         for more info. If None no redirect is performed.
 
-    created_by_user_id : str or None, default None
+    created_by_user_id : streamlit_passwordless.UserID or None, default None
         The ID of the user that is creating the new user. If None the ID of
         the created user will be used if the user does not already exist.
 

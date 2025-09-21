@@ -14,7 +14,10 @@ from streamlit.navigation.page import StreamlitPage
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
-from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless.backend import (
+    BitwardenPasswordlessClient,
+)
+from streamlit_passwordless.models import UserID
 
 from . import config
 
@@ -120,7 +123,7 @@ def verify_sign_in(
 
 
 def delete_user_from_bitwarden_passwordless(
-    client: BitwardenPasswordlessClient, user_id: str
+    client: BitwardenPasswordlessClient, user_id: UserID
 ) -> tuple[bool, str]:
     r"""Delete a user from Bitwarden Passwordless.
 
@@ -130,7 +133,7 @@ def delete_user_from_bitwarden_passwordless(
         The Bitwarden Passwordless client to use for interacting with
         the Bitwarden Passwordless API.
 
-    user_id : str
+    user_id : streamlit_passwordless.UserID
         The unique ID of the user to delete.
 
     Returns
@@ -242,7 +245,7 @@ def create_user_in_database(
     session: db.Session,
     user: models.User,
     custom_roles: Sequence[db.models.CustomRole] | None = None,
-    created_by_user_id: str | None = None,
+    created_by_user_id: models.UserID | None = None,
 ) -> tuple[bool, str]:
     r"""Create a new user in the database.
 
@@ -259,7 +262,7 @@ def create_user_in_database(
         If provided these roles will take precedence over the custom roles defined on
         `user` and avoids a database lookup since the custom roles already exist in the `session`.
 
-    created_by_user_id : str or None, default None
+    created_by_user_id : streamlit_passwordless.UserID or None, default None
         The ID of the user that is creating the new user.
 
     Returns

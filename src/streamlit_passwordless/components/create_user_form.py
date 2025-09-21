@@ -101,7 +101,7 @@ def create_user_form(
     submit_button_type: core.ButtonType = 'primary',
     clear_on_submit: bool = False,
     banner_container: core.BannerContainer | None = None,
-    created_by_user_id: str | None = None,
+    created_by_user_id: models.UserID | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -199,7 +199,7 @@ def create_user_form(
         the create user process will be displayed. Useful to make the banner appear at the desired
         location on a page. If None the banner will be displayed right above the form.
 
-    created_by_user_id : str or None, default None
+    created_by_user_id : streamlit_passwordless.UserID or None, default None
         The ID of the user that is creating the new user.
         If None the ID of the currently signed in user is used.
 

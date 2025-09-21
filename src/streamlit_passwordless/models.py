@@ -1,20 +1,20 @@
 r"""The data models of streamlit-passwordless."""
 
 # Standard library
-import uuid
 from datetime import datetime
-from typing import Self
+from typing import Self, TypeAlias
+from uuid import UUID, uuid4
 
 # Third party
-from pydantic import AliasChoices
+from pydantic import AliasChoices, ConfigDict, Field, ValidationError, field_validator
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 # Local
 from streamlit_passwordless.database.models import Role as DBRole
 
 from . import exceptions
 
+UserID: TypeAlias = UUID
 
 class BaseModel(PydanticBaseModel):
     r"""The BaseModel that all models inherit from."""
@@ -176,8 +176,9 @@ class Email(BaseModel):
         The unique identifier of the email and the primary key in the database.
         None is used when the email is not persisted in the database.
 
-    user_id : str
+    user_id : streamlit_passwordless.UserID or None, default None
         The unique ID of the user the email address belongs to.
+        None is used to represent an email address not yet associated with a user.
 
     email : str
         An email address of a user. Must be unique across all users.
@@ -200,7 +201,7 @@ class Email(BaseModel):
     """
 
     email_id: int | None = None
-    user_id: str = ''
+    user_id: UUID | None = None
     email: str
     rank: int
     verified: bool = False
@@ -218,7 +219,7 @@ class UserSignIn(BaseModel):
         The unique ID of sign in entry. The primary key of the database table.
         None is used when the sign in entry is not persisted in the database.
 
-    user_id : str
+    user_id : streamlit_passwordless.UserID
         The unique ID of the user that signed in to the application.
 
     sign_in_timestamp : datetime
@@ -251,7 +252,7 @@ class UserSignIn(BaseModel):
     """
 
     user_sign_in_id: int | None = None
-    user_id: str
+    user_id: UUID
     sign_in_timestamp: datetime = Field(
         validation_alias=AliasChoices('sign_in_timestamp', 'timestamp')
     )
@@ -272,9 +273,9 @@ class User(BaseModel):
 
     Parameters
     ----------
-    user_id : str, default ''
+    user_id : streamlit_passwordless.UserID, default :func:`uuid.uuid4()`
         The unique ID of the user which serves as the primary key in the database.
-        If empty string (the default) it will be generated as a uuid.
+        If not specified :func:`uuid.uuid4` is used to generate the ID.
 
     username : str
         The username of the user. It must be unique across all users.
@@ -319,7 +320,7 @@ class User(BaseModel):
         aliases if tuple is not used.
     """
 
-    user_id: str = Field(default='', validate_default=True)
+    user_id: UUID = Field(default_factory=uuid4)
     username: str
     ad_username: str | None = None
     displayname: str | None = None
@@ -335,12 +336,6 @@ class User(BaseModel):
 
     def __hash__(self) -> int:
         return hash(self.user_id)
-
-    @field_validator('user_id')
-    def generate_user_id(cls, v: str) -> str:
-        r"""Generate a user ID if not supplied."""
-
-        return str(uuid.uuid4()) if not v else v
 
     @field_validator('aliases')
     def process_aliases(cls, aliases: tuple[str, ...] | str | None) -> tuple[str, ...] | None:

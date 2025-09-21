@@ -142,7 +142,7 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
         register_config = self.register_config
         input_register_token = RegisterToken(
-            user_id=user.user_id,
+            user_id=str(user.user_id),
             username=user.username,
             display_name=user.displayname,
             attestation=register_config.attestation,
@@ -200,12 +200,12 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
         return models.UserSignIn.model_validate(verified_user)
 
-    def get_credentials(self, user_id: str, origin: str | None = None) -> list[PasskeyCredential]:
+    def get_credentials(self, user_id: models.UserID, origin: str | None = None) -> list[PasskeyCredential]:
         r"""Get the registered passkey credentials for a user.
 
         Parameters
         ----------
-        user_id : str
+        user_id : streamlit_passwordless.UserID
             The unique ID of the user.
 
         origin : str or None, default None
@@ -225,7 +225,7 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
         try:
             credentials: list[PasskeyCredential] = self._backend_client.get_credentials(
-                user_id=user_id
+                user_id=str(user_id)
             )
         except PasswordlessError as e:
             error_msg = f'Error retrieving credentials for {user_id=}!\nproblem_details: {e.problem_details}'
@@ -237,12 +237,12 @@ class BitwardenPasswordlessClient(models.BaseModel):
 
         return [c for c in credentials if c.origin == origin] if origin else credentials
 
-    def delete_user(self, user_id: str) -> None:
+    def delete_user(self, user_id: models.UserID) -> None:
         r"""Delete a user from Bitwarden Passwordless.
 
         Parameters
         ----------
-        user_id : str
+        user_id : streamlit_passwordless.UserID
             The unique ID of the user to delete.
 
         Raises
@@ -252,7 +252,7 @@ class BitwardenPasswordlessClient(models.BaseModel):
         """
 
         try:
-            self._backend_client.delete_user(DeleteUser(user_id=user_id))
+            self._backend_client.delete_user(DeleteUser(user_id=str(user_id)))
         except PasswordlessError as e:
             error_msg = f'Error deleting {user_id=}!\nproblem_details: {e.problem_details}'
             data = {

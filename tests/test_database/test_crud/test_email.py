@@ -3,6 +3,7 @@ r"""Unit tests for the crud operations on the email table stp_email."""
 # Standard library
 from datetime import datetime
 from unittest.mock import Mock
+from uuid import UUID
 
 # Third party
 import pytest
@@ -41,7 +42,7 @@ def sqlite_in_memory_database_with_user_and_email(
         created_at=datetime(2025, 1, 1, 0, 0, 0),
     )
     user = User(
-        user_id='user_id',
+        user_id=UUID('794c7257-b185-4d07-be6e-4990c1e94721'),
         username='username',
         role_id=role.role_id,
         emails=[exp_email],
@@ -74,7 +75,7 @@ class TestGetEmail:
 
         # Setup
         # ===========================================================
-        session, session_factory, exp_user = sqlite_in_memory_database_with_user_and_email
+        _, session_factory, exp_user = sqlite_in_memory_database_with_user_and_email
         exp_email = exp_user.emails[0]
 
         # Exercise

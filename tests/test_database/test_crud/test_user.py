@@ -2,6 +2,7 @@ r"""Unit tests for the crud operations on the User model."""
 
 # Standard library
 from datetime import datetime
+from uuid import UUID
 
 # Third party
 import pytest
@@ -345,7 +346,7 @@ class TestCreateUser:
         user_to_create = User(
             username='username',
             role=Role(role_id=1, name='', rank=0),
-            emails=[Email(user_id='', email=email, rank=1)],
+            emails=[Email(user_id=None, email=email, rank=1)],
         )
         query = select(db.models.Email).where(db.models.Email.email == email)
 
@@ -596,30 +597,21 @@ class TestCreateUser:
         # Clean up - None
         # ===========================================================
 
-    @pytest.mark.parametrize(
-        'user_id, username, error_msg_part',
-        (
-            pytest.param(None, 'username', 'stp_user.user_id', id='user_id is None'),
-            pytest.param('user_id', None, 'stp_user.username', id='username is None'),
-        ),
-    )
-    def test_not_null_constraints(
+    def test_username_not_null_constraint(
         self,
-        user_id: str | None,
-        username: str | None,
-        error_msg_part: str,
+        user_1_user_id: UUID,
         sqlite_in_memory_database_with_roles: DbWithRoles,
     ) -> None:
-        r"""Test that the not null constraints are triggered correctly."""
+        r"""Test that the username not null constraint is triggered correctly."""
 
         # Setup
         # ===========================================================
         session, _, exp_roles = sqlite_in_memory_database_with_roles
         exp_role = exp_roles[3]
         user_to_create = db.models.User(
-            user_id=user_id, username=username, role_id=exp_role.role_id
+            user_id=user_1_user_id, username=None, role_id=exp_role.role_id
         )
-        exp_error_msg = f'NOT NULL constraint failed: {error_msg_part}'
+        exp_error_msg = 'NOT NULL constraint failed: stp_user.username'
         session.add(user_to_create)
 
         # Exercise

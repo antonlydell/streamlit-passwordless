@@ -10,6 +10,7 @@ import streamlit as st
 
 # Local
 from streamlit_passwordless import database as db
+from streamlit_passwordless.models import UserID
 
 from . import config, core, ids
 
@@ -73,7 +74,7 @@ def _updated_user(
     custom_roles: Sequence[db.models.CustomRole] | None,
     with_disabled: bool,
     disabled: bool,
-    updated_by_user_id: str | None,
+    updated_by_user_id: UserID | None,
 ) -> bool:
     r"""Update the fields of the user.
 
@@ -115,7 +116,7 @@ def _updated_user(
     disabled : bool
         The new state of the disabled field of the user.
 
-    updated_by_user_id : str or None
+    updated_by_user_id : streamlit_passwordless.UserID or None
         The ID of the user that is updating the `user` to update.
 
     Returns
@@ -211,7 +212,7 @@ def update_user_form(
     submit_button_type: core.ButtonType = 'primary',
     clear_on_submit: bool = True,
     banner_container: core.BannerContainer | None = None,
-    updated_by_user_id: str | None = None,
+    updated_by_user_id: UserID | None = None,
     username_label: str = 'Username',
     username_max_length: int | None = 50,
     username_placeholder: str | None = 'john.doe',
@@ -294,7 +295,7 @@ def update_user_form(
         the update user process will be displayed. Useful to make the banner appear at the desired
         location on a page. If None the banner will be displayed right above the form.
 
-    updated_by_user_id : str or None, default None
+    updated_by_user_id : streamlit_passwordless.UserID or None, default None
         The ID of the user that is updating the `user` to update.
         If None the ID of the currently signed in user is used.
 

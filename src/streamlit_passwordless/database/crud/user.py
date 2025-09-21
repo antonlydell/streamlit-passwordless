@@ -117,16 +117,16 @@ def get_user_by_username(
 
 
 def get_user_by_user_id(
-    session: Session, user_id: str, disabled: bool | None = False, is_verified: bool | None = None
+    session: Session, user_id: models.UserID, disabled: bool | None = False, is_verified: bool | None = None
 ) -> models.User | None:
     r"""Get a user by user_id.
 
     Parameters
     ----------
-    session : Session
+    session : streamlit_passwordless.db.Session
         An active database session.
 
-    user_id : str
+    user_id : streamlit_passwordless.UserID
         The user_id to filter by.
 
     disabled : bool or None, default False
@@ -174,14 +174,14 @@ def create_user(
     session: Session,
     user: User,
     custom_roles: Sequence[models.CustomRole] | None = None,
-    created_by_user_id: str | None = None,
+    created_by_user_id: models.UserID | None = None,
     commit: bool = False,
 ) -> models.User:
     r"""Create a new user in the database.
 
     Parameters
     ----------
-    session : Session
+    session : streamlit_passwordless.db.Session
         An active database session.
 
     user : streamlit_passwordless.User
@@ -192,7 +192,7 @@ def create_user(
         If provided these roles will take precedence over the custom roles defined on
         `user` and avoids a database lookup since the custom roles already exist in the `session`.
 
-    created_by_user_id : str or None, default None
+    created_by_user_id : streamlit_passwordless.UserID or None, default None
         The ID of the user that is creating the new user.
 
     commit : bool, default False

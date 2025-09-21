@@ -3,6 +3,7 @@ r"""Unit tests for the backend module of the bitwarden_passwordless library."""
 # Standard library
 from datetime import datetime, timedelta
 from unittest.mock import Mock, call
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 # Third party
@@ -553,6 +554,7 @@ class TestGetCredentialsMethod:
 
     def test_called_correctly(
         self,
+        user_1_user_id: UUID,
         list_of_credentials: tuple[list[Credential], str, list[Credential]],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -561,7 +563,6 @@ class TestGetCredentialsMethod:
         # Setup
         # ===========================================================
         credentials, _, _ = list_of_credentials
-        user_id = 'user_1'
 
         client = BitwardenPasswordlessClient(
             url='https://ax7.com', private_key='private_key', public_key='public_key'
@@ -577,12 +578,12 @@ class TestGetCredentialsMethod:
 
         # Exercise
         # ===========================================================
-        credentials_result = client.get_credentials(user_id=user_id)
+        credentials_result = client.get_credentials(user_id=user_1_user_id)
 
         # Verify
         # ===========================================================
         m.assert_called_once()
-        assert m.call_args == call(user_id=user_id), 'call_args are incorrect!'
+        assert m.call_args == call(user_id=str(user_1_user_id)), 'call_args are incorrect!'
         assert credentials_result == credentials, 'credentials are incorrect!'
 
         # Clean up - None
@@ -590,6 +591,7 @@ class TestGetCredentialsMethod:
 
     def test_filter_by_origin(
         self,
+        user_1_user_id: UUID,
         list_of_credentials: tuple[list[Credential], str, list[Credential]],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -598,7 +600,6 @@ class TestGetCredentialsMethod:
         # Setup
         # ===========================================================
         credentials, origin_filter, exp_credentials = list_of_credentials
-        user_id = 'user_1'
 
         client = BitwardenPasswordlessClient(
             url='https://ax7.com', private_key='private_key', public_key='public_key'
@@ -614,12 +615,12 @@ class TestGetCredentialsMethod:
 
         # Exercise
         # ===========================================================
-        credentials_result = client.get_credentials(user_id=user_id, origin=origin_filter)
+        credentials_result = client.get_credentials(user_id=user_1_user_id, origin=origin_filter)
 
         # Verify
         # ===========================================================
         m.assert_called_once()
-        assert m.call_args == call(user_id=user_id), 'call_args are incorrect!'
+        assert m.call_args == call(user_id=str(user_1_user_id)), 'call_args are incorrect!'
         assert credentials_result == exp_credentials, 'credentials are incorrect!'
 
         # Clean up - None

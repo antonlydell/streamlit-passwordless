@@ -4,6 +4,7 @@ r"""Unit tests for the models' module."""
 from copy import deepcopy
 from datetime import datetime
 from typing import Any, ClassVar, Sequence
+from uuid import UUID
 
 # Third party
 import pytest
@@ -386,7 +387,6 @@ class TestEmail:
         # Setup
         # ===========================================================
         input_data = {
-            'user_id': 'user_id',
             'email': 'm.shadows@ax7.com',
             'rank': 1,
             'disabled': False,
@@ -394,6 +394,7 @@ class TestEmail:
 
         data_exp = input_data.copy()
         data_exp['email_id'] = None
+        data_exp['user_id'] = None
         data_exp['verified'] = False
         data_exp['verified_at'] = None
         data_exp['disabled_at'] = None
@@ -414,9 +415,9 @@ class TestEmail:
 
         # Setup
         # ===========================================================
-        input_data = {
+        input_data: dict[str, Any] = {
             'email_id': 1,
-            'user_id': 'user_id',
+            'user_id': '794c7257-b185-4d07-be6e-4990c1e94721',
             'email': 'test@email.com',
             'rank': 3,
             'verified': True,
@@ -426,6 +427,7 @@ class TestEmail:
         }
 
         data_exp = input_data.copy()
+        data_exp['user_id'] = UUID(input_data['user_id'])
         data_exp['verified_at'] = datetime(2024, 9, 17, 21, 4, 5)
 
         # Exercise
@@ -463,13 +465,13 @@ class TestEmail:
 class TestUserSignIn:
     r"""Tests for the model `UserSignIn`."""
 
-    def test_init_with_default_values(self) -> None:
+    def test_init_with_default_values(self, user_1_user_id: UUID) -> None:
         r"""Test to initialize the model with required parameters only."""
 
         # Setup
         # ===========================================================
         input_data = {
-            'user_id': 'user_id',
+            'user_id': user_1_user_id,
             'sign_in_timestamp': datetime(2024, 9, 18, 19, 20, 23),
             'success': True,
             'origin': 'origin',
@@ -494,7 +496,7 @@ class TestUserSignIn:
         # Clean up - None
         # ===========================================================
 
-    def test_init_with_aliases(self) -> None:
+    def test_init_with_aliases(self, user_1_user_id: UUID) -> None:
         r"""Test to initialize the model with aliases.
 
         The following parameters are initialized with their aliases:
@@ -507,7 +509,7 @@ class TestUserSignIn:
         # ===========================================================
         input_data = {
             'user_sign_in_id': 1,
-            'user_id': 'user_id',
+            'user_id': user_1_user_id,
             'timestamp': datetime(2024, 9, 18, 19, 20, 23),
             'success': True,
             'origin': 'origin',
@@ -520,7 +522,7 @@ class TestUserSignIn:
         }
         data_exp = {
             'user_sign_in_id': 1,
-            'user_id': 'user_id',
+            'user_id': user_1_user_id,
             'sign_in_timestamp': datetime(2024, 9, 18, 19, 20, 23),
             'success': True,
             'origin': 'origin',
@@ -563,13 +565,13 @@ class TestUserSignIn:
         # Clean up - None
         # ===========================================================
 
-    def test_from_bitwarden_passwordless_verified_user(self) -> None:
+    def test_from_bitwarden_passwordless_verified_user(self, user_1_user_id: UUID) -> None:
         r"""Test to initialize the model from an instance of `passwordless.VerifiedUser`."""
 
         # Setup
         # ===========================================================
         verified_user = VerifiedUser(
-            user_id='user_id',
+            user_id=str(user_1_user_id),
             timestamp=datetime(2024, 9, 18, 19, 20, 23),
             success=False,
             origin='origin',
@@ -584,7 +586,7 @@ class TestUserSignIn:
         )
         data_exp = {
             'user_sign_in_id': None,
-            'user_id': 'user_id',
+            'user_id': user_1_user_id,
             'sign_in_timestamp': datetime(2024, 9, 18, 19, 20, 23),
             'success': False,
             'origin': 'origin',
@@ -612,7 +614,7 @@ class TestUser:
     r"""Tests for the model `User`."""
 
     def test_init_with_defaults(
-        self, mocked_user_id: str, user_role: tuple[models.Role, db_models.Role, ModelData]
+        self, user_role: tuple[models.Role, db_models.Role, ModelData]
     ) -> None:
         r"""Test to initialize the model with required parameters only.
 
@@ -625,7 +627,6 @@ class TestUser:
 
         username = 'm.shadows'
         data_exp: dict[str, Any] = {
-            'user_id': mocked_user_id,
             'username': username,
             'ad_username': None,
             'displayname': None,
@@ -646,13 +647,15 @@ class TestUser:
 
         # Verify
         # ===========================================================
-        assert user.model_dump() == data_exp
+        assert user.model_dump(exclude={'user_id'}) == data_exp, 'data_exp is incorrect!'
+        assert isinstance(user.user_id, UUID), 'user_id is not a UUID!'
 
         # Clean up - None
         # ===========================================================
 
     def test_init_with_all_parameters(
         self,
+        user_1_user_id: UUID,
         user_1_email_primary: tuple[models.Email, db_models.Email, ModelData],
         user_1_email_secondary: tuple[models.Email, db_models.Email, ModelData],
         user_1_sign_in_successful: tuple[models.UserSignIn, db_models.UserSignIn, ModelData],
@@ -666,7 +669,7 @@ class TestUser:
         _, _, sign_in_data = user_1_sign_in_successful
 
         input_data = {
-            'user_id': 'user_id',
+            'user_id': str(user_1_user_id),
             'username': 'username',
             'ad_username': 'ad_username',
             'displayname': 'displayname',
@@ -689,6 +692,7 @@ class TestUser:
         }
 
         data_exp = deepcopy(input_data)
+        data_exp['user_id'] = user_1_user_id
         data_exp['verified_at'] = datetime(2024, 9, 17, 20, 48, 16)
         data_exp['disabled_at'] = datetime(2024, 9, 18, 21, 48, 16)
         data_exp['aliases'] = ('Matt', 'Shadows')
@@ -790,7 +794,7 @@ class TestUser:
         # Setup
         # ===========================================================
         user_sign_in, _, _ = user_1_sign_in_successful
-        user = models.User(user_id='user_id_not_equal_user_sign_in_user_id', username='username')
+        user = models.User(user_id=UUID('794c7257-b185-4d07-be6e-4990c1e94721'), username='username')
         user.sign_in = user_sign_in
 
         # Exercise & Verify

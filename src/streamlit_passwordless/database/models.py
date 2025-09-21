@@ -4,10 +4,20 @@ r"""The models that represent tables in the database."""
 import os
 from datetime import datetime
 from enum import StrEnum
-from typing import ClassVar, Optional, Self
+from typing import ClassVar, Self, TypeAlias
+from uuid import UUID, uuid4
 
 # Third party
-from sqlalchemy import TIMESTAMP, Column, ForeignKey, Index, MetaData, Table, UniqueConstraint, func
+from sqlalchemy import (
+    TIMESTAMP,
+    Column,
+    ForeignKey,
+    Index,
+    MetaData,
+    Table,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -16,10 +26,12 @@ from sqlalchemy.orm import (
     relationship,
 )
 
+UserID: TypeAlias = UUID
+
 SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
 metadata_obj = MetaData(schema=SCHEMA)
 
-updated_at_column: Mapped[Optional[datetime]] = mapped_column(
+updated_at_column: Mapped[datetime | None] = mapped_column(
     TIMESTAMP(), onupdate=func.current_timestamp()
 )
 created_at_column: Mapped[datetime] = mapped_column(
@@ -82,14 +94,14 @@ class ModifiedAndCreatedColumnMixin:
     updated_at : datetime or None
         The timestamp at which the record was last updated (UTC).
 
-    updated_by : str or None
+    updated_by : streamlit_passwordless.UserID or None
         The ID of the user that last updated the record.
 
     created_at : datetime
         The timestamp at which the record was created (UTC).
         Defaults to current timestamp.
 
-    created_by : str or None
+    created_by : streamlit_passwordless.UserID or None
         The ID of the user that created the record.
 
     A table model should inherit from this class prior to :class:`Base`.
@@ -101,10 +113,10 @@ class ModifiedAndCreatedColumnMixin:
             pass
     """
 
-    updated_at: Mapped[Optional[datetime]] = updated_at_column
-    updated_by: Mapped[Optional[str]]
+    updated_at: Mapped[datetime | None] = updated_at_column
+    updated_by: Mapped[UUID | None]
     created_at: Mapped[datetime] = created_at_column
-    created_by: Mapped[Optional[str]]
+    created_by: Mapped[UUID | None]
 
 
 class UserRoleName(StrEnum):
@@ -307,7 +319,7 @@ class CustomRole(ModifiedAndCreatedColumnMixin, Base):
     role_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
-    description: Mapped[Optional[str]]
+    description: Mapped[str | None]
     users: Mapped[dict[str, 'User']] = relationship(
         secondary='stp_user_custom_role_link',
         back_populates='custom_roles',
@@ -331,16 +343,17 @@ class User(ModifiedAndCreatedColumnMixin, Base):
 
     Parameters
     ----------
-    user_id : str
+    user_id : streamlit_passwordless.UserID
         The unique ID of the user. The primary key of the table.
+        If not specified :func:`uuid.uuid4` is used to generate the ID.
 
     username : str
         The username of the user. It must be unique across all users.
 
-    ad_username : Optional[str]
+    ad_username : str or None
         The active directory username of the user.
 
-    displayname : Optional[str]
+    displayname : str or None
         A descriptive name of the user that is easy to understand for a human.
 
     role_id : int
@@ -350,14 +363,14 @@ class User(ModifiedAndCreatedColumnMixin, Base):
         True if a user is verified and False otherwise. A user is verified when
         at least one verified email address is associated with the user.
 
-    verified_at : Optional[datetime]
+    verified_at : datetime or None
         The timestamp in UTC when the user was verified.
 
     disabled : bool, default False
         If False the user is enabled and if True the user is disabled.
         A disabled user is not able to register credentials or sign in.
 
-    disabled_at : Optional[datetime]
+    disabled_at : datetime or None
         The timestamp in UTC when the user was disabled.
 
     updated_at : datetime or None
@@ -404,15 +417,15 @@ class User(ModifiedAndCreatedColumnMixin, Base):
 
     __tablename__ = 'stp_user'
 
-    user_id: Mapped[str] = mapped_column(primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     username: Mapped[str] = mapped_column(unique=True, nullable=False)
-    ad_username: Mapped[Optional[str]]
-    displayname: Mapped[Optional[str]]
+    ad_username: Mapped[str | None]
+    displayname: Mapped[str | None]
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.role_id))
     verified: Mapped[bool] = mapped_column(default=False)
-    verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    verified_at: Mapped[datetime | None] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
-    disabled_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    disabled_at: Mapped[datetime | None] = mapped_column(TIMESTAMP())
     role: Mapped[Role] = relationship(back_populates='users')
     custom_roles: Mapped[dict[str, CustomRole]] = relationship(
         secondary='stp_user_custom_role_link',
@@ -441,7 +454,7 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
     email_id : int
         The primary key of the table.
 
-    user_id : str
+    user_id : streamlit_passwordless.UserID
         The unique ID of the user the email address belongs to.
 
     email : str
@@ -454,13 +467,13 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
     verified : bool, default False
         True if the email address is verified and False otherwise.
 
-    verified_at : Optional[datetime]
+    verified_at : datetime or None
         The timestamp in UTC when the email address was verified by the user.
 
     disabled : bool, default False
         If the email address is disabled or not.
 
-    disabled_at : Optional[datetime]
+    disabled_at : datetime or None
         The timestamp in UTC when the email address was disabled.
 
     updated_at : datetime or None
@@ -499,13 +512,13 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
     __table_args__ = (UniqueConstraint('user_id', 'rank', name=f'{__tablename__}_user_id_rank_iu'),)
 
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     email: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
     verified: Mapped[bool] = mapped_column(default=False)
-    verified_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    verified_at: Mapped[datetime | None] = mapped_column(TIMESTAMP())
     disabled: Mapped[bool] = mapped_column(default=False)
-    disabled_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP())
+    disabled_at: Mapped[datetime | None] = mapped_column(TIMESTAMP())
     user: Mapped['User'] = relationship(back_populates='emails')
 
 
@@ -521,7 +534,7 @@ class UserSignIn(Base):
     user_sign_in_id : int
         The primary key of the table.
 
-    user_id : str
+    user_id : streamlit_passwordless.UserID
         The unique ID of the user that signed in to the application.
 
     sign_in_timestamp : datetime
@@ -578,7 +591,7 @@ class UserSignIn(Base):
     __tablename__ = 'stp_user_sign_in'
 
     user_sign_in_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     sign_in_timestamp: Mapped[datetime] = mapped_column(TIMESTAMP())
     success: Mapped[bool]
     origin: Mapped[str]
@@ -587,7 +600,7 @@ class UserSignIn(Base):
     credential_nickname: Mapped[str]
     credential_id: Mapped[str]
     sign_in_type: Mapped[str]
-    rp_id: Mapped[Optional[str]]
+    rp_id: Mapped[str | None]
     created_at: Mapped[datetime] = created_at_column
     user: Mapped['User'] = relationship(back_populates='sign_ins')
 

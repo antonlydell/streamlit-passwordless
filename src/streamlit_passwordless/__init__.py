@@ -62,7 +62,11 @@ from streamlit_passwordless.exceptions import (
     SignInTokenVerificationError,
     StreamlitPasswordlessError,
 )
-from streamlit_passwordless.metadata import __releasedate__, __version__, __versiontuple__
+from streamlit_passwordless.metadata import (
+    __releasedate__,
+    __version__,
+    __versiontuple__,
+)
 from streamlit_passwordless.models import (
     AdminRole,
     CustomRole,
@@ -70,6 +74,7 @@ from streamlit_passwordless.models import (
     Role,
     SuperUserRole,
     User,
+    UserID,
     UserRole,
     UserSignIn,
     ViewerRole,
@@ -147,6 +152,7 @@ __all__ = [
     'Role',
     'SuperUserRole',
     'User',
+    'UserID',
     'UserRole',
     'UserSignIn',
     'ViewerRole',

@@ -1,5 +1,8 @@
 r"""The delete user button and its callback functions."""
 
+# Standard library
+from uuid import UUID
+
 # Third party
 import streamlit as st
 
@@ -7,19 +10,19 @@ import streamlit as st
 from streamlit_passwordless import database as db
 from streamlit_passwordless.authorization import sign_out
 from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
-from streamlit_passwordless.models import AdminRole, Role, User
+from streamlit_passwordless.models import AdminRole, Role, User, UserID
 
 from . import config, core, ids
 
 
 def _can_delete_user(
-    user_id: str, signed_in_user: User | None, allow_delete_self: bool, authorized_for_role: Role
+    user_id: UserID, signed_in_user: User | None, allow_delete_self: bool, authorized_for_role: Role
 ) -> None:
     r"""Check if a user is allowed to delete a user.
 
     Parameters
     ----------
-    user_id : str
+    user_id : streamlit_passwordless.UserID
         The unique ID of the user to delete.
 
     signed_in_user : streamlit_passwordless.User or None
@@ -160,7 +163,7 @@ def delete_user_button(
 
     if user is None:
         disabled = True
-        user_id = ''
+        user_id: UUID | None = None
         username = ''
     else:
         user_id = user.user_id
