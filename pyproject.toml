@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=62.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -50,16 +50,46 @@ stp = "streamlit_passwordless.cli.main:main"
 [tool.setuptools.dynamic]
 version = {attr = "streamlit_passwordless.metadata.__version__"}
 
-
-[tool.black]
+[tool.ruff]
 line-length = 100
-target-version = ["py311"]
-skip-string-normalization = true
+target-version = "py311"
 
+[tool.ruff.lint]
+select = [
+    "ERA",  # eradicate
+    "S",    # flake8-bandit
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "C4",   # flake8-comprehensions
+    "ICN",  # flake8-import-conventions
+    "T20",  # flake8-print
+    "PT",   # flake8-pytest-style
+    "RET",  # flake8-return
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "ARG",  # flake8-unused-arguments
+    "I",    # isort
+    "C90",  # mccabe
+    "F",    # Pyflakes
+    "N",    # pep8-naming
+    "E",    # pycodestyle (Error)
+    "W",    # pycodestyle (Warning)
+    "RUF",  # Ruff-specific rules
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",     # Line too long ({width} > {limit})
+    "RUF022",   # __all__ is not sorted
+]
 
-[tool.isort]
-profile = "black"
-line_length = 100
+[tool.ruff.lint.per-file-ignores]
+"tests/**.py" = [
+  "S101",     # Use of assert detected
+  "T20",      # flake8-print
+]
+
+[tool.ruff.format]
+quote-style = "single"
 
 
 [tool.pytest.ini_options]
@@ -74,8 +104,10 @@ markers = [
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
+warn_redundant_casts = true
 warn_return_any = true
 warn_unreachable = true
+warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = ["passwordless.*"]
