@@ -9,8 +9,8 @@ from uuid import UUID, uuid4
 
 # Third party
 from sqlalchemy import (
-    TIMESTAMP,
     Column,
+    DateTime,
     ForeignKey,
     Index,
     MetaData,
@@ -32,10 +32,10 @@ SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
 metadata_obj = MetaData(schema=SCHEMA)
 
 updated_at_column: Mapped[datetime | None] = mapped_column(
-    TIMESTAMP(), onupdate=func.current_timestamp()
+    DateTime(timezone=True), onupdate=func.current_timestamp()
 )
 created_at_column: Mapped[datetime] = mapped_column(
-    TIMESTAMP(), server_default=func.current_timestamp()
+    DateTime(timezone=True), server_default=func.current_timestamp()
 )
 
 
@@ -423,9 +423,9 @@ class User(ModifiedAndCreatedColumnMixin, Base):
     displayname: Mapped[str | None]
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.role_id))
     verified: Mapped[bool] = mapped_column(default=False)
-    verified_at: Mapped[datetime | None] = mapped_column(TIMESTAMP())
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     disabled: Mapped[bool] = mapped_column(default=False)
-    disabled_at: Mapped[datetime | None] = mapped_column(TIMESTAMP())
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     role: Mapped[Role] = relationship(back_populates='users')
     custom_roles: Mapped[dict[str, CustomRole]] = relationship(
         secondary='stp_user_custom_role_link',
@@ -516,9 +516,9 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
     email: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
     verified: Mapped[bool] = mapped_column(default=False)
-    verified_at: Mapped[datetime | None] = mapped_column(TIMESTAMP())
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     disabled: Mapped[bool] = mapped_column(default=False)
-    disabled_at: Mapped[datetime | None] = mapped_column(TIMESTAMP())
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     user: Mapped['User'] = relationship(back_populates='emails')
 
 
@@ -592,7 +592,7 @@ class UserSignIn(Base):
 
     user_sign_in_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
-    sign_in_timestamp: Mapped[datetime] = mapped_column(TIMESTAMP())
+    sign_in_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     success: Mapped[bool]
     origin: Mapped[str]
     device: Mapped[str]
