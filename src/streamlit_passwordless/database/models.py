@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 # Third party
 from sqlalchemy import (
+    BigInteger,
     Column,
     DateTime,
     ForeignKey,
@@ -590,7 +591,7 @@ class UserSignIn(Base):
 
     __tablename__ = 'stp_user_sign_in'
 
-    user_sign_in_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_sign_in_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     sign_in_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     success: Mapped[bool]
