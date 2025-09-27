@@ -13,7 +13,9 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Identity,
     Index,
+    Integer,
     MetaData,
     Table,
     UniqueConstraint,
@@ -202,7 +204,7 @@ class Role(ModifiedAndCreatedColumnMixin, Base):
 
     __tablename__ = 'stp_role'
 
-    role_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    role_id: Mapped[int] = mapped_column(Integer(), Identity(), primary_key=True)
     name: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
     description: Mapped[str | None]
@@ -318,7 +320,7 @@ class CustomRole(ModifiedAndCreatedColumnMixin, Base):
 
     __tablename__ = 'stp_custom_role'
 
-    role_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    role_id: Mapped[int] = mapped_column(Integer(), Identity(), primary_key=True)
     name: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
     description: Mapped[str | None]
@@ -514,7 +516,7 @@ class Email(ModifiedAndCreatedColumnMixin, Base):
     __tablename__ = 'stp_email'
     __table_args__ = (UniqueConstraint('user_id', 'rank', name=f'{__tablename__}_user_id_rank_iu'),)
 
-    email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    email_id: Mapped[int] = mapped_column(Integer(), Identity(), primary_key=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     email: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
@@ -595,6 +597,7 @@ class UserSignIn(Base):
 
     user_sign_in_id: Mapped[int] = mapped_column(
         BigInteger().with_variant(SQLITE_INTEGER(), 'sqlite'),
+        Identity(),
         primary_key=True,
         autoincrement=True,
     )
