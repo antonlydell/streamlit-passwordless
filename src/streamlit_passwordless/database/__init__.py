@@ -29,7 +29,6 @@ from .crud.user import (
 from .crud.user_sign_in import create_user_sign_in
 from .schemas.role import RoleCreate
 from .schemas.user import UserCreate
-from .schemas.user_sign_in import UserSignInCreate
 
 # The Public API
 __all__ = [
@@ -66,5 +65,4 @@ __all__ = [
     # schemas
     'RoleCreate',
     'UserCreate',
-    'UserSignInCreate',
 ]

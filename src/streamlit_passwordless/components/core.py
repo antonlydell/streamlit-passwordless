@@ -2,9 +2,10 @@ r"""Helper functions and core components that can be used by other components.""
 
 # Standard library
 import logging
+from collections.abc import Sequence
 from enum import StrEnum
 from functools import partial
-from typing import Literal, Sequence, TypeAlias
+from typing import Literal, TypeAlias
 
 # Third party
 import streamlit as st
@@ -115,7 +116,7 @@ def verify_sign_in(
         logger.error(str(e))
     except exceptions.StreamlitPasswordlessError as e:
         error_msg = f'Error creating user sign in!\n{e.displayable_message}'
-        logger.error(f'Error creating user sign in!\n{str(e)}')
+        logger.error(f'Error creating user sign in!\n{e!s}')
 
     st.session_state[config.SK_USER_SIGN_IN] = user_sign_in
 
@@ -182,10 +183,8 @@ def save_user_sign_in_to_database(
         in entry to the database. If no error occurred an empty string is returned.
     """
 
-    user_sign_in_to_db = db.UserSignInCreate.model_validate(user_sign_in)
-
     try:
-        db.create_user_sign_in(session=session, user_sign_in=user_sign_in_to_db, commit=True)
+        db.create_user_sign_in(session=session, user_sign_in=user_sign_in, commit=True)
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
         error_msg = e.displayable_message

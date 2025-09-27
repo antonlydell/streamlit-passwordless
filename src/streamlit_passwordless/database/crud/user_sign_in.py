@@ -1,18 +1,14 @@
 r"""Database operations on the user_sign_in table."""
 
-# Standard library
-
-# Third party
-
 # Local
-from .. import models
-from ..core import Session
-from ..core import commit as db_commit
-from ..schemas import user_sign_in as schemas
+from streamlit_passwordless.database import models
+from streamlit_passwordless.database.core import Session
+from streamlit_passwordless.database.core import commit as db_commit
+from streamlit_passwordless.models import UserSignIn
 
 
 def create_user_sign_in(
-    session: Session, user_sign_in: schemas.UserSignInCreate, commit: bool = True
+    session: Session, user_sign_in: UserSignIn, commit: bool = True
 ) -> models.UserSignIn:
     r"""Create a new user sign in entry in the database.
 
@@ -21,7 +17,7 @@ def create_user_sign_in(
     session : streamlit_passwordless.db.Session
         An active database session.
 
-    user_sign_in : streamlit_passwordless.db.UserSignInCreate
+    user_sign_in : streamlit_passwordless.UserSignIn
         The user sign in entry to create.
 
     commit : bool, default True
