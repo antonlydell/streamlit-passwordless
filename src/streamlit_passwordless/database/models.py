@@ -19,6 +19,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.dialects.sqlite import INTEGER as SQLITE_INTEGER
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -66,7 +67,7 @@ class Base(DeclarativeBase):
         The indentation space used for each column in the `__repr__` method.
     """
 
-    columns__repr__: ClassVar[tuple[str, ...]] = tuple()
+    columns__repr__: ClassVar[tuple[str, ...]] = ()
     indent_space__repr__: ClassVar[str] = ' ' * 4
 
     metadata = metadata_obj
@@ -592,7 +593,11 @@ class UserSignIn(Base):
 
     __tablename__ = 'stp_user_sign_in'
 
-    user_sign_in_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_sign_in_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(SQLITE_INTEGER(), 'sqlite'),
+        primary_key=True,
+        autoincrement=True,
+    )
     user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     sign_in_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     success: Mapped[bool]
