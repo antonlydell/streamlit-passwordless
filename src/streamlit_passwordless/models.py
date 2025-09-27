@@ -16,6 +16,7 @@ from . import exceptions
 
 UserID: TypeAlias = UUID
 
+
 class BaseModel(PydanticBaseModel):
     r"""The BaseModel that all models inherit from."""
 
@@ -44,50 +45,44 @@ class BaseRole(BaseModel):
     def __eq__(self, other: object) -> bool:  # ==
         if isinstance(other, BaseRole):
             return self.rank == other.rank
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.rank == other
-        else:
-            return NotImplemented
+        return NotImplemented
 
-    def __nq__(self, other: object) -> bool:  # !=
+    def __ne__(self, other: object) -> bool:  # !=
         if isinstance(other, BaseRole):
             return self.rank != other.rank
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.rank != other
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __lt__(self, other: object) -> bool:  # <
         if isinstance(other, BaseRole):
             return self.rank < other.rank
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.rank < other
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __le__(self, other: object) -> bool:  # <=
         if isinstance(other, BaseRole):
             return self.rank <= other.rank
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.rank <= other
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __gt__(self, other: object) -> bool:  # >
         if isinstance(other, BaseRole):
             return self.rank > other.rank
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.rank > other
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __ge__(self, other: object) -> bool:  # >=
         if isinstance(other, BaseRole):
             return self.rank >= other.rank
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.rank >= other
-        else:
-            return NotImplemented
+        return NotImplemented
 
 
 class Role(BaseRole):
@@ -304,8 +299,8 @@ class User(BaseModel):
         The role of the user. The role is used for check if the user is authorized
         to access certain pages within an application.
 
-    custom_roles : dict[str, streamlit_passwordless.CustomRole], default {}
-        The custom roles of the user. The role name is mapped to the :class:`CustomRole` model.
+    custom_roles : dict[int, streamlit_passwordless.CustomRole], default {}
+        The custom roles of the user. :attr:`CustomRole.role_id` is mapped to :class:`CustomRole`.
         A user may have none or many custom roles.
 
     emails : list[streamlit_passwordless.Email], default []
@@ -329,7 +324,7 @@ class User(BaseModel):
     disabled: bool = False
     disabled_at: datetime | None = None
     role: Role = UserRole
-    custom_roles: dict[str, CustomRole] = Field(default_factory=dict)
+    custom_roles: dict[int, CustomRole] = Field(default_factory=dict)
     emails: list[Email] = Field(default_factory=list)
     sign_in: UserSignIn | None = None
     aliases: tuple[str, ...] | str | None = Field(default=None, validate_default=True)
@@ -338,13 +333,13 @@ class User(BaseModel):
         return hash(self.user_id)
 
     @field_validator('aliases')
+    @classmethod
     def process_aliases(cls, aliases: tuple[str, ...] | str | None) -> tuple[str, ...] | None:
         r"""Convert multiple aliases in a string to a tuple by splitting on the semicolon ";"."""
 
         if isinstance(aliases, str):
             return tuple(v for a in aliases.split(';') if (v := a.strip()))
-        else:
-            return aliases
+        return aliases
 
     @property
     def is_authenticated(self) -> bool:
@@ -352,8 +347,7 @@ class User(BaseModel):
 
         if (sign_in := self.sign_in) is None:
             return False
-        else:
-            return sign_in.user_id == self.user_id and sign_in.success
+        return sign_in.user_id == self.user_id and sign_in.success
 
     def is_authorized(self, role: Role | int | None = None) -> bool:
         r"""Check if the user is authorized to access content of specified `role`.
@@ -375,8 +369,7 @@ class User(BaseModel):
 
         if role is None:
             return self.is_authenticated
-        else:
-            return self.role >= role if self.is_authenticated else False
+        return self.role >= role if self.is_authenticated else False
 
     @property
     def email(self) -> str:

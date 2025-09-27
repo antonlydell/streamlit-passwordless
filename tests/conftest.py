@@ -1,8 +1,9 @@
 r"""Fixtures for testing streamlit-passwordless."""
 
 # Standard library
+from collections.abc import Generator
 from datetime import datetime
-from typing import Any, Generator
+from typing import Any
 from unittest.mock import Mock
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -208,8 +209,6 @@ def user_1_user_id() -> UUID:
     return UUID('24ba6b71-a766-4bf7-82e5-1f0ae16eeb5b')
 
 
-
-
 @pytest.fixture(scope='session')
 def user_1_email_primary(user_1_user_id: UUID) -> tuple[models.Email, db_models.Email, ModelData]:
     r"""The primary email of test user 1.
@@ -393,7 +392,7 @@ def user_1(
         'disabled': disabled,
         'disabled_at': disabled_at,
         'role': role_data,
-        'custom_roles': {'Drummer': custom_role_data},
+        'custom_roles': {db_drummer_custom_role_model.role_id: custom_role_data},
         'emails': [],
         'sign_in': None,
         'aliases': None,
@@ -480,7 +479,7 @@ def user_1_with_unsuccessful_signin(
     return model, db_model, data
 
 
-@pytest.fixture()
+@pytest.fixture
 def passwordless_verified_user() -> tuple[VerifiedUser, models.UserSignIn, ModelData]:
     r"""An instance of `passwordless.VerifiedUser`.
 
@@ -534,7 +533,7 @@ def passwordless_verified_user() -> tuple[VerifiedUser, models.UserSignIn, Model
 # =============================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def mocked_get_current_datetime(monkeypatch: pytest.MonkeyPatch) -> datetime:
     r"""Set the current datetime to a fixed value.
 
@@ -559,7 +558,7 @@ def mocked_get_current_datetime(monkeypatch: pytest.MonkeyPatch) -> datetime:
 # =============================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def empty_sqlite_in_memory_database() -> Generator[tuple[Session, SessionFactory], None, None]:
     r"""An empty in-memory SQLite database.
 
@@ -584,16 +583,16 @@ def empty_sqlite_in_memory_database() -> Generator[tuple[Session, SessionFactory
         yield session, session_factory
 
 
-@pytest.fixture()
+@pytest.fixture
 def sqlite_in_memory_database_with_roles(
     empty_sqlite_in_memory_database: tuple[Session, SessionFactory],
-) -> Generator[DbWithRoles, None, None]:
+) -> DbWithRoles:
     r"""A SQLite database with roles defined.
 
     The database has all tables created and foreign key constraints enabled.
 
-    Yields
-    ------
+    Returns
+    -------
     session : sqlalchemy.orm.Session
         An open session to the database.
 
@@ -616,21 +615,21 @@ def sqlite_in_memory_database_with_roles(
     session.add_all(roles)
     session.commit()
 
-    yield session, session_factory, roles
+    return session, session_factory, roles
 
 
-@pytest.fixture()
+@pytest.fixture
 def sqlite_in_memory_database_with_custom_roles(
     sqlite_in_memory_database_with_roles: DbWithRoles,
     drummer_custom_role: tuple[models.CustomRole, db_models.CustomRole, ModelData],
     guitarist_custom_role: tuple[models.CustomRole, db_models.CustomRole, ModelData],
-) -> Generator[DbWithCustomRoles, None, None]:
+) -> DbWithCustomRoles:
     r"""A SQLite database with roles and custom roles defined.
 
     The database has all tables created and foreign key constraints enabled.
 
-    Yields
-    ------
+    Returns
+    -------
     session : sqlalchemy.orm.Session
         An open session to the database.
 
@@ -650,4 +649,4 @@ def sqlite_in_memory_database_with_custom_roles(
     session.add_all(custom_roles)
     session.commit()
 
-    yield session, session_factory, custom_roles
+    return session, session_factory, custom_roles

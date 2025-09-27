@@ -1,9 +1,10 @@
 r"""Unit tests for the models' module."""
 
 # Standard library
+from collections.abc import Sequence
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, ClassVar, Sequence
+from typing import Any, ClassVar
 from uuid import UUID
 
 # Third party
@@ -69,13 +70,13 @@ class TestBaseRole:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_left, role_right, exp_result',
-        (
+        ('role_left', 'role_right', 'exp_result'),
+        [
             pytest.param(user_role, user_role, True, id='True'),
             pytest.param(user_role, admin_role, False, id='False'),
             pytest.param(user_role, 1, True, id='int True'),
             pytest.param(user_role, 2, False, id='int False'),
-        ),
+        ],
     )
     def test___eq__(
         self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
@@ -97,18 +98,18 @@ class TestBaseRole:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_left, role_right, exp_result',
-        (
+        ('role_left', 'role_right', 'exp_result'),
+        [
             pytest.param(user_role, admin_role, True, id='True'),
             pytest.param(user_role, user_role, False, id='False'),
             pytest.param(user_role, 2, True, id='int True'),
             pytest.param(user_role, 1, False, id='int False'),
-        ),
+        ],
     )
-    def test___nq__(
+    def test___ne__(
         self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
     ) -> None:
-        r"""Test the `__nq__` method (!=)."""
+        r"""Test the `__ne__` method (!=)."""
 
         # Setup - None
         # ===========================================================
@@ -125,13 +126,13 @@ class TestBaseRole:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_left, role_right, exp_result',
-        (
+        ('role_left', 'role_right', 'exp_result'),
+        [
             pytest.param(user_role, admin_role, True, id='True'),
             pytest.param(user_role, user_role, False, id='False'),
             pytest.param(user_role, 2, True, id='int True'),
             pytest.param(user_role, 1, False, id='int False'),
-        ),
+        ],
     )
     def test___lt__(
         self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
@@ -153,15 +154,15 @@ class TestBaseRole:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_left, role_right, exp_result',
-        (
+        ('role_left', 'role_right', 'exp_result'),
+        [
             pytest.param(user_role, admin_role, True, id='< True'),
             pytest.param(user_role, user_role, True, id='<= True'),
             pytest.param(admin_role, user_role, False, id='< False'),
             pytest.param(user_role, 2, True, id='< int True'),
             pytest.param(user_role, 1, True, id='<= int True'),
             pytest.param(user_role, 0, False, id='< int False'),
-        ),
+        ],
     )
     def test___le__(
         self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
@@ -183,13 +184,13 @@ class TestBaseRole:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_left, role_right, exp_result',
-        (
+        ('role_left', 'role_right', 'exp_result'),
+        [
             pytest.param(admin_role, user_role, True, id='True'),
             pytest.param(user_role, admin_role, False, id='False'),
             pytest.param(user_role, 0, True, id='int True'),
             pytest.param(user_role, 1, False, id='int False'),
-        ),
+        ],
     )
     def test___gt__(
         self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
@@ -211,15 +212,15 @@ class TestBaseRole:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_left, role_right, exp_result',
-        (
+        ('role_left', 'role_right', 'exp_result'),
+        [
             pytest.param(admin_role, user_role, True, id='> True'),
             pytest.param(user_role, user_role, True, id='>= True'),
             pytest.param(user_role, admin_role, False, id='> False'),
             pytest.param(user_role, 0, True, id='> int True'),
             pytest.param(user_role, 1, True, id='>= int True'),
             pytest.param(user_role, 2, False, id='> int False'),
-        ),
+        ],
     )
     def test___ge__(
         self, role_left: models.BaseRole, role_right: models.BaseRole | int, exp_result: bool
@@ -580,7 +581,7 @@ class TestUserSignIn:
             nickname='credential_nickname',
             credential_id='credential_id',
             expires_at=datetime(2024, 9, 19, 19, 20, 23),
-            token_id='token_id',
+            token_id='token_id',  # noqa: S106
             type='sign_in_type',
             rp_id='rp_id',
         )
@@ -679,7 +680,7 @@ class TestUser:
             'disabled_at': '2024-09-18T21:48:16',
             'role': {'role_id': 1, 'name': 'role', 'rank': 1, 'description': None},
             'custom_roles': {
-                'custom_role_1': {
+                1: {
                     'role_id': 1,
                     'name': 'custom_role',
                     'rank': 1,
@@ -759,7 +760,7 @@ class TestUser:
         # Exercise & Verify
         # ===========================================================
         assert user.is_authenticated is True, 'user.is_authenticated is False!'
-        assert getattr(user.sign_in, 'success') is True, 'user.sign_in.success is False!'
+        assert getattr(user.sign_in, 'success') is True, 'user.sign_in.success is False!'  # noqa: B009
 
         # Clean up - None
         # ===========================================================
@@ -776,7 +777,7 @@ class TestUser:
         # Exercise & Verify
         # ===========================================================
         assert user.is_authenticated is False, 'user.is_authenticated is True!'
-        assert getattr(user.sign_in, 'success') is False, 'user.sign_in.success is True!'
+        assert getattr(user.sign_in, 'success') is False, 'user.sign_in.success is True!'  # noqa: B009
 
         # Clean up - None
         # ===========================================================
@@ -794,13 +795,15 @@ class TestUser:
         # Setup
         # ===========================================================
         user_sign_in, _, _ = user_1_sign_in_successful
-        user = models.User(user_id=UUID('794c7257-b185-4d07-be6e-4990c1e94721'), username='username')
+        user = models.User(
+            user_id=UUID('794c7257-b185-4d07-be6e-4990c1e94721'), username='username'
+        )
         user.sign_in = user_sign_in
 
         # Exercise & Verify
         # ===========================================================
         assert user.is_authenticated is False, 'user.is_authenticated is True!'
-        assert getattr(user.sign_in, 'success') is True, 'user.sign_in.success is False!'
+        assert user.sign_in.success is True, 'user.sign_in.success is False!'
 
         # Clean up - None
         # ===========================================================
@@ -844,15 +847,15 @@ class TestUser:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'aliases, aliases_exp',
-        (
+        ('aliases', 'aliases_exp'),
+        [
             pytest.param(None, None, id='None'),
             pytest.param(('Matt', 'Shadows'), ('Matt', 'Shadows'), id="('Matt', 'Shadows')"),
             pytest.param(['Matt', 'Shadows'], ('Matt', 'Shadows'), id="['Matt', 'Shadows']"),
             pytest.param('Matt;Shadows', ('Matt', 'Shadows'), id='Matt;Shadows;'),
             pytest.param('Matt', ('Matt',), id='str'),
             pytest.param('Matt;', ('Matt',), id='Matt;'),
-        ),
+        ],
     )
     def test_aliases(
         self, aliases: str | Sequence[str], aliases_exp: tuple[str, ...] | None
@@ -904,7 +907,7 @@ class TestUserIsAuthorized:
     r"""Tests for the method `User.is_authorized`."""
 
     @pytest.mark.parametrize(
-        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+        'role_as_int', [pytest.param(False, id='Role'), pytest.param(True, id='int')]
     )
     def test_authenticated_and_authorized_superuser_against_user(
         self,
@@ -928,7 +931,7 @@ class TestUserIsAuthorized:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+        'role_as_int', [pytest.param(False, id='Role'), pytest.param(True, id='int')]
     )
     def test_authenticated_and_authorized_superuser_against_superuser(
         self,
@@ -952,7 +955,7 @@ class TestUserIsAuthorized:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+        'role_as_int', [pytest.param(False, id='Role'), pytest.param(True, id='int')]
     )
     def test_authenticated_and_not_authorized_superuser_against_admin(
         self,
@@ -976,7 +979,7 @@ class TestUserIsAuthorized:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+        'role_as_int', [pytest.param(False, id='Role'), pytest.param(True, id='int')]
     )
     def test_not_authenticated_and_authorized_superuser_against_user(
         self,
@@ -1000,7 +1003,7 @@ class TestUserIsAuthorized:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+        'role_as_int', [pytest.param(False, id='Role'), pytest.param(True, id='int')]
     )
     def test_not_authenticated_and_authorized_superuser_against_superuser(
         self,
@@ -1024,7 +1027,7 @@ class TestUserIsAuthorized:
         # ===========================================================
 
     @pytest.mark.parametrize(
-        'role_as_int', (pytest.param(False, id='Role'), pytest.param(True, id='int'))
+        'role_as_int', [pytest.param(False, id='Role'), pytest.param(True, id='int')]
     )
     def test_not_authenticated_and_not_authorized_superuser_against_admin(
         self,

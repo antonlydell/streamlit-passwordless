@@ -390,8 +390,9 @@ class User(ModifiedAndCreatedColumnMixin, Base):
     role : Role
         The role of the user.
 
-    custom_roles : dict[str, CustomRole]
-        The custom roles of the user. The role name is mapped to the :class:`CustomRole` model.
+    custom_roles : dict[int, CustomRole]
+        The custom roles of the user. :attr:`CustomRole.role_id` is mapped to :class:`CustomRole`.
+        A user may have none or many custom roles.
 
     emails : list[Email]
         The email addresses associated with the user.
@@ -428,9 +429,9 @@ class User(ModifiedAndCreatedColumnMixin, Base):
     disabled: Mapped[bool] = mapped_column(default=False)
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     role: Mapped[Role] = relationship(back_populates='users')
-    custom_roles: Mapped[dict[str, CustomRole]] = relationship(
+    custom_roles: Mapped[dict[int, CustomRole]] = relationship(
         secondary='stp_user_custom_role_link',
-        collection_class=attribute_keyed_dict('name'),
+        collection_class=attribute_keyed_dict('role_id'),
         back_populates='users',
         passive_deletes=True,
     )

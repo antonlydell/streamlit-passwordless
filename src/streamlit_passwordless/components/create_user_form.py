@@ -2,7 +2,7 @@ r"""The create user form component and its callback functions."""
 
 # Standard library
 import logging
-from typing import Sequence
+from collections.abc import Sequence
 
 # Third party
 import streamlit as st
@@ -84,7 +84,7 @@ def _validate_form(db_session: db.Session, email_is_username: bool) -> None:
     st.session_state[config.SK_CREATE_USER_FORM_IS_VALID] = form_is_valid
 
 
-def create_user_form(
+def create_user_form(  # noqa: C901
     db_session: db.Session,
     with_displayname: bool = True,
     with_ad_username: bool = False,
@@ -388,7 +388,7 @@ def create_user_form(
                 key=ids.CREATE_USER_FORM_CUSTOM_ROLES_MULTISELECTBOX,
             )
         else:
-            selected_custom_roles = tuple()
+            selected_custom_roles = ()
         if with_email:
             if not email_is_username:
                 email_error_banner = st.empty()
@@ -444,7 +444,9 @@ def create_user_form(
         disabled_at=get_current_datetime() if disabled else None,
         role=models.UserRole if role is None else role,
         emails=[models.Email(email=email.strip().casefold(), rank=1)] if email else [],
-        custom_roles={m.name: models.CustomRole.model_validate(m) for m in selected_custom_roles},
+        custom_roles={
+            m.role_id: models.CustomRole.model_validate(m) for m in selected_custom_roles
+        },
     )
 
     if created_by_user_id is None:

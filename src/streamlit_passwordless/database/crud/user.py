@@ -2,7 +2,8 @@ r"""Database operations on the user table."""
 
 # Standard library
 import logging
-from typing import Literal, Sequence, overload
+from collections.abc import Sequence
+from typing import Literal, overload
 
 # Third party
 import pandas as pd
@@ -11,12 +12,11 @@ from sqlalchemy.exc import SQLAlchemyError
 
 # Local
 from streamlit_passwordless import exceptions
+from streamlit_passwordless.database import models
+from streamlit_passwordless.database.core import Session
+from streamlit_passwordless.database.core import commit as db_commit
 from streamlit_passwordless.database.crud.custom_role import get_custom_roles
 from streamlit_passwordless.models import User
-
-from .. import models
-from ..core import Session
-from ..core import commit as db_commit
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +79,7 @@ def get_all_users(
 
     if as_df:
         return pd.read_sql_query(sql=query, con=session.bind, index_col=index_col)  # type: ignore
-    else:
-        return session.scalars(query).all()
+    return session.scalars(query).all()
 
 
 def get_user_by_username(
@@ -117,7 +116,10 @@ def get_user_by_username(
 
 
 def get_user_by_user_id(
-    session: Session, user_id: models.UserID, disabled: bool | None = False, is_verified: bool | None = None
+    session: Session,
+    user_id: models.UserID,
+    disabled: bool | None = False,
+    is_verified: bool | None = None,
 ) -> models.User | None:
     r"""Get a user by user_id.
 
@@ -237,11 +239,10 @@ def create_user(
         session.add_all(db_emails)
 
     if custom_roles:
-        db_user.custom_roles = {model.name: model for model in custom_roles}
+        db_user.custom_roles = {model.role_id: model for model in custom_roles}
     elif _custom_roles := user.custom_roles:
-        role_ids = {role_id for cr in _custom_roles.values() if (role_id := cr.role_id) is not None}
-        db_custom_roles = get_custom_roles(session=session, role_ids=role_ids)
-        db_user.custom_roles = {model.name: model for model in db_custom_roles}
+        db_custom_roles = get_custom_roles(session=session, role_ids=_custom_roles.keys())
+        db_user.custom_roles = {model.role_id: model for model in db_custom_roles}
 
     session.add(db_user)
 

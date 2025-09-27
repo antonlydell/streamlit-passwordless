@@ -1,8 +1,8 @@
 r"""The update user form component and its callback functions."""
 
 # Standard library
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence
 from zoneinfo import ZoneInfo
 
 # Third party
@@ -39,7 +39,6 @@ def _validate_form(db_session: db.Session, current_username: str) -> None:
 
     validation_error_field = core.FormField.USERNAME
     if username := st.session_state[ids.UPDATE_USER_FORM_USERNAME_TEXT_INPUT]:
-
         if (new_username := username.strip().casefold()) != current_username:
             db_user, error_msg = core.get_user_from_database(
                 session=db_session, username=new_username
@@ -61,7 +60,7 @@ def _validate_form(db_session: db.Session, current_username: str) -> None:
     st.session_state[config.SK_UPDATE_USER_FORM_IS_VALID] = form_is_valid
 
 
-def _updated_user(
+def _updated_user(  # noqa: C901
     user: db.models.User,
     username: str,
     with_displayname: bool,
@@ -158,7 +157,7 @@ def _updated_user(
         role_updated = False
 
     if with_custom_roles:
-        new_custom_roles = {cr.name: cr for cr in custom_roles} if custom_roles else {}
+        new_custom_roles = {cr.role_id: cr for cr in custom_roles} if custom_roles else {}
 
         new_custom_roles_set = set(new_custom_roles.keys())
         old_custom_roles_set = set(user.custom_roles.keys())
@@ -166,7 +165,7 @@ def _updated_user(
             new_custom_roles_set.difference(old_custom_roles_set),
             old_custom_roles_set.difference(new_custom_roles_set),
         )
-        custom_roles_updated = True if diff else False
+        custom_roles_updated = bool(diff)
 
         if custom_roles_updated:
             user.custom_roles = new_custom_roles
@@ -196,7 +195,7 @@ def _updated_user(
     )
 
 
-def update_user_form(
+def update_user_form(  # noqa: C901
     db_session: db.Session,
     user: db.models.User,
     with_displayname: bool = True,
@@ -436,7 +435,7 @@ def update_user_form(
 
             role = st.selectbox(
                 label=role_label,
-                options=db_roles if db_roles else tuple(),
+                options=db_roles if db_roles else (),
                 index=db_roles.index(user.role) if roles else 0,  # Role of the current user.
                 placeholder=role_placeholder,
                 format_func=lambda r: r.name,
@@ -449,7 +448,6 @@ def update_user_form(
 
         if with_custom_roles:
             if custom_roles is None:
-                st.write(f'Session loading custom roles : {db_session}')
                 db_custom_roles, error_msg = core.get_all_custom_roles_from_database(
                     session=db_session
                 )
@@ -470,7 +468,7 @@ def update_user_form(
             st.multiselect(
                 label=custom_roles_label,
                 options=db_custom_roles,
-                default=[role for role in user.custom_roles.values()],
+                default=list(user.custom_roles.values()),
                 max_selections=custom_roles_max_selections,
                 placeholder=custom_roles_placeholder,
                 format_func=lambda r: r.name,
@@ -525,9 +523,7 @@ def update_user_form(
         with_role=with_role,
         role_id=role_id,
         with_custom_roles=with_custom_roles,
-        custom_roles=st.session_state.get(
-            ids.UPDATE_USER_FORM_CUSTOM_ROLES_MULTISELECTBOX, tuple()
-        ),
+        custom_roles=st.session_state.get(ids.UPDATE_USER_FORM_CUSTOM_ROLES_MULTISELECTBOX, ()),
         with_disabled=with_disabled_toggle,
         disabled=disabled,
         updated_by_user_id=updated_by,
