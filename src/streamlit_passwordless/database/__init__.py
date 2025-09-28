@@ -27,7 +27,6 @@ from .crud.user import (
     get_user_by_username,
 )
 from .crud.user_sign_in import create_user_sign_in
-from .schemas.user import UserCreate
 
 # The Public API
 __all__ = [
@@ -61,6 +60,4 @@ __all__ = [
     'get_user_by_username',
     # user_sign_in
     'create_user_sign_in',
-    # schemas
-    'UserCreate',
 ]
