@@ -1,7 +1,8 @@
 r"""Database operations on the role table (:class:`streamlit_passwordless.db.models.Role`)."""
 
 # Standard library
-from typing import Literal, Sequence, overload
+from collections.abc import Sequence
+from typing import Literal, overload
 
 # Third party
 import pandas as pd
@@ -9,11 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 # Local
-from streamlit_passwordless import exceptions
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.database.core import Session
 from streamlit_passwordless.database.core import commit as db_commit
 from streamlit_passwordless.database.models import Role
-from streamlit_passwordless.database.schemas.role import RoleCreate
 
 
 @overload
@@ -79,9 +79,8 @@ def get_all_roles(
 
     try:
         if as_df:
-            return pd.read_sql_query(sql=query, con=session.bind, index_col=index_col)  # type: ignore
-        else:
-            return session.scalars(query).all()
+            return pd.read_sql_query(sql=query, con=session.get_bind(), index_col=index_col)
+        return session.scalars(query).all()
     except SQLAlchemyError as e:
         raise exceptions.DatabaseError('Error loading roles from database!', e=e) from None
 
@@ -146,7 +145,7 @@ def get_role_by_role_id(session: Session, role_id: int) -> Role | None:
         raise exceptions.DatabaseError('Error loading role from database!', e=e) from None
 
 
-def create_role(session: Session, role: RoleCreate, commit: bool = False) -> Role:
+def create_role(session: Session, role: models.Role, commit: bool = False) -> Role:
     r"""Create a new role in the database.
 
     Parameters
@@ -154,8 +153,8 @@ def create_role(session: Session, role: RoleCreate, commit: bool = False) -> Rol
     session : Session
         An active database session.
 
-    role : streamlit_passwordless.db.RoleCreate
-        The schema of the role to create.
+    role : streamlit_passwordless.Role
+        The role to create.
 
     commit : bool, default False
         True if the added role should be committed after being added to the session and False

@@ -14,7 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 # Local
-from streamlit_passwordless import exceptions
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.database.crud.role import (
     create_default_roles,
     create_role,
@@ -23,7 +23,6 @@ from streamlit_passwordless.database.crud.role import (
     get_role_by_role_id,
 )
 from streamlit_passwordless.database.models import Role
-from streamlit_passwordless.database.schemas.role import RoleCreate
 from tests.config import DbWithRoles
 
 # =============================================================================================
@@ -273,7 +272,7 @@ class TestGetRoleByRoleId:
         # ===========================================================
         session, _ = empty_sqlite_in_memory_database
 
-        exp_error_msg = "Error loading role from database!"
+        exp_error_msg = 'Error loading role from database!'
         monkeypatch.setattr(
             session, 'scalars', Mock(side_effect=SQLAlchemyError('A mocked error occurred!'))
         )
@@ -299,16 +298,17 @@ class TestCreateRole:
 
     @pytest.mark.parametrize(
         'role_to_create',
-        (
+        [
             pytest.param(
-                RoleCreate(name='User', rank=2, description='This is a user'), id='with description'
+                models.Role(name='User', rank=2, description='This is a user'),
+                id='with description',
             ),
-            pytest.param(RoleCreate(name='Admin', rank=4), id='without description'),
-        ),
+            pytest.param(models.Role(name='Admin', rank=4), id='without description'),
+        ],
     )
     def test_create_role_with_commit(
         self,
-        role_to_create: RoleCreate,
+        role_to_create: models.Role,
         empty_sqlite_in_memory_database: tuple[Session, sessionmaker],
     ) -> None:
         r"""Test to create a new role in the database.
@@ -352,7 +352,7 @@ class TestCreateRole:
         # Setup
         # ===========================================================
         session, session_factory = empty_sqlite_in_memory_database
-        role_to_create = RoleCreate(name='Admin', rank=4)
+        role_to_create = models.Role(name='Admin', rank=4)
         query = select(Role).where(Role.name == role_to_create.name)
 
         # Exercise
@@ -385,7 +385,7 @@ class TestCreateRole:
         # ===========================================================
         session, _ = empty_sqlite_in_memory_database
 
-        role_to_create = RoleCreate(name='SuperUser', rank=3)
+        role_to_create = models.Role(name='SuperUser', rank=3)
         exp_error_msg = (
             'Unable to save role SuperUser to database! Check the logs for more details.'
         )
