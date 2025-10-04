@@ -11,6 +11,7 @@ from pydantic import BaseModel as PydanticBaseModel
 
 # Local
 from streamlit_passwordless.database.models import Role as DBRole
+from streamlit_passwordless.database.models import User as DBUser
 
 from . import exceptions
 
@@ -382,3 +383,25 @@ class User(BaseModel):
             return self.emails[0].email
         except IndexError:
             return ''
+
+    @classmethod
+    def from_db(cls, db_user: DBUser, load_role: bool = False, load_custom_roles: bool = False, load_emails: bool = False) -> bool:
+        r"""Create a user instance from a database model."""
+
+
+        if load_role:
+            role = Role.model_validate(db_user.role)
+        
+        if load_custom_roles:
+            custom_roles = CustomRole.model_validate(db_user.custom_roles)
+        
+        cls(
+            user_id=db_user.user_id,
+            username=db_user.username,
+            ad_username=db_user.ad_username,
+            verified=db_user.verified,
+            verified_at=db_user.verified_at,
+            disabled=db_user.disabled,
+            disabled_at=db_user.disabled_at
+        )
+        user = .model_validate(db_user)

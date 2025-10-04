@@ -436,7 +436,10 @@ class User(ModifiedAndCreatedColumnMixin, Base):
         secondary='stp_user_custom_role_link',
         collection_class=attribute_keyed_dict('role_id'),
         back_populates='users',
+        cascade='all, delete-orphan',
         passive_deletes=True,
+        single_parent=True,
+        # lazy='selectin',
     )
     emails: Mapped[list['Email']] = relationship(
         back_populates='user', cascade='delete, delete-orphan', order_by='Email.rank'

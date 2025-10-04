@@ -9,14 +9,14 @@ from typing import Literal, overload
 import pandas as pd
 from sqlalchemy import and_, select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload, selectinload
 
 # Local
-from streamlit_passwordless import exceptions
-from streamlit_passwordless.database import models
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.database.core import Session
 from streamlit_passwordless.database.core import commit as db_commit
 from streamlit_passwordless.database.crud.custom_role import get_custom_roles
-from streamlit_passwordless.models import User
+from streamlit_passwordless.database.models import Email, Role, User, UserID
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def get_all_users(
     limit: int | None = None,
     as_df: Literal[False] = False,
     index_col: str = 'user_id',
-) -> Sequence[models.User]: ...
+) -> Sequence[User]: ...
 
 
 @overload
@@ -47,7 +47,7 @@ def get_all_users(
     limit: int | None = None,
     as_df: bool = False,
     index_col: str = 'user_id',
-) -> pd.DataFrame | Sequence[models.User]:
+) -> pd.DataFrame | Sequence[User]:
     r"""Get all users from the database.
 
     Parameters
@@ -75,7 +75,7 @@ def get_all_users(
         The users from the database.
     """
 
-    query = select(models.User).order_by(models.User.username).offset(skip).limit(limit)
+    query = select(User).order_by(User.username).offset(skip).limit(limit)
 
     if as_df:
         return pd.read_sql_query(sql=query, con=session.bind, index_col=index_col)  # type: ignore
@@ -84,7 +84,7 @@ def get_all_users(
 
 def get_user_by_username(
     session: Session, username: str, disabled: bool | None = False
-) -> models.User | None:
+) -> User | None:
     r"""Get a user by its username.
 
     Parameters
@@ -106,21 +106,25 @@ def get_user_by_username(
     """
 
     if disabled is None:
-        where_clause = models.User.username == username
+        where_clause = User.username == username
     else:
-        where_clause = and_(models.User.username == username, models.User.disabled == disabled)
+        where_clause = and_(User.username == username, User.disabled == disabled)
 
-    query = select(models.User).where(where_clause)
+    query = select(User).where(where_clause)
 
     return session.scalars(query).one_or_none()
 
 
 def get_user_by_user_id(
     session: Session,
-    user_id: models.UserID,
+    user_id: UserID,
     disabled: bool | None = False,
     is_verified: bool | None = None,
-) -> models.User | None:
+    load_role: bool = False,
+    load_custom_roles: bool = False,
+    load_emails: bool = False,
+    raiseload: bool = True,
+) -> User | None:
     r"""Get a user by user_id.
 
     Parameters
@@ -150,17 +154,36 @@ def get_user_by_user_id(
         If an error occurs while loading the user from the database.
     """
 
-    if disabled is None:
-        where_clause = models.User.user_id == user_id
-    else:
-        where_clause = and_(models.User.user_id == user_id, models.User.disabled == disabled)
+    query = select(User)
+    if load_role:
+        query = query.options(
+            joinedload(User.role).load_only(Role.role_id, Role.name, Role.rank, raiseload=raiseload)
+        )
+    if load_custom_roles:
+        query = query.options(selectinload(User.custom_roles))
+        # query = query.options(
+        #     selectinload(User.custom_roles).load_only(
+        #         CustomRole.role_id, CustomRole.name, CustomRole.rank, raiseload=raiseload
+        #     )
+        # )
+    if load_emails:
+        query = query.options(
+            selectinload(User.emails).load_only(
+                Email.email_id, Email.email, Email.rank, raiseload=raiseload
+            )
+        )
 
-    query = select(models.User).where(where_clause)
+    if disabled is None:
+        where_clause = User.user_id == user_id
+    else:
+        where_clause = and_(User.user_id == user_id, User.disabled == disabled)
+
+    query = query.where(where_clause)
 
     if is_verified is True:
-        query = query.where(models.User.verified_at._is_not(None))
+        query = query.where(User.verified_at.is_not(None))
     elif is_verified is False:
-        query = query.where(models.User.verified_at._is(None))
+        query = query.where(User.verified_at.is_(None))
     else:
         pass
 
@@ -174,11 +197,11 @@ def get_user_by_user_id(
 
 def create_user(
     session: Session,
-    user: User,
+    user: models.User,
     custom_roles: Sequence[models.CustomRole] | None = None,
-    created_by_user_id: models.UserID | None = None,
+    created_by_user_id: UserID | None = None,
     commit: bool = False,
-) -> models.User:
+) -> User:
     r"""Create a new user in the database.
 
     Parameters
@@ -221,7 +244,7 @@ def create_user(
         logger.error(error_msg)
         raise exceptions.DatabaseCreateUserError(error_msg)
 
-    db_user = models.User(
+    db_user = User(
         user_id=user.user_id,
         username=user.username,
         ad_username=user.ad_username,
@@ -234,7 +257,7 @@ def create_user(
     )
 
     if emails := user.emails:
-        db_emails = [models.Email(**email.model_dump()) for email in emails]
+        db_emails = [Email(**email.model_dump()) for email in emails]
         db_user.emails.extend(db_emails)
         session.add_all(db_emails)
 

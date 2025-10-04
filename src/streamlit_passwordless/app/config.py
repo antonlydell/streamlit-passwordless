@@ -61,6 +61,8 @@ def setup(
     client = create_bitwarden_passwordless_client(
         public_key=cm.bwp_public_key, private_key=cm.bwp_private_key, _url=cm.bwp_url
     )
-    session_factory = create_session_factory_cached(url=cm.db_url, create_database=create_database)
+    session_factory = create_session_factory_cached(
+        url=cm.db_url, create_database=create_database, echo=True
+    )
 
     return client, session_factory, cm

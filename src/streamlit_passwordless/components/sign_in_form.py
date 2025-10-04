@@ -19,7 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 def _get_user_from_db(
-    session: db.Session, user_sign_in: models.UserSignIn
+    session: db.Session,
+    user_sign_in: models.UserSignIn,
+    load_role: bool = False,
+    load_custom_roles: bool = False,
+    load_emails: bool = False,
 ) -> tuple[models.User | None, str]:
     r"""Get the signed in user from the database.
 
@@ -49,7 +53,13 @@ def _get_user_from_db(
     db_user = None
     user = None
     try:
-        db_user = db.get_user_by_user_id(session=session, user_id=user_sign_in.user_id)
+        db_user = db.get_user_by_user_id(
+            session=session,
+            user_id=user_sign_in.user_id,
+            load_role=load_role,
+            load_custom_roles=load_custom_roles,
+            load_emails=load_emails,
+        )
         load_db_user_error = False
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
@@ -71,6 +81,7 @@ def _get_user_from_db(
                 'does not exist! Check the logs for more details.'
             )
     else:
+        breakpoint()
         user = models.User.model_validate(db_user)
 
     st.session_state[config.SK_DB_USER] = db_user
@@ -133,6 +144,9 @@ def _process_user_sign_in(
     clicked: bool,
     client: BitwardenPasswordlessClient,
     session: db.Session,
+    load_role: bool,
+    load_custom_roles: bool,
+    load_emails: bool,
     role: models.Role | int | None,
     banner_container: core.BannerContainer,
     redirect: core.Redirectable | None,
@@ -210,7 +224,13 @@ def _process_user_sign_in(
         )
         return None, False
 
-    user, error_msg = _get_user_from_db(session=session, user_sign_in=user_sign_in)
+    user, error_msg = _get_user_from_db(
+        session=session,
+        user_sign_in=user_sign_in,
+        load_role=load_role,
+        load_custom_roles=load_custom_roles,
+        load_emails=load_emails,
+    )
     if user is None:
         core.display_banner_message(
             message=error_msg,
@@ -218,8 +238,7 @@ def _process_user_sign_in(
             container=banner_container,
         )
         return user, False
-    else:
-        user.sign_in = user_sign_in
+    user.sign_in = user_sign_in
 
     user, error_msg = _authorize_user(user=user, role=role)
     if error_msg:
@@ -434,6 +453,9 @@ def bitwarden_sign_in_button(
     role: models.Role | int | None = None,
     with_discoverable: bool = True,
     with_autofill: bool = False,
+    load_role: bool = False,
+    load_custom_roles: bool = False,
+    load_emails: bool = False,
     button_label: str = 'Sign in',
     button_type: core.ButtonType = 'primary',
     banner_container: core.BannerContainer | None = None,
@@ -471,6 +493,13 @@ def bitwarden_sign_in_button(
         signing in. If False the sign in method is disabled. This method of signing in is
         overridden if `alias` specified or `with_discoverable` is True.
 
+    load_role: bool = False,
+
+    load_custom_roles: bool = False,
+
+    load_emails: bool = False,
+
+    button_label: str = 'Sign in',
     button_label : str, default 'Sign in'
         The label of the button.
 
@@ -532,6 +561,9 @@ def bitwarden_sign_in_button(
         clicked=clicked,
         client=client,
         session=db_session,
+        load_role=load_role,
+        load_custom_roles=load_custom_roles,
+        load_emails=load_emails,
         role=role,
         banner_container=banner_container,
         redirect=redirect,
