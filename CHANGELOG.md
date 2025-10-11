@@ -13,6 +13,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.17.0] - 2025-10-11
+
+Proper UUID support for `User.user_id`!
+
+The datatype of the `User.user_id` column in the database has been updated from string to UUID.
+Having a proper UUID datatype allows databases (that support UUID) to leverage this datatype
+for improved performance and reduced storage space.
+
+
+### Changed
+
+- `streamlit_passwordless.db.models`:
+
+  - All datetime columns are now generated as timezone aware in database dialects that support
+    timezone aware datatypes.
+
+  - `User`, `Email`, `UserSignIn` : Changed datatype of `user_id` column from `str` to `sqlalchemy.Uuid`.
+
+  - `UserSignIn` : Changed dtype of `user_sign_in_id` column from `sqlalchemy.Integer` to `sqlalchemy.BigInteger`
+    to better accommodate a large number of user sign in events.
+
+  - `User` : Changed the keying of `custom_roles` dict from `name` to `role_id`.
+    It makes more sense to access custom roles by `CustomRole.role_id` rather than `CustomRole.name`,
+    since names may change.
+
+- `streamlit_passwordless.User` : Changed the datatype of `user_id` attribute from `str` to `uuid.UUID` and
+  the keying of `custom_roles` dict from `name` to `role_id`.
+
+
+### Removed
+
+- `streamlit_passwordless.db.RoleCreate` : This schema has been replaced with `streamlit_passwordless.Role`.
+- `streamlit_passwordless.db.UserCreate` : This schema has been replaced with `streamlit_passwordless.User`.
+- `streamlit_passwordless.db.UserSignInCreate` : This schema has been replaced with `streamlit_passwordless.UserSignIn`.
+
+
 ## [0.16.1] - 2025-07-27
 
 Bugfix for connecting to other databases than SQLite!
@@ -817,7 +853,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.17.0
 [0.16.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.16.1
 [0.16.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.16.0
 [0.15.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.15.0
