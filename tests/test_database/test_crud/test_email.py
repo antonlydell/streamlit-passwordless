@@ -96,14 +96,12 @@ class TestGetEmail:
             ('verified_at', exp_email.verified_at),
             ('disabled', exp_email.disabled),
             ('disabled_at', exp_email.disabled_at),
-            ('updated_at', exp_email.updated_at),
-            ('created_at', exp_email.created_at),
         )
         for attr, exp_value in attributes_to_verify:
             assert getattr(email, attr) == exp_value, f'{email.email} : email.{attr} is incorrect!'
 
         with pytest.raises(DetachedInstanceError):  # Check that the user is not loaded.
-            email.user
+            email.user  # noqa: B018
 
         # Clean up - None
         # ===========================================================
@@ -139,7 +137,7 @@ class TestGetEmail:
 
         # Setup
         # ===========================================================
-        session, session_factory, exp_user = sqlite_in_memory_database_with_user_and_email
+        _, session_factory, exp_user = sqlite_in_memory_database_with_user_and_email
         exp_email = exp_user.emails[0]
 
         # Exercise
@@ -161,8 +159,6 @@ class TestGetEmail:
             ('verified_at', exp_email.verified_at),
             ('disabled', exp_email.disabled),
             ('disabled_at', exp_email.disabled_at),
-            ('updated_at', exp_email.updated_at),
-            ('created_at', exp_email.created_at),
         )
         for attr, exp_value in email_attributes_to_verify:
             assert getattr(email, attr) == exp_value, f'{email.email} : email.{attr} is incorrect!'
@@ -177,8 +173,6 @@ class TestGetEmail:
             ('verified_at', exp_user.verified_at),
             ('disabled', exp_user.disabled),
             ('disabled_at', exp_user.disabled_at),
-            ('updated_at', exp_user.updated_at),
-            ('created_at', exp_user.created_at),
         )
         for attr, exp_value in user_attributes_to_verify:
             assert getattr(user, attr) == exp_value, f'user.{attr} is incorrect!'

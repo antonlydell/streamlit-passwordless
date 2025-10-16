@@ -1,7 +1,6 @@
 r"""Unit tests for the crud operations on the CustomRole database model."""
 
 # Standard library
-from datetime import datetime
 from itertools import zip_longest
 from unittest.mock import Mock
 
@@ -21,7 +20,7 @@ from streamlit_passwordless.database.crud.custom_role import (
     get_all_custom_roles,
     get_custom_roles,
 )
-from tests.config import TZ_UTC, DbWithCustomRoles
+from tests.config import DbWithCustomRoles
 
 # =============================================================================================
 # Tests
@@ -234,8 +233,6 @@ class TestGetCustomRoles:
         assert exp_role.name == role.name, 'name attribute is incorrect!'
         assert exp_role.rank == role.rank, 'rank attribute is incorrect!'
         assert exp_role.description == role.description, 'description attribute is incorrect!'
-        assert role.updated_at is None, 'updated_at is not None!'
-        assert isinstance(exp_role.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
         # ===========================================================
@@ -328,7 +325,7 @@ class TestCreateCustomRole:
 
     @pytest.mark.parametrize(
         'role_to_create',
-        (
+        [
             pytest.param(
                 models.CustomRole(role_id=1, name='Drummer', rank=2, description='Epic drummer!'),
                 id='with role_id and description',
@@ -336,7 +333,7 @@ class TestCreateCustomRole:
             pytest.param(
                 models.CustomRole(name='Guitarist', rank=4), id='without role_id and description'
             ),
-        ),
+        ],
     )
     def test_create_role_with_commit(
         self,
@@ -366,8 +363,6 @@ class TestCreateCustomRole:
         assert role.name == role_to_create.name, 'name attribute is incorrect!'
         assert role.rank == role_to_create.rank, 'rank attribute is incorrect!'
         assert role.description == role_to_create.description, 'description attribute is incorrect!'
-        assert role.updated_at is None, 'updated_at is not None!'
-        assert isinstance(role.created_at, datetime), 'created_at is not a datetime object!'
 
         # Clean up - None
         # ===========================================================
@@ -400,44 +395,6 @@ class TestCreateCustomRole:
         assert role.name == role_to_create.name, 'name attribute is incorrect!'
         assert role.rank == role_to_create.rank, 'rank attribute is incorrect!'
         assert role.description == role_to_create.description, 'description attribute is incorrect!'
-        assert role.updated_at is None, 'updated_at is not None!'  # type: ignore
-        assert role.created_at is None, 'created_at is not None!'  # type: ignore
-
-        # Clean up - None
-        # ===========================================================
-
-    def test_created_at_and_updated_at(
-        self, empty_sqlite_in_memory_database: tuple[Session, sessionmaker]
-    ) -> None:
-        r"""Test that the columns `created_at` and `updated_at` are correctly set.
-
-        When creating a new custom role the column `updated_at` should be None and `created_at`
-        should be set to the UTC timestamp when the record was inserted into the database.
-        """
-
-        # Setup
-        # ===========================================================
-        session, session_factory = empty_sqlite_in_memory_database
-        role_to_create = models.CustomRole(name='Drummer', rank=4)
-        query = select(db_models.CustomRole).where(db_models.CustomRole.name == role_to_create.name)
-
-        before_create_role = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
-
-        # Exercise
-        # ===========================================================
-        create_custom_role(session=session, role=role_to_create, commit=True)
-
-        # Verify
-        # ===========================================================
-        after_create_role = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
-
-        with session_factory() as new_session:
-            db_custom_role = new_session.scalars(query).one()
-
-        assert db_custom_role.updated_at is None, 'updated_at is not None!'
-        assert (
-            before_create_role <= db_custom_role.created_at <= after_create_role
-        ), 'custom_role.created_at is incorrect!'
 
         # Clean up - None
         # ===========================================================
@@ -456,8 +413,7 @@ class TestCreateCustomRole:
 
         role_to_create = models.CustomRole(name='Guitarist', rank=3)
         exp_error_msg = (
-            'Unable to save custom role "Guitarist" to database! '
-            'Check the logs for more details.'
+            'Unable to save custom role "Guitarist" to database! Check the logs for more details.'
         )
         monkeypatch.setattr(
             session, 'commit', Mock(side_effect=SQLAlchemyError('A mocked error occurred!'))

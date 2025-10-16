@@ -5,10 +5,15 @@ from datetime import datetime
 
 # Third party
 import pytest
+from sqlalchemy import select
+from sqlalchemy.orm import undefer_group
 
 # Local
+from streamlit_passwordless import UserID
 from streamlit_passwordless.database import models as db_models
-from tests.config import TZ_UTC
+from streamlit_passwordless.database.core import Session, SessionFactory
+from streamlit_passwordless.database.models import Role
+from tests.config import TZ_UTC, DbWithRoles
 
 # =============================================================================================
 # Fixtures
@@ -363,6 +368,110 @@ class TestUserSignIn:
         print(f'Expected Result:\n{repr_str_exp}')
 
         assert result == repr_str_exp
+
+        # Clean up - None
+        # ===========================================================
+
+
+class TestAuditColumnsMixin:
+    r"""Tests for the model `AuditColumnsMixin`."""
+
+    def test_create_role(
+        self,
+        empty_sqlite_in_memory_database: tuple[Session, SessionFactory],
+        user_1_user_id: UserID,
+    ) -> None:
+        r"""Test to create a role and validate the audit columns."""
+
+        # Setup
+        # ===========================================================
+        session, session_factory = empty_sqlite_in_memory_database
+        role = Role(
+            role_id=1,
+            name='User',
+            rank=1,
+            created_by=user_1_user_id,
+        )
+        query = select(Role).options(undefer_group('audit')).where(Role.role_id == role.role_id)
+        before_create_role = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
+
+        # Exercise
+        # ===========================================================
+        session.add(role)
+        session.commit()
+
+        # Verify
+        # ===========================================================
+        with session_factory() as new_session:
+            db_role = new_session.scalars(query).one()
+
+        assert db_role is not None, f'Role(role_id={role.role_id}) not found in the database!'
+
+        attributes_to_verify = (
+            ('updated_at', None),
+            ('updated_by', None),
+            ('created_by', user_1_user_id),
+        )
+        for attr, exp_value in attributes_to_verify:
+            assert getattr(db_role, attr) == exp_value, f'db_role.{attr}  is incorrect!'
+
+        after_create_role = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
+        assert before_create_role <= db_role.created_at <= after_create_role, (
+            'db_role.created_at is incorrect!'
+        )
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_update_role(
+        self,
+        sqlite_in_memory_database_with_roles: DbWithRoles,
+        user_1_user_id: UserID,
+    ) -> None:
+        r"""Test to update a role and validate the audit columns."""
+
+        # Setup
+        # ===========================================================
+        session, session_factory, _ = sqlite_in_memory_database_with_roles
+        role = session.get(Role, 1)
+
+        assert role is not None, 'Role(role_id=1) was not found in test database!'
+
+        new_role_name = 'updated'
+        role.name = new_role_name
+        role.updated_by = user_1_user_id
+        query = select(Role).options(undefer_group('audit')).where(Role.role_id == role.role_id)
+        before_update_role = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
+
+        # Exercise
+        # ===========================================================
+        session.add(role)
+        session.commit()
+
+        # Verify
+        # ===========================================================
+        with session_factory() as new_session:
+            db_role = new_session.scalars(query).one()
+
+        assert db_role is not None, f'Role(role_id={role.role_id}) not found in the database!'
+
+        attributes_to_verify = (
+            ('name', new_role_name),
+            ('updated_by', user_1_user_id),
+            ('created_by', None),
+        )
+        for attr, exp_value in attributes_to_verify:
+            assert getattr(db_role, attr) == exp_value, f'db_role.{attr}  is incorrect!'
+
+        after_update_role = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
+
+        assert db_role.updated_at is not None, 'db_role.updated_at is unspecified!'
+        assert before_update_role <= db_role.updated_at <= after_update_role, (
+            'db_role.updated_at is incorrect!'
+        )
+        assert isinstance(db_role.created_at, datetime), (
+            'db_role.created_at is not a datetime object!'
+        )
 
         # Clean up - None
         # ===========================================================

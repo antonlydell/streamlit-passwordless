@@ -67,9 +67,6 @@ class TestCreateUser:
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
 
-        assert db_user.updated_at is None, 'updated_at is not None!'
-        assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
-
         # Clean up - None
         # ===========================================================
 
@@ -295,85 +292,6 @@ class TestCreateUser:
         # Clean up - None
         # ===========================================================
 
-    def test_user_created_at_and_updated_at(
-        self, sqlite_in_memory_database_with_roles: DbWithRoles
-    ) -> None:
-        r"""Test that the columns `created_at` and `updated_at` are correctly set.
-
-        When creating a new user the column `updated_at` should be None and `created_at`
-        should be set to the UTC timestamp when the record was inserted into the database.
-        """
-
-        # Setup
-        # ===========================================================
-        session, session_factory, _ = sqlite_in_memory_database_with_roles
-
-        user_to_create = User(username='username', role=Role(role_id=1, name='', rank=0))
-        query = select(db.models.User).where(db.models.User.user_id == user_to_create.user_id)
-
-        before_create_user = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
-
-        # Exercise
-        # ===========================================================
-        db.create_user(session=session, user=user_to_create, commit=True)
-
-        # Verify
-        # ===========================================================
-        after_create_user = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
-
-        with session_factory() as new_session:
-            db_user = new_session.scalars(query).one()
-
-        assert db_user.updated_at is None, 'updated_at is not None!'
-        assert before_create_user <= db_user.created_at <= after_create_user, (
-            'db_user.created_at is incorrect!'
-        )
-
-        # Clean up - None
-        # ===========================================================
-
-    def test_user_email_created_at_and_updated_at(
-        self, sqlite_in_memory_database_with_roles: DbWithRoles
-    ) -> None:
-        r"""Test that the columns `created_at` and `updated_at` are correctly set.
-
-        When creating a new email the column `updated_at` should be None and `created_at`
-        should be set to the UTC timestamp when the record was inserted into the database.
-        """
-
-        # Setup
-        # ===========================================================
-        session, session_factory, _ = sqlite_in_memory_database_with_roles
-
-        email = 'test@example.com'
-        user_to_create = User(
-            username='username',
-            role=Role(role_id=1, name='', rank=0),
-            emails=[Email(user_id=None, email=email, rank=1)],
-        )
-        query = select(db.models.Email).where(db.models.Email.email == email)
-
-        before_create_user = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
-
-        # Exercise
-        # ===========================================================
-        db.create_user(session=session, user=user_to_create, commit=True)
-
-        # Verify
-        # ===========================================================
-        after_create_user = datetime.now(tz=TZ_UTC).replace(tzinfo=None, microsecond=0)
-
-        with session_factory() as new_session:
-            db_email = new_session.scalars(query).one()
-
-        assert db_email.updated_at is None, 'updated_at is not None!'
-        assert before_create_user <= db_email.created_at <= after_create_user, (
-            'db_email.created_at is incorrect!'
-        )
-
-        # Clean up - None
-        # ===========================================================
-
     def test_create_user_with_two_custom_roles(
         self,
         sqlite_in_memory_database_with_custom_roles: DbWithCustomRoles,
@@ -434,9 +352,6 @@ class TestCreateUser:
         )
         for attr, exp_value in attributes_to_verify:
             assert getattr(db_user, attr) == exp_value, f'db_user.{attr}  is incorrect!'
-
-        assert db_user.updated_at is None, 'updated_at is not None!'
-        assert isinstance(db_user.created_at, datetime), 'created_at is not a datetime object!'
 
         assert len(db_user.custom_roles) == nr_exp_custom_roles, (
             f'User does not have {nr_exp_custom_roles} custom roles in db!'

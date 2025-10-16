@@ -31,8 +31,44 @@ from sqlalchemy.orm import (
 )
 
 UserID: TypeAlias = UUID
-
 SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
+
+
+class AuditColumnsMixinBase:
+    r"""The base class of the audit columns to add to a table.
+
+    Parameters
+    ----------
+    updated_at : datetime or None
+        The timestamp at which the record was last updated (UTC).
+
+    updated_by : streamlit_passwordless.UserID or None
+        The ID of the user that last updated the record.
+
+    created_at : datetime
+        The timestamp at which the record was created (UTC).
+        Defaults to current timestamp.
+
+    created_by : streamlit_passwordless.UserID or None
+        The ID of the user that created the record.
+
+    A table model should inherit from the created class prior to :class:`Base`.
+    E.g. creating the user model:
+
+    .. code-block:: python
+
+        class User(AuditColumnsMixin, Base):
+            pass
+    """
+
+    updated_at: Mapped[datetime | None]
+    updated_by: Mapped[UUID | None]
+    created_at: Mapped[datetime]
+    created_by: Mapped[UUID | None]
+
+
+AuditColumnsMixinClass: TypeAlias = type[AuditColumnsMixinBase]
+
 metadata_obj = MetaData(schema=SCHEMA)
 
 updated_at_column: Mapped[datetime | None] = mapped_column(
@@ -41,6 +77,61 @@ updated_at_column: Mapped[datetime | None] = mapped_column(
 created_at_column: Mapped[datetime] = mapped_column(
     DateTime(timezone=True), server_default=func.current_timestamp()
 )
+
+def audit_columns_mixin_factory(
+    deferred=True, raiseload=True, group: str = 'audit'
+) -> AuditColumnsMixinClass:
+    r"""Create the mixin class for the audit columns.
+
+    The audit columns consists of `updated_at`, `updated_by`, `created_at` and `created_by`.
+    See :class:`AuditColumnsMixinBase` for further details about the columns.
+
+    Parameters
+    ----------
+    deferred : bool, default True
+        True if the columns should not be loaded by default in queries and False otherwise.
+
+    raiseload : bool, default True
+        True if an exception should be raised when accessing an audit column when it is
+        in a deferred state e.g. when `deferred` is True.
+
+    group : str, default 'audit'
+        The group name of the audit columns. Useful for undeferring all audit
+        columns on a per query basis if `deferred` is False. For example:
+
+        .. code-block:: python
+
+           from sqlalchemy.orm import undefer_group
+           stmt = select(User).options(undefer_group('audit'))
+    """
+
+    class _AuditColumnsMixin(AuditColumnsMixinBase):
+        updated_at: Mapped[datetime | None] = mapped_column(
+            DateTime(timezone=True),
+            onupdate=func.current_timestamp(),
+            deferred=deferred,
+            deferred_raiseload=raiseload,
+            deferred_group=group,
+        )
+        updated_by: Mapped[UUID | None] = mapped_column(
+            deferred=deferred,
+            deferred_raiseload=raiseload,
+            deferred_group=group,
+        )
+        created_at: Mapped[datetime] = mapped_column(
+            DateTime(timezone=True),
+            server_default=func.current_timestamp(),
+            deferred=deferred,
+            deferred_raiseload=raiseload,
+            deferred_group=group,
+        )
+        created_by: Mapped[UUID | None] = mapped_column(
+            deferred=deferred,
+            deferred_raiseload=raiseload,
+            deferred_group=group,
+        )
+
+    return _AuditColumnsMixin
 
 
 def _column_to_str(col: object) -> str:
@@ -90,37 +181,8 @@ class Base(DeclarativeBase):
         return output
 
 
-class ModifiedAndCreatedColumnMixin:
-    r"""Add columns for when a record was last updated and created in a table.
-
-    Parameters
-    ----------
-    updated_at : datetime or None
-        The timestamp at which the record was last updated (UTC).
-
-    updated_by : streamlit_passwordless.UserID or None
-        The ID of the user that last updated the record.
-
-    created_at : datetime
-        The timestamp at which the record was created (UTC).
-        Defaults to current timestamp.
-
-    created_by : streamlit_passwordless.UserID or None
-        The ID of the user that created the record.
-
-    A table model should inherit from this class prior to :class:`Base`.
-    E.g. creating the user model:
-
-    .. code-block:: python
-
-        class User(ModifiedAndCreatedColumnMixin, Base):
-            pass
-    """
-
-    updated_at: Mapped[datetime | None] = updated_at_column
-    updated_by: Mapped[UUID | None]
-    created_at: Mapped[datetime] = created_at_column
-    created_by: Mapped[UUID | None]
+class AuditColumnsMixin(audit_columns_mixin_factory(deferred=True, raiseload=True)):  # type: ignore[misc]
+    pass
 
 
 class UserRoleName(StrEnum):
@@ -153,7 +215,7 @@ class UserRoleName(StrEnum):
     ADMIN = 'Admin'
 
 
-class Role(ModifiedAndCreatedColumnMixin, Base):
+class Role(AuditColumnsMixin, Base):
     r"""The role of a user.
 
     A :class:`User` is associated with a role to manage its privileges within an application.
@@ -267,7 +329,7 @@ class Role(ModifiedAndCreatedColumnMixin, Base):
 Index(f'{Role.__tablename__}_name_ix', Role.name)
 
 
-class CustomRole(ModifiedAndCreatedColumnMixin, Base):
+class CustomRole(AuditColumnsMixin, Base):
     r"""The custom roles of a user.
 
     Custom roles can be defined specifically for each application.
@@ -342,7 +404,7 @@ user_custom_role_link = Table(
 )
 
 
-class User(ModifiedAndCreatedColumnMixin, Base):
+class User(AuditColumnsMixin, Base):
     r"""The user table.
 
     Parameters
@@ -451,7 +513,7 @@ Index(f'{User.__tablename__}_ad_username_ix', User.ad_username)
 Index(f'{User.__tablename__}_disabled_ix', User.disabled)
 
 
-class Email(ModifiedAndCreatedColumnMixin, Base):
+class Email(AuditColumnsMixin, Base):
     r"""Email addresses of a user.
 
     Parameters
