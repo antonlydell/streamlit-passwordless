@@ -9,16 +9,103 @@ from typing import Literal, overload
 import pandas as pd
 from sqlalchemy import and_, select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import (
+    LoaderCriteriaOption,
+    joinedload,
+    raiseload,
+    selectinload,
+    with_loader_criteria,
+)
+from sqlalchemy.orm.interfaces import LoaderOption
 
 # Local
-from streamlit_passwordless import exceptions
-from streamlit_passwordless.database import models
+from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.database.core import Session
 from streamlit_passwordless.database.core import commit as db_commit
 from streamlit_passwordless.database.crud.custom_role import get_custom_roles
-from streamlit_passwordless.models import User
+from streamlit_passwordless.database.models import CustomRole, Email, Role, User, UserID
 
 logger = logging.getLogger(__name__)
+
+
+def _configure_user_relationship_loading(
+    load_role: bool = True,
+    load_custom_roles: bool = False,
+    load_emails: bool = False,
+    raiseload_if_unloaded: bool = True,
+    defer_role_description: bool = True,
+) -> list[LoaderOption | LoaderCriteriaOption]:
+    r"""Configure how the user relationships should be loaded.
+
+    Parameters
+    ----------
+    load_role : bool, default True
+        True if the role of the user should be loaded and False otherwise.
+
+    load_custom_roles : bool, default False
+        True if the custom roles of the user should be loaded and False otherwise.
+
+    load_emails : bool, default False
+        True if the enabled emails of the user should be loaded and False otherwise.
+
+    raiseload_if_unloaded : bool, default True
+        If True :exc:`sqlalchemy.exc.InvalidRequestError` is raised if trying to access an
+        unloaded object (role, custom_roles or emails) of the user. When False the objects
+        are lazy loaded on access.
+
+    defer_role_description : bool, default True
+        True if the description columns of the role and custom_roles should not be loaded
+        and False otherwise. A :exc:`sqlalchemy.exc.InvalidRequestError` will be raised
+        when trying to access these columns if `raiseload_if_unloaded` is True.
+
+    Returns
+    -------
+    options : list[sqlalchemy.orm.interfaces.LoaderOption | sqlalchemy.orm.LoaderCriteriaOption]
+        The options to apply to the query.
+
+    Raises
+    ------
+    sqlalchemy.exc.InvalidRequestError
+        If a deferred object or column is accessed when `raiseload_if_unloaded` is True.
+    """
+
+    options: list[LoaderOption | LoaderCriteriaOption] = []
+
+    if load_role:
+        if defer_role_description:
+            options.append(
+                joinedload(User.role).defer(Role.description, raiseload=raiseload_if_unloaded)
+            )
+        options.append(joinedload(User.role))
+
+    elif raiseload_if_unloaded:
+        options.append(raiseload(User.role))
+
+    if load_custom_roles:
+        if defer_role_description:
+            options.append(
+                selectinload(User.custom_roles).defer(
+                    CustomRole.description, raiseload=raiseload_if_unloaded
+                )
+            )
+        options.append(selectinload(User.custom_roles))
+
+    elif raiseload_if_unloaded:
+        options.append(raiseload(User.custom_roles))
+
+    if load_emails:
+        options.append(selectinload(User.emails))
+        options.append(
+            with_loader_criteria(
+                Email,
+                Email.disabled.is_(False),
+                include_aliases=True,
+            )
+        )
+    elif raiseload_if_unloaded:
+        options.append(raiseload(User.emails))
+
+    return options
 
 
 @overload
@@ -28,7 +115,7 @@ def get_all_users(
     limit: int | None = None,
     as_df: Literal[False] = False,
     index_col: str = 'user_id',
-) -> Sequence[models.User]: ...
+) -> Sequence[User]: ...
 
 
 @overload
@@ -47,7 +134,7 @@ def get_all_users(
     limit: int | None = None,
     as_df: bool = False,
     index_col: str = 'user_id',
-) -> pd.DataFrame | Sequence[models.User]:
+) -> pd.DataFrame | Sequence[User]:
     r"""Get all users from the database.
 
     Parameters
@@ -75,7 +162,7 @@ def get_all_users(
         The users from the database.
     """
 
-    query = select(models.User).order_by(models.User.username).offset(skip).limit(limit)
+    query = select(User).order_by(User.username).offset(skip).limit(limit)
 
     if as_df:
         return pd.read_sql_query(sql=query, con=session.bind, index_col=index_col)  # type: ignore
@@ -84,7 +171,7 @@ def get_all_users(
 
 def get_user_by_username(
     session: Session, username: str, disabled: bool | None = False
-) -> models.User | None:
+) -> User | None:
     r"""Get a user by its username.
 
     Parameters
@@ -106,21 +193,26 @@ def get_user_by_username(
     """
 
     if disabled is None:
-        where_clause = models.User.username == username
+        where_clause = User.username == username
     else:
-        where_clause = and_(models.User.username == username, models.User.disabled == disabled)
+        where_clause = and_(User.username == username, User.disabled == disabled)
 
-    query = select(models.User).where(where_clause)
+    query = select(User).where(where_clause)
 
     return session.scalars(query).one_or_none()
 
 
 def get_user_by_user_id(
     session: Session,
-    user_id: models.UserID,
+    user_id: UserID,
     disabled: bool | None = False,
     is_verified: bool | None = None,
-) -> models.User | None:
+    load_role: bool = True,
+    load_custom_roles: bool = False,
+    load_emails: bool = False,
+    raiseload: bool = True,
+    defer_role_description: bool = True,
+) -> User | None:
     r"""Get a user by user_id.
 
     Parameters
@@ -139,6 +231,25 @@ def get_user_by_user_id(
         If True filter by verified users and if False by non-verified users.
         If None filtering by verified users is omitted.
 
+    load_role : bool, default True
+        True if the role of the user should be loaded and False otherwise.
+
+    load_custom_roles : bool, default False
+        True if the custom roles of the user should be loaded and False otherwise.
+
+    load_emails : bool, default False
+        True if the enabled emails of the user should be loaded and False otherwise.
+
+    raiseload : bool, default True
+        If True :exc:`sqlalchemy.exc.InvalidRequestError` is raised if trying to access an
+        unloaded object (role, custom_roles or emails) of the user. When False the objects
+        are lazy loaded on access.
+
+    defer_role_description : bool, default True
+        True if the description columns of the role and custom_roles should not be loaded
+        and False otherwise. A :exc:`sqlalchemy.exc.InvalidRequestError` will be raised
+        when trying to access these columns if `raiseload` is True.
+
     Returns
     -------
     streamlit_passwordless.db.models.User or None
@@ -148,19 +259,32 @@ def get_user_by_user_id(
     ------
     streamlit_passwordless.DatabaseError
         If an error occurs while loading the user from the database.
+
+    sqlalchemy.exc.InvalidRequestError
+        If a deferred object or column is accessed when `raiseload` is True.
     """
 
-    if disabled is None:
-        where_clause = models.User.user_id == user_id
-    else:
-        where_clause = and_(models.User.user_id == user_id, models.User.disabled == disabled)
+    query = select(User)
+    options = _configure_user_relationship_loading(
+        load_role=load_role,
+        load_custom_roles=load_custom_roles,
+        load_emails=load_emails,
+        raiseload_if_unloaded=raiseload,
+        defer_role_description=defer_role_description,
+    )
+    query = query.options(*options)
 
-    query = select(models.User).where(where_clause)
+    if disabled is None:
+        where_clause = User.user_id == user_id
+    else:
+        where_clause = and_(User.user_id == user_id, User.disabled == disabled)
+
+    query = query.where(where_clause)
 
     if is_verified is True:
-        query = query.where(models.User.verified_at._is_not(None))
+        query = query.where(User.verified_at.is_not(None))
     elif is_verified is False:
-        query = query.where(models.User.verified_at._is(None))
+        query = query.where(User.verified_at.is_(None))
     else:
         pass
 
@@ -174,11 +298,11 @@ def get_user_by_user_id(
 
 def create_user(
     session: Session,
-    user: User,
+    user: models.User,
     custom_roles: Sequence[models.CustomRole] | None = None,
-    created_by_user_id: models.UserID | None = None,
+    created_by_user_id: UserID | None = None,
     commit: bool = False,
-) -> models.User:
+) -> User:
     r"""Create a new user in the database.
 
     Parameters
@@ -221,7 +345,7 @@ def create_user(
         logger.error(error_msg)
         raise exceptions.DatabaseCreateUserError(error_msg)
 
-    db_user = models.User(
+    db_user = User(
         user_id=user.user_id,
         username=user.username,
         ad_username=user.ad_username,
@@ -234,7 +358,7 @@ def create_user(
     )
 
     if emails := user.emails:
-        db_emails = [models.Email(**email.model_dump()) for email in emails]
+        db_emails = [Email(**email.model_dump()) for email in emails]
         db_user.emails.extend(db_emails)
         session.add_all(db_emails)
 
