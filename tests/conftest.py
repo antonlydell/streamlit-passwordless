@@ -27,7 +27,7 @@ from .config import TZ_UTC, DbWithCustomRoles, DbWithRoles, ModelData
 # =============================================================================================
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def viewer_role() -> tuple[models.Role, db_models.Role, ModelData]:
     r"""The VIEWER role.
 
@@ -55,7 +55,7 @@ def viewer_role() -> tuple[models.Role, db_models.Role, ModelData]:
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def user_role() -> tuple[models.Role, db_models.Role, ModelData]:
     r"""The USER role.
 
@@ -83,7 +83,7 @@ def user_role() -> tuple[models.Role, db_models.Role, ModelData]:
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def superuser_role() -> tuple[models.Role, db_models.Role, ModelData]:
     r"""The SUPERUSER role.
 
@@ -114,7 +114,7 @@ def superuser_role() -> tuple[models.Role, db_models.Role, ModelData]:
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def admin_role() -> tuple[models.Role, db_models.Role, ModelData]:
     r"""The ADMIN role.
 
@@ -146,7 +146,7 @@ def admin_role() -> tuple[models.Role, db_models.Role, ModelData]:
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def drummer_custom_role() -> tuple[models.CustomRole, db_models.CustomRole, ModelData]:
     r"""The role of a user that is a drummer.
 
@@ -174,7 +174,7 @@ def drummer_custom_role() -> tuple[models.CustomRole, db_models.CustomRole, Mode
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def guitarist_custom_role() -> tuple[models.CustomRole, db_models.CustomRole, ModelData]:
     r"""The role of a user that is a guitarist.
 
@@ -209,7 +209,7 @@ def user_1_user_id() -> UUID:
     return UUID('24ba6b71-a766-4bf7-82e5-1f0ae16eeb5b')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def user_1_email_primary(user_1_user_id: UUID) -> tuple[models.Email, db_models.Email, ModelData]:
     r"""The primary email of test user 1.
 
@@ -242,7 +242,7 @@ def user_1_email_primary(user_1_user_id: UUID) -> tuple[models.Email, db_models.
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def user_1_email_secondary(user_1_user_id: UUID) -> tuple[models.Email, db_models.Email, ModelData]:
     r"""The secondary email of test user 1.
 
@@ -275,7 +275,7 @@ def user_1_email_secondary(user_1_user_id: UUID) -> tuple[models.Email, db_model
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def user_1_sign_in_successful(
     user_1_user_id: UUID,
 ) -> tuple[models.UserSignIn, db_models.UserSignIn, ModelData]:
@@ -313,7 +313,7 @@ def user_1_sign_in_successful(
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def user_1_sign_in_unsuccessful(
     user_1_user_id: UUID,
 ) -> tuple[models.UserSignIn, db_models.UserSignIn, ModelData]:
@@ -351,7 +351,7 @@ def user_1_sign_in_unsuccessful(
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def user_1(
     user_1_user_id: UUID,
     superuser_role: tuple[models.Role, db_models.Role, ModelData],
@@ -410,13 +410,13 @@ def user_1(
         disabled=disabled,
         disabled_at=disabled_at,
         role=db_superuser_role_model,
-        custom_roles={db_drummer_custom_role_model.name: db_drummer_custom_role_model},
+        custom_roles={db_drummer_custom_role_model.role_id: db_drummer_custom_role_model},
     )
 
     return model, db_model, data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def user_1_with_2_emails_and_successful_signin(
     user_1: tuple[models.User, db_models.User, ModelData],
     user_1_email_primary: tuple[models.Email, db_models.Email, ModelData],
@@ -437,20 +437,23 @@ def user_1_with_2_emails_and_successful_signin(
         The input data that created `model`.
     """
 
-    email_primary, _, _ = user_1_email_primary
-    email_secondary, _, _ = user_1_email_secondary
-    _, _, sign_in_data = user_1_sign_in_successful
-    _, db_model, user_data = user_1
+    email_primary, email_primary_db, email_primary_data = user_1_email_primary
+    email_secondary, email_secondary_db, email_secondary_data = user_1_email_secondary
+    sign_in, sign_in_db, sign_in_data = user_1_sign_in_successful
+    user_model, user_model_db, user_data = user_1
 
-    data = user_data.copy()
-    data['emails'] = [email_primary, email_secondary]
-    data['sign_in'] = sign_in_data
-    model = models.User.model_validate(data)
+    user_model.emails = [email_primary, email_secondary]
+    user_model.sign_in = sign_in
+    user_model_db.emails = [email_primary_db, email_secondary_db]
+    user_model_db.sign_ins = [sign_in_db]
 
-    return model, db_model, data
+    user_data['emails'] = [email_primary_data, email_secondary_data]
+    user_data['sign_in'] = sign_in_data
+
+    return user_model, user_model_db, user_data
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def user_1_with_unsuccessful_signin(
     user_1: tuple[models.User, db_models.User, ModelData],
     user_1_sign_in_unsuccessful: tuple[models.UserSignIn, db_models.UserSignIn, ModelData],
@@ -650,3 +653,37 @@ def sqlite_in_memory_database_with_custom_roles(
     session.commit()
 
     return session, session_factory, custom_roles
+
+
+@pytest.fixture
+def sqlite_in_memory_database_with_user(
+    empty_sqlite_in_memory_database: tuple[Session, SessionFactory],
+    user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+) -> tuple[Session, SessionFactory, db_models.User]:
+    r"""A SQLite database with a user with a role, custom roles and emails.
+
+    The database has all tables created and foreign key constraints enabled.
+
+    Returns
+    -------
+    session : sqlalchemy.orm.Session
+        An open session to the database.
+
+    session_factory : sqlalchemy.orm.sessionmaker
+        The session factory that can produce new database sessions.
+
+    db_user : streamlit_passwordless.db.models.User
+        The user that exists in the database.
+    """
+
+    session, session_factory = empty_sqlite_in_memory_database
+    _, db_user, _ = user_1_with_2_emails_and_successful_signin
+
+    session.add(db_user.role)
+    session.add_all(r for r in db_user.custom_roles.values())
+    session.add_all(db_user.emails)
+    session.add_all(db_user.sign_ins)
+    session.add(db_user)
+    session.commit()
+
+    return session, session_factory, db_user

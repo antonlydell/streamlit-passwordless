@@ -7,15 +7,17 @@ from uuid import UUID
 
 # Third party
 import pytest
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import Engine, inspect, select
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.state import InstanceState
 
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions
 from streamlit_passwordless.models import CustomRole, Email, Role, User
-from tests.config import TZ_UTC, DbWithCustomRoles, DbWithRoles, ModelData
+from tests.config import DbWithCustomRoles, DbWithRoles, ModelData
+from tests.test_database.helpers import count_queries
 
 CustomRoleMapping: TypeAlias = dict[int, CustomRole]
 
@@ -518,3 +520,659 @@ class TestCreateUser:
         print(error_msg)
 
         assert exp_error_msg in error_msg
+
+
+class TestGetUserByUserId:
+    r"""Tests for the function `get_user_by_user_id`."""
+
+    def test_user_not_found_in_database(
+        self,
+        empty_sqlite_in_memory_database: tuple[db.Session, db.SessionFactory],
+        user_1_user_id: UUID,
+    ) -> None:
+        r"""Test to load a user that does not exist in the database."""
+
+        # Setup
+        # ===========================================================
+        _, session_factory = empty_sqlite_in_memory_database
+
+        # Exercise
+        # ===========================================================
+        with session_factory() as new_session:
+            user = db.get_user_by_user_id(session=new_session, user_id=user_1_user_id)
+
+        # Verify
+        # ===========================================================
+        assert user is None, f'User(user_id={user_1_user_id}) found in the database!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_load_role_and_lazy_load_other_attributes(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+    ) -> None:
+        r"""Test to load a user and its role from the database.
+
+        The `role.description`, `custom_roles` or `emails` should be lazy loaded on access.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        role_exp = user_exp.role
+        nr_sql_queries_user_and_role = 1
+        nr_sql_queries_description = nr_sql_queries_user_and_role + 1
+        max_nr_sql_queries = nr_sql_queries_description + 2
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_exp.user_id,
+                load_role=True,
+                load_custom_roles=False,
+                load_emails=False,
+                raiseload=False,
+                defer_role_description=True,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, f'User(username={user_exp.username} not found in the database!'
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert 'role' not in user_state_unloaded, 'role was not eagerly loaded!'
+            assert 'custom_roles' in user_state_unloaded, 'custom_role were eagerly loaded!'
+            assert 'emails' in user_state_unloaded, 'emails were eagerly loaded!'
+
+            # Role
+            role = user.role
+            assert len(stmts) == nr_sql_queries_user_and_role, (
+                'More than one SQL query emitted for role!'
+            )
+
+            role_attributes_to_verify = (
+                ('role_id', role_exp.role_id),
+                ('name', role_exp.name),
+                ('rank', role_exp.rank),
+                ('description', role_exp.description),
+            )
+            for attr, exp_value in role_attributes_to_verify:
+                assert getattr(role, attr) == exp_value, (
+                    f'{role.name} : db_custom_role.{attr} is incorrect!'
+                )
+            assert len(stmts) == nr_sql_queries_description, (
+                'No SQL query emitted for loading description!'
+            )
+
+            # No raiseload
+            _ = user.custom_roles
+            _ = user.emails
+
+            assert len(stmts) == max_nr_sql_queries, (
+                'No SQL queries emitted for loading custom roles and emails!'
+            )
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_load_role_with_raiseload_and_defer_role_description(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+    ) -> None:
+        r"""Test to load a user and its role from the database.
+
+        An exception should be raised if trying to access the unloaded attributes
+        `role.description`, `custom_roles` and `emails`.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        role_exp = user_exp.role
+        nr_sql_queries_exp = 1
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_exp.user_id,
+                load_role=True,
+                load_custom_roles=False,
+                load_emails=False,
+                raiseload=True,
+                defer_role_description=True,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert 'role' not in user_state_unloaded, 'role was not eagerly loaded!'
+            assert 'custom_roles' in user_state_unloaded, 'custom_role were eagerly loaded!'
+            assert 'emails' in user_state_unloaded, 'emails were eagerly loaded!'
+
+            # Role
+            role = user.role
+            assert len(stmts) == nr_sql_queries_exp, 'More than one SQL query emitted for role!'
+
+            role_attributes_to_verify = (
+                ('role_id', role_exp.role_id),
+                ('name', role_exp.name),
+                ('rank', role_exp.rank),
+            )
+            for attr, exp_value in role_attributes_to_verify:
+                assert getattr(role, attr) == exp_value, (
+                    f'{role.name} : db_custom_role.{attr} is incorrect!'
+                )
+
+            for model, attr in ((role, 'description'), (user, 'custom_roles'), (user, 'emails')):
+                with pytest.raises(InvalidRequestError) as exc_info:
+                    getattr(model, attr)
+
+                error_msg_exp = f'{model.__class__.__name__}.{attr}'
+                assert error_msg_exp in exc_info.exconly(), f'{error_msg_exp} not in error message!'
+
+            assert len(stmts) == nr_sql_queries_exp, 'More than one SQL query emitted for role!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_load_role_with_raiseload_and_no_defer_role_description(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+    ) -> None:
+        r"""Test to load a user and its role from the database.
+
+        An exception should be raised if trying to access the unloaded attributes
+        `custom_roles` and `emails`.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        role_exp = user_exp.role
+        nr_sql_queries_exp = 1
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_exp.user_id,
+                load_role=True,
+                load_custom_roles=False,
+                load_emails=False,
+                raiseload=True,
+                defer_role_description=False,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert 'role' not in user_state_unloaded, 'role was not eagerly loaded!'
+            assert 'custom_roles' in user_state_unloaded, 'custom_role were eagerly loaded!'
+            assert 'emails' in user_state_unloaded, 'emails were eagerly loaded!'
+
+            # Role
+            role = user.role
+            assert len(stmts) == nr_sql_queries_exp, 'More than one SQL query emitted for role!'
+
+            role_attributes_to_verify = (
+                ('role_id', role_exp.role_id),
+                ('name', role_exp.name),
+                ('rank', role_exp.rank),
+                ('description', role_exp.description),
+            )
+            for attr, exp_value in role_attributes_to_verify:
+                assert getattr(role, attr) == exp_value, (
+                    f'{role.name} : db_custom_role.{attr} is incorrect!'
+                )
+
+            for model, attr in ((user, 'custom_roles'), (user, 'emails')):
+                with pytest.raises(InvalidRequestError) as exc_info:
+                    getattr(model, attr)
+
+                error_msg_exp = f'{model.__class__.__name__}.{attr}'
+                assert error_msg_exp in exc_info.exconly(), f'{error_msg_exp} not in error message!'
+
+            assert len(stmts) == nr_sql_queries_exp, 'More than one SQL query emitted for role!'
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_load_custom_roles_and_lazy_load_other_attributes(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+    ) -> None:
+        r"""Test to load a user and its custom roles from the database.
+
+        The `custom_role.description`, `role` and `emails` should be lazy loaded on access.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        custom_roles_exp = user_exp.custom_roles
+        nr_sql_queries_user_and_custom_roles = 2
+        nr_sql_queries_descriptions = nr_sql_queries_user_and_custom_roles + len(custom_roles_exp)
+        max_nr_sql_queries = nr_sql_queries_descriptions + 2
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_exp.user_id,
+                load_role=False,
+                load_custom_roles=True,
+                load_emails=False,
+                raiseload=False,
+                defer_role_description=True,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert 'role' in user_state_unloaded, 'role was eagerly loaded!'
+            assert 'custom_roles' not in user_state_unloaded, (
+                'custom_roles were not eagerly loaded!'
+            )
+            assert 'emails' in user_state_unloaded, 'emails were eagerly loaded!'
+
+            # CustomRole
+            _ = user.custom_roles
+            assert len(stmts) == nr_sql_queries_user_and_custom_roles, (
+                f'> {nr_sql_queries_user_and_custom_roles} SQL queries emitted for custom_roles!'
+            )
+
+            for role_id, db_custom_role in user.custom_roles.items():
+                custom_role_exp = custom_roles_exp.get(role_id)
+
+                assert custom_role_exp is not None, (
+                    f'{db_custom_role.name} not among the expected custom roles!'
+                )
+
+                custom_role_attributes_to_verify = (
+                    ('role_id', custom_role_exp.role_id),
+                    ('name', custom_role_exp.name),
+                    ('rank', custom_role_exp.rank),
+                    ('description', custom_role_exp.description),
+                )
+                for attr, exp_value in custom_role_attributes_to_verify:
+                    assert getattr(db_custom_role, attr) == exp_value, (
+                        f'{db_custom_role.name} : db_custom_role.{attr} is incorrect!'
+                    )
+
+            assert len(stmts) == nr_sql_queries_descriptions, (
+                'No SQL queries emitted for loading custom role descriptions!'
+            )
+
+            # No raiseload
+            _ = user.role
+            _ = user.emails
+
+            assert len(stmts) == max_nr_sql_queries, (
+                'No SQL queries emitted for loading role and emails!'
+            )
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_load_custom_roles_with_raiseload_and_defer_role_description(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+    ) -> None:
+        r"""Test to load a user and its custom roles from the database.
+
+        An exception will be raised if trying to access the unloaded attributes:
+        `custom_role.description`, `role` and `emails`.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        custom_roles_exp = user_exp.custom_roles
+        max_nr_sql_queries = 2
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_exp.user_id,
+                load_role=False,
+                load_custom_roles=True,
+                load_emails=False,
+                raiseload=True,
+                defer_role_description=True,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert 'role' in user_state_unloaded, 'role was eagerly loaded!'
+            assert 'custom_roles' not in user_state_unloaded, (
+                'custom_roles were not eagerly loaded!'
+            )
+            assert 'emails' in user_state_unloaded, 'emails were eagerly loaded!'
+
+            # CustomRole
+            _ = user.custom_roles
+            assert len(stmts) == max_nr_sql_queries, (
+                f'> {max_nr_sql_queries=} SQL queries emitted for custom_roles!'
+            )
+
+            for role_id, db_custom_role in user.custom_roles.items():
+                custom_role_exp = custom_roles_exp.get(role_id)
+
+                assert custom_role_exp is not None, (
+                    f'{db_custom_role.name} not among the expected custom roles!'
+                )
+
+                custom_role_attributes_to_verify = (
+                    ('role_id', custom_role_exp.role_id),
+                    ('name', custom_role_exp.name),
+                    ('rank', custom_role_exp.rank),
+                )
+                for attr, exp_value in custom_role_attributes_to_verify:
+                    assert getattr(db_custom_role, attr) == exp_value, (
+                        f'{db_custom_role.name} : db_custom_role.{attr} is incorrect!'
+                    )
+
+                with pytest.raises(InvalidRequestError) as exc_info:
+                    _ = db_custom_role.description
+
+                error_msg_exp = f'{db_custom_role.__class__.__name__}.description'
+                assert error_msg_exp in exc_info.exconly(), f'{error_msg_exp} not in error message!'
+
+            for model, attr in ((user, 'role'), (user, 'emails')):
+                with pytest.raises(InvalidRequestError) as exc_info:
+                    getattr(model, attr)
+
+                error_msg_exp = f'{model.__class__.__name__}.{attr}'
+                assert error_msg_exp in exc_info.exconly(), f'{error_msg_exp} not in error message!'
+
+            assert len(stmts) == max_nr_sql_queries, (
+                f'> {max_nr_sql_queries} emitted for loading custom roles!'
+            )
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_load_custom_roles_with_raiseload_and_no_defer_role_description(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+    ) -> None:
+        r"""Test to load a user and its custom roles from the database.
+
+        An exception will be raised if trying to access the unloaded attributes `role` and `emails`.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        custom_roles_exp = user_exp.custom_roles
+        max_nr_sql_queries = 2
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_exp.user_id,
+                load_role=False,
+                load_custom_roles=True,
+                load_emails=False,
+                raiseload=True,
+                defer_role_description=False,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert 'role' in user_state_unloaded, 'role was eagerly loaded!'
+            assert 'custom_roles' not in user_state_unloaded, (
+                'custom_roles were not eagerly loaded!'
+            )
+            assert 'emails' in user_state_unloaded, 'emails were eagerly loaded!'
+
+            # CustomRole
+            custom_roles = user.custom_roles
+            assert len(stmts) == max_nr_sql_queries, (
+                f'> {max_nr_sql_queries=} SQL queries emitted for custom_roles!'
+            )
+
+            for role_id, db_custom_role in custom_roles.items():
+                custom_role_exp = custom_roles_exp.get(role_id)
+
+                assert custom_role_exp is not None, (
+                    f'{db_custom_role.name} not among the expected custom roles!'
+                )
+
+                custom_role_attributes_to_verify = (
+                    ('role_id', custom_role_exp.role_id),
+                    ('name', custom_role_exp.name),
+                    ('rank', custom_role_exp.rank),
+                    ('description', custom_role_exp.description),
+                )
+                for attr, exp_value in custom_role_attributes_to_verify:
+                    assert getattr(db_custom_role, attr) == exp_value, (
+                        f'{db_custom_role.name} : db_custom_role.{attr} is incorrect!'
+                    )
+
+            for model, attr in ((user, 'role'), (user, 'emails')):
+                with pytest.raises(InvalidRequestError) as exc_info:
+                    getattr(model, attr)
+
+                error_msg_exp = f'{model.__class__.__name__}.{attr}'
+                assert error_msg_exp in exc_info.exconly(), f'{error_msg_exp} not in error message!'
+
+            assert len(stmts) == max_nr_sql_queries, (
+                f'> {max_nr_sql_queries} emitted for loading custom roles!'
+            )
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_load_emails_and_lazy_load_other_attributes(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+    ) -> None:
+        r"""Test to load a user and its enabled emails from the database.
+
+        The disabled secondary email should not be loaded from the database.
+        The `role` and `custom_roles` should be lazy loaded on access.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        email_exp = user_exp.emails[0]  # The primary email
+        nr_sql_queries_user_and_emails = 2
+        max_nr_sql_queries = nr_sql_queries_user_and_emails + 2  # role and custom roles
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_exp.user_id,
+                load_role=False,
+                load_custom_roles=False,
+                load_emails=True,
+                raiseload=False,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert 'role' in user_state_unloaded, 'role was eagerly loaded!'
+            assert 'custom_roles' in user_state_unloaded, 'custom_roles were eagerly loaded!'
+            assert 'emails' not in user_state_unloaded, 'emails were not eagerly loaded!'
+
+            # emails
+            emails = user.emails
+            assert len(stmts) == nr_sql_queries_user_and_emails, (
+                f'> {nr_sql_queries_user_and_emails} SQL queries emitted for emails!'
+            )
+            assert len(emails) == 1, 'More emails than the primary email were loaded!'
+
+            email = emails[0]
+            email_attributes_to_verify = (
+                ('email_id', email_exp.email_id),
+                ('email', email_exp.email),
+                ('rank', email_exp.rank),
+                ('verified', email_exp.verified),
+                ('verified_at', email_exp.verified_at),
+                ('disabled', email_exp.disabled),
+                ('disabled_at', email_exp.disabled_at),
+            )
+            for attr, exp_value in email_attributes_to_verify:
+                assert getattr(email, attr) == exp_value, (
+                    f'{email.email} : email.{attr} is incorrect!'
+                )
+
+            # No raiseload
+            _ = user.role
+            _ = user.custom_roles
+
+            assert len(stmts) == max_nr_sql_queries, (
+                'No SQL queries emitted for loading role and custom roles'
+            )
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_load_emails_with_raiseload(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+    ) -> None:
+        r"""Test to load a user and its enabled emails from the database.
+
+        An exception should be raised if trying to access the unloaded attributes
+        `role` and `custom_roles`.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        email_exp = user_exp.emails[0]
+        nr_sql_queries_user_and_emails = 2
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_exp.user_id,
+                load_role=False,
+                load_custom_roles=False,
+                load_emails=True,
+                raiseload=True,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert 'role' in user_state_unloaded, 'role was eagerly loaded!'
+            assert 'custom_roles' in user_state_unloaded, 'custom_roles were eagerly loaded!'
+            assert 'emails' not in user_state_unloaded, 'emails were not eagerly loaded!'
+
+            # emails
+            emails = user.emails
+            assert len(stmts) == nr_sql_queries_user_and_emails, (
+                f'> {nr_sql_queries_user_and_emails=} SQL queries emitted for emails!'
+            )
+            assert len(emails) == 1, 'More emails than the primary email were loaded!'
+
+            email = emails[0]
+            email_attributes_to_verify = (
+                ('email_id', email_exp.email_id),
+                ('email', email_exp.email),
+                ('rank', email_exp.rank),
+                ('verified', email_exp.verified),
+                ('verified_at', email_exp.verified_at),
+                ('disabled', email_exp.disabled),
+                ('disabled_at', email_exp.disabled_at),
+            )
+            for attr, exp_value in email_attributes_to_verify:
+                assert getattr(email, attr) == exp_value, (
+                    f'{email.email} : email.{attr} is incorrect!'
+                )
+
+            for model, attr in ((user, 'role'), (user, 'custom_roles')):
+                with pytest.raises(InvalidRequestError) as exc_info:
+                    getattr(model, attr)
+
+                error_msg_exp = f'{model.__class__.__name__}.{attr}'
+                assert error_msg_exp in exc_info.exconly(), f'{error_msg_exp} not in error message!'
+
+            assert len(stmts) == nr_sql_queries_user_and_emails, (
+                f'> {nr_sql_queries_user_and_emails=} emitted!'
+            )
+
+        # Clean up - None
+        # ===========================================================
