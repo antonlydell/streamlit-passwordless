@@ -1,26 +1,39 @@
 r"""Fixtures for testing streamlit-passwordless."""
 
+# ruff:  noqa: ARG001
+
 # Standard library
 from collections.abc import Generator
 from datetime import datetime
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 from unittest.mock import Mock
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
 # Third party
 import pytest
+import streamlit as st
 from passwordless import VerifiedUser
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
+from streamlit.testing.v1 import AppTest
 
 # Local
 import streamlit_passwordless.bitwarden_passwordless.backend
+import streamlit_passwordless.components
 from streamlit_passwordless import common, models
+from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
 from streamlit_passwordless.database import SessionFactory
 from streamlit_passwordless.database import models as db_models
 
-from .config import TZ_UTC, DbWithCustomRoles, DbWithRoles, ModelData
+from .config import (
+    STATIC_FILES_COMPONENTS_APP_MAIN,
+    TZ_UTC,
+    DbWithCustomRoles,
+    DbWithRoles,
+    ModelData,
+)
 
 # =============================================================================================
 # Models
@@ -562,7 +575,7 @@ def mocked_get_current_datetime(monkeypatch: pytest.MonkeyPatch) -> datetime:
 
 
 @pytest.fixture
-def empty_sqlite_in_memory_database() -> Generator[tuple[Session, SessionFactory], None, None]:
+def empty_sqlite_in_memory_database() -> Generator[tuple[Session, SessionFactory]]:
     r"""An empty in-memory SQLite database.
 
     The database has all tables created and foreign key constraints enabled.
@@ -687,3 +700,164 @@ def sqlite_in_memory_database_with_user(
     session.commit()
 
     return session, session_factory, db_user
+
+
+@pytest.fixture
+def sqlite_db_with_user(
+    tmp_path: Path,
+    viewer_role: tuple[models.Role, db_models.Role, ModelData],
+    user_role: tuple[models.Role, db_models.Role, ModelData],
+    superuser_role: tuple[models.Role, db_models.Role, ModelData],
+    admin_role: tuple[models.Role, db_models.Role, ModelData],
+    user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+) -> Generator[tuple[Session, SessionFactory, db_models.User]]:
+    r"""A file based SQLite database with a roles and a user with custom roles and emails.
+
+    The database has all tables created and foreign key constraints enabled.
+
+    Returns
+    -------
+    session : sqlalchemy.orm.Session
+        An open session to the database.
+
+    session_factory : sqlalchemy.orm.sessionmaker
+        The session factory that can produce new database sessions.
+
+    db_user : streamlit_passwordless.db.models.User
+        The user that exists in the database.
+    """
+
+    db = tmp_path / 'streamlit_passwordless.db'
+
+    engine = create_engine(url=f'sqlite:///{db}', echo=False)
+    session_factory = sessionmaker(bind=engine)
+    db_models.Base.metadata.create_all(bind=engine)
+
+    _, db_viewer_role, _ = viewer_role
+    _, db_user_role, _ = user_role
+    _, db_superuser_role, _ = superuser_role
+    _, db_admin_role, _ = admin_role
+    _, db_user, _ = user_1_with_2_emails_and_successful_signin
+
+    with session_factory() as session:
+        session.execute(text('PRAGMA foreign_keys=ON'))
+        session.add_all((db_viewer_role, db_user_role, db_superuser_role, db_admin_role))
+        session.add_all(r for r in db_user.custom_roles.values())
+        session.add(db_user)
+        session.commit()
+
+        yield session, session_factory, db_user
+
+
+# =============================================================================================
+# Bitwarden Passwordless
+# =============================================================================================
+
+
+@pytest.fixture
+def mocked_bwp_register_button_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    r"""A mocked version of the Bitwarden Passwordless register button.
+
+    When the button is clicked a successful registration is performed.
+    """
+
+    def mocked_register_button(
+        register_token: str,
+        public_key: str,
+        credential_nickname: str,
+        disabled: bool = False,
+        label: str = 'Register',
+        button_type: Literal['primary', 'secondary'] = 'primary',
+        key: str | None = None,
+    ) -> tuple[str, dict | None, bool]:
+        if st.button(label=label, type=button_type, key=key, disabled=disabled):
+            return ('register_token', None, True)
+
+        return ('', None, False)
+
+    monkeypatch.setattr(
+        streamlit_passwordless.components.register_form, 'register_button', mocked_register_button
+    )
+
+
+@pytest.fixture
+def mocked_bwp_sign_in_button_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    r"""A mocked version of the Bitwarden Passwordless sign in button.
+
+    When the button is clicked a successful sign in is performed.
+    """
+
+    def mocked_signed_in_button(
+        public_key: str,
+        alias: str | None = None,
+        with_discoverable: bool = True,
+        with_autofill: bool = False,
+        disabled: bool = False,
+        label: str = 'Sign in',
+        button_type: Literal['primary', 'secondary'] = 'primary',
+        key: str | None = None,
+    ) -> tuple[str, dict | None, bool]:
+        if st.button(label=label, type=button_type, key=key, disabled=disabled):
+            return ('sign_in_token', None, True)
+
+        return ('', None, False)
+
+    monkeypatch.setattr(
+        streamlit_passwordless.components.sign_in_form, 'sign_in_button', mocked_signed_in_button
+    )
+
+
+@pytest.fixture
+def bwp_client_with_successful_sign_in(
+    user_1_with_2_emails_and_successful_signin: tuple[models.User, db_models.User, ModelData],
+) -> tuple[Mock, models.UserSignIn]:
+    r"""A Bitwarden Passwordless client that can yield a successful user sign in.
+
+    Returns
+    -------
+    client : unitest.mock.Mock
+        A mocked version of :class:`streamlit_passwordless.BitwardenPasswordlessClient`.
+
+    user_sign_in : streamlit_passwordless.UserSignIn
+        The user sign in object generated when the user signs in through the mocked `client`.
+    """
+
+    user, _, _ = user_1_with_2_emails_and_successful_signin
+    user_sign_in = models.UserSignIn(
+        user_id=user.user_id,
+        sign_in_timestamp=datetime(2025, 10, 17, 13, 37, 37),
+        success=True,
+        origin='https://ax7.com',
+        device='My device',
+        country='SE',
+        credential_nickname='nickname',
+        credential_id='credential_id',
+        sign_in_type='type',
+        rp_id='rp_id',
+    )
+
+    client = Mock(
+        spec_set=BitwardenPasswordlessClient(public_key='public_key', private_key='private_key'),
+        name='mocked_bitwarden_passwordless_client',
+    )
+    client.public_key = 'public_key'
+
+    client.verify_sign_in = Mock(
+        spec_set=BitwardenPasswordlessClient.verify_sign_in,
+        name='mocked_verify_sign_in',
+        return_value=user_sign_in,
+    )
+
+    return client, user_sign_in
+
+
+# =============================================================================================
+# Components
+# =============================================================================================
+
+
+@pytest.fixture
+def app_components() -> AppTest:
+    r"""A Streamlit app to test the components of streamlit-passwordless."""
+
+    return AppTest.from_file(STATIC_FILES_COMPONENTS_APP_MAIN)
