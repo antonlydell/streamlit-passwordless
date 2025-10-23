@@ -287,7 +287,7 @@ def _validate_username_field(
         if error_msg:  # DatabaseError
             validation_errors[validation_error_field] = error_msg
             return False, False
-        elif not pre_authorized:
+        if not pre_authorized:
             return True, False
 
         error_msg = (
@@ -807,7 +807,7 @@ def bitwarden_register_form(
             else:
                 aliases = None
 
-            form_is_valid = st.session_state[config.SK_REGISTER_FORM_IS_VALID]
+            form_is_valid = st.session_state.get(config.SK_REGISTER_FORM_IS_VALID, False)
             if validate_button_type is None:
                 button_type: core.ButtonType = 'secondary' if form_is_valid else 'primary'
             else:
@@ -868,7 +868,7 @@ def bitwarden_register_form(
     if form_is_not_valid:
         validation_error_key = config.SK_REGISTER_FORM_VALIDATION_ERRORS
         core.process_form_validation_errors(
-            validation_errors=st.session_state[validation_error_key],
+            validation_errors=st.session_state.get(validation_error_key, {}),
             banner_container_mapping=banner_container_mapping,  # type: ignore
             default_banner_container=banner_container,
         )
