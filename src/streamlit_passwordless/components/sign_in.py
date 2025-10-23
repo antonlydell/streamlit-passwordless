@@ -1,4 +1,4 @@
-r"""The sign in form component."""
+r"""The sign in components."""
 
 # Standard library
 import logging
@@ -19,7 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 def _get_user_from_db(
-    session: db.Session, user_sign_in: models.UserSignIn
+    session: db.Session,
+    user_sign_in: models.UserSignIn,
+    load_custom_roles: bool,
+    load_emails: bool,
+    defer_role_description: bool,
 ) -> tuple[models.User | None, str]:
     r"""Get the signed in user from the database.
 
@@ -35,6 +39,16 @@ def _get_user_from_db(
     user_sign_in : streamlit_passwordless.UserSignIn
         Data from Bitwarden Passwordless about the user that signed in.
 
+    load_custom_roles : bool
+        True if the custom roles of the user should be loaded and False otherwise.
+
+    load_emails : bool
+        True if the enabled emails of the user should be loaded and False otherwise.
+
+    defer_role_description : bool
+        True if the description columns of the role and custom_roles should not be
+        loaded and False otherwise.
+
     Returns
     -------
     user : streamlit_passwordless.User or None
@@ -49,7 +63,15 @@ def _get_user_from_db(
     db_user = None
     user = None
     try:
-        db_user = db.get_user_by_user_id(session=session, user_id=user_sign_in.user_id)
+        db_user = db.get_user_by_user_id(
+            session=session,
+            user_id=user_sign_in.user_id,
+            load_role=True,
+            load_custom_roles=load_custom_roles,
+            load_emails=load_emails,
+            raiseload=True,
+            defer_role_description=defer_role_description,
+        )
         load_db_user_error = False
     except exceptions.DatabaseError as e:
         logger.error(e.detailed_message)
@@ -71,7 +93,13 @@ def _get_user_from_db(
                 'does not exist! Check the logs for more details.'
             )
     else:
-        user = models.User.model_validate(db_user)
+        user = models.User.from_db(
+            db_user=db_user,
+            load_role=True,
+            load_custom_roles=load_custom_roles,
+            load_emails=load_emails,
+            defer_role_description=defer_role_description,
+        )
 
     st.session_state[config.SK_DB_USER] = db_user
     st.session_state[config.SK_USER] = user
@@ -134,6 +162,9 @@ def _process_user_sign_in(
     client: BitwardenPasswordlessClient,
     session: db.Session,
     role: models.Role | int | None,
+    load_custom_roles: bool,
+    load_emails: bool,
+    defer_role_description: bool,
     banner_container: core.BannerContainer,
     redirect: core.Redirectable | None,
 ) -> tuple[models.User | None, bool]:
@@ -165,6 +196,16 @@ def _process_user_sign_in(
         integer is supplied it is assumed to be the rank of the role to authorize the
         user against. If None (the default) the user is authorized regardless of its role.
         The user must always be authenticated to be authorized.
+
+    load_custom_roles : bool
+        True if the custom roles of the user should be loaded and False otherwise.
+
+    load_emails : bool
+        True if the enabled emails of the user should be loaded and False otherwise.
+
+    defer_role_description : bool
+        True if the description columns of the role and custom_roles should not be
+        loaded and False otherwise.
 
     banner_container : streamlit_passwordless.BannerContainer or None, default None
         A container produced by :func:`streamlit.empty`, in which error or success messages about
@@ -210,7 +251,13 @@ def _process_user_sign_in(
         )
         return None, False
 
-    user, error_msg = _get_user_from_db(session=session, user_sign_in=user_sign_in)
+    user, error_msg = _get_user_from_db(
+        session=session,
+        user_sign_in=user_sign_in,
+        load_custom_roles=load_custom_roles,
+        load_emails=load_emails,
+        defer_role_description=defer_role_description,
+    )
     if user is None:
         core.display_banner_message(
             message=error_msg,
@@ -218,8 +265,7 @@ def _process_user_sign_in(
             container=banner_container,
         )
         return user, False
-    else:
-        user.sign_in = user_sign_in
+    user.sign_in = user_sign_in
 
     user, error_msg = _authorize_user(user=user, role=role)
     if error_msg:
@@ -260,6 +306,9 @@ def bitwarden_sign_in_form(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
     role: models.Role | int | None = None,
+    load_custom_roles: bool = False,
+    load_emails: bool = False,
+    defer_role_description: bool = True,
     with_alias: bool = True,
     with_discoverable: bool = True,
     with_autofill: bool = False,
@@ -293,6 +342,16 @@ def bitwarden_sign_in_form(
         integer is supplied it is assumed to be the rank of the role to authorize the
         user against. If None (the default) the user is authorized regardless of its role.
         The user must always be authenticated to be authorized.
+
+    load_custom_roles : bool, default False
+        True if the custom roles of the user should be loaded and False otherwise.
+
+    load_emails : bool, default False
+        True if the enabled emails of the user should be loaded and False otherwise.
+
+    defer_role_description : bool, default True
+        True if the description columns of the role and custom_roles should not be
+        loaded and False otherwise.
 
     with_alias : bool, default True
         If True the field to enter the alias to use for signing in will be rendered. If False
@@ -381,7 +440,7 @@ def bitwarden_sign_in_form(
             },
         )
 
-    help: str | None = None
+    _help: str | None = None
     banner_container = st.empty() if banner_container is None else banner_container
 
     with st.container(border=border):
@@ -389,18 +448,18 @@ def bitwarden_sign_in_form(
 
         if with_alias:
             if alias_help == '__default__':
-                help = (
+                _help = (
                     'An alias of the user. If not supplied auto discover '
                     'of available credentials will be attempted.'
                 )
             else:
-                help = alias_help
+                _help = alias_help
 
             st.text_input(
                 label=alias_label,
                 placeholder=alias_placeholder,
                 max_chars=alias_max_length,
-                help=help,
+                help=_help,
                 key=ids.BP_SIGN_IN_FORM_ALIAS_TEXT_INPUT,
             )
 
@@ -421,6 +480,9 @@ def bitwarden_sign_in_form(
         client=client,
         session=db_session,
         role=role,
+        load_custom_roles=load_custom_roles,
+        load_emails=load_emails,
+        defer_role_description=defer_role_description,
         banner_container=banner_container,
         redirect=redirect,
     )
@@ -432,6 +494,9 @@ def bitwarden_sign_in_button(
     client: BitwardenPasswordlessClient,
     db_session: db.Session,
     role: models.Role | int | None = None,
+    load_custom_roles: bool = False,
+    load_emails: bool = False,
+    defer_role_description: bool = True,
     with_discoverable: bool = True,
     with_autofill: bool = False,
     button_label: str = 'Sign in',
@@ -460,6 +525,16 @@ def bitwarden_sign_in_button(
         integer is supplied it is assumed to be the rank of the role to authorize the
         user against. If None (the default) the user is authorized regardless of its role.
         The user must always be authenticated to be authorized.
+
+    load_custom_roles : bool, default False
+        True if the custom roles of the user should be loaded and False otherwise.
+
+    load_emails : bool, default False
+        True if the enabled emails of the user should be loaded and False otherwise.
+
+    defer_role_description : bool, default True
+        True if the description columns of the role and custom_roles should not be
+        loaded and False otherwise.
 
     with_discoverable : bool, default True
         If True the browser's native UI prompt will be used to select the passkey to use for
@@ -533,6 +608,9 @@ def bitwarden_sign_in_button(
         client=client,
         session=db_session,
         role=role,
+        load_custom_roles=load_custom_roles,
+        load_emails=load_emails,
+        defer_role_description=defer_role_description,
         banner_container=banner_container,
         redirect=redirect,
     )

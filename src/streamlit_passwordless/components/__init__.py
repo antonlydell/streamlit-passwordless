@@ -26,7 +26,7 @@ from .core import (
 from .create_user_form import create_user_form
 from .delete_user_button import delete_user_button
 from .register_form import bitwarden_register_form, bitwarden_register_form_existing_user
-from .sign_in_form import bitwarden_sign_in_button, bitwarden_sign_in_form
+from .sign_in import bitwarden_sign_in_button, bitwarden_sign_in_form
 from .sign_out import sign_out_button
 from .update_user_form import update_user_form
 

@@ -803,7 +803,7 @@ def mocked_bwp_sign_in_button_success(monkeypatch: pytest.MonkeyPatch) -> None:
         return ('', None, False)
 
     monkeypatch.setattr(
-        streamlit_passwordless.components.sign_in_form, 'sign_in_button', mocked_signed_in_button
+        streamlit_passwordless.components.sign_in, 'sign_in_button', mocked_signed_in_button
     )
 
 

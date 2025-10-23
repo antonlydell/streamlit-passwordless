@@ -11,6 +11,7 @@ from pydantic import BaseModel as PydanticBaseModel
 
 # Local
 from streamlit_passwordless.database.models import Role as DBRole
+from streamlit_passwordless.database.models import User as DBUser
 
 from . import exceptions
 
@@ -382,3 +383,89 @@ class User(BaseModel):
             return self.emails[0].email
         except IndexError:
             return ''
+
+    @classmethod
+    def from_db(
+        cls,
+        db_user: DBUser,
+        load_role: bool = True,
+        load_custom_roles: bool = False,
+        load_emails: bool = False,
+        defer_role_description: bool = True,
+    ) -> Self:
+        r"""Create a user from a user database model.
+
+        Parameters
+        ----------
+        db_user : streamlit_passwordless.db.models.User
+            The database user from which to create the user.
+
+        load_role : bool, default True
+            True if the role of the user should be loaded and False otherwise.
+
+        load_custom_roles : bool, default False
+            True if the custom roles of the user should be loaded and False otherwise.
+
+        load_emails : bool, default False
+            True if the enabled emails of the user should be loaded and False otherwise.
+
+        defer_role_description : bool, default True
+            True if the description columns of the role and custom_roles should not be loaded
+            and False otherwise.
+        """
+
+        if load_role and (db_role := db_user.role):
+            if defer_role_description:
+                role = Role(role_id=db_role.role_id, name=db_role.name, rank=db_role.rank)
+            else:
+                role = Role(
+                    role_id=db_role.role_id,
+                    name=db_role.name,
+                    rank=db_role.rank,
+                    description=db_role.description,
+                )
+        else:
+            role = Role(role_id=db_user.role_id, name='', rank=0)
+
+        if load_custom_roles:
+            custom_roles = {
+                role_id: CustomRole(role_id=m.role_id, name=m.name, rank=m.rank)
+                if defer_role_description
+                else CustomRole(
+                    role_id=m.role_id, name=m.name, rank=m.rank, description=m.description
+                )
+                for role_id, m in db_user.custom_roles.items()
+            }
+        else:
+            custom_roles = {}
+
+        if load_emails:
+            emails = [
+                Email(
+                    email_id=e.email_id,
+                    user_id=e.user_id,
+                    email=e.email,
+                    rank=e.rank,
+                    verified=e.verified,
+                    verified_at=e.verified_at,
+                    disabled=e.disabled,
+                    disabled_at=e.disabled_at,
+                )
+                for e in db_user.emails
+            ]
+        else:
+            emails = []
+
+        return cls(
+            user_id=db_user.user_id,
+            username=db_user.username,
+            ad_username=db_user.ad_username,
+            displayname=db_user.displayname,
+            verified=db_user.verified,
+            verified_at=db_user.verified_at,
+            disabled=db_user.disabled,
+            disabled_at=db_user.disabled_at,
+            role=role,
+            custom_roles=custom_roles,
+            emails=emails,
+        )
