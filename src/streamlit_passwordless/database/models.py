@@ -29,6 +29,7 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
+from sqlalchemy.sql.expression import false
 
 UserID: TypeAlias = UUID
 
@@ -73,12 +74,6 @@ AuditColumnsMixinClass: TypeAlias = type[AuditColumnsMixinBase]
 
 metadata_obj = MetaData(schema=SCHEMA)
 
-updated_at_column: Mapped[datetime | None] = mapped_column(
-    DateTime(timezone=True), onupdate=func.current_timestamp()
-)
-created_at_column: Mapped[datetime] = mapped_column(
-    DateTime(timezone=True), server_default=func.current_timestamp()
-)
 
 def audit_columns_mixin_factory(
     deferred=True, raiseload=True, group: str = 'audit'
@@ -229,7 +224,7 @@ class Role(AuditColumnsMixin, Base):
         The primary key of the table.
 
     name : str
-        The name of the role. Must be unique.
+        The name of the role. Must be unique. Is indexed.
 
     rank : int
         The rank of the role. A role with a higher rank has more privileges. Used
@@ -328,9 +323,6 @@ class Role(AuditColumnsMixin, Base):
         )
 
 
-Index(f'{Role.__tablename__}_name_ix', Role.name)
-
-
 class CustomRole(AuditColumnsMixin, Base):
     r"""The custom roles of a user.
 
@@ -344,7 +336,7 @@ class CustomRole(AuditColumnsMixin, Base):
         The primary key of the table.
 
     name : str
-        The name of the role.
+        The name of the role. Must be unique. Is indexed.
 
     rank : int
         The rank of the role. A role with a higher rank has more privileges. Used
@@ -366,9 +358,9 @@ class CustomRole(AuditColumnsMixin, Base):
     created_by : str or None
         The ID of the user that created the custom role.
 
-    users : dict[str, User]
+    users : dict[int, User]
         A mapping of the users that have the custom role assigned.
-        The key is the username of the user.
+        The key is the user_id of the user.
     """
 
     columns__repr__: ClassVar[tuple[str, ...]] = (
@@ -388,14 +380,13 @@ class CustomRole(AuditColumnsMixin, Base):
     name: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
     description: Mapped[str | None]
-    users: Mapped[dict[str, 'User']] = relationship(
+    users: Mapped[dict[int, 'User']] = relationship(
         secondary='stp_user_custom_role_link',
         back_populates='custom_roles',
-        collection_class=attribute_keyed_dict('username'),
+        passive_deletes=True,
+        collection_class=attribute_keyed_dict('user_id'),
     )
 
-
-Index(f'{CustomRole.__tablename__}_name_ix', CustomRole.name)
 
 # Association table for the many-to-many relationship between User and CustomRole.
 user_custom_role_link = Table(
@@ -403,6 +394,12 @@ user_custom_role_link = Table(
     Base.metadata,
     Column('user_id', ForeignKey('stp_user.user_id', ondelete='CASCADE'), primary_key=True),
     Column('role_id', ForeignKey('stp_custom_role.role_id'), primary_key=True),
+)
+
+Index(
+    'stp_user_custom_role_link_role_id_user_id_ix',
+    user_custom_role_link.c.role_id,
+    user_custom_role_link.c.user_id,
 )
 
 
@@ -487,13 +484,13 @@ class User(AuditColumnsMixin, Base):
     __tablename__ = 'stp_user'
 
     user_id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    username: Mapped[str] = mapped_column(unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(unique=True)
     ad_username: Mapped[str | None]
     displayname: Mapped[str | None]
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.role_id))
-    verified: Mapped[bool] = mapped_column(default=False)
+    verified: Mapped[bool] = mapped_column(server_default=false())
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    disabled: Mapped[bool] = mapped_column(default=False)
+    disabled: Mapped[bool] = mapped_column(server_default=false())
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     role: Mapped[Role] = relationship(back_populates='users')
     custom_roles: Mapped[dict[int, CustomRole]] = relationship(
@@ -501,16 +498,23 @@ class User(AuditColumnsMixin, Base):
         collection_class=attribute_keyed_dict('role_id'),
         back_populates='users',
         passive_deletes=True,
+        order_by='CustomRole.rank.desc()',
     )
     emails: Mapped[list['Email']] = relationship(
-        back_populates='user', cascade='delete, delete-orphan', order_by='Email.rank'
+        back_populates='user',
+        cascade='all, delete-orphan',
+        single_parent=True,
+        order_by='Email.rank.asc()',
     )
     sign_ins: Mapped[list['UserSignIn']] = relationship(
-        back_populates='user', cascade='delete, delete-orphan'
+        back_populates='user',
+        cascade='all, delete-orphan',
+        single_parent=True,
+        order_by='UserSignIn.sign_in_timestamp.desc()',
     )
 
 
-Index(f'{User.__tablename__}_username_ix', User.username)
+Index(f'{User.__tablename__}_role_id_ix', User.role_id)
 Index(f'{User.__tablename__}_ad_username_ix', User.ad_username)
 Index(f'{User.__tablename__}_disabled_ix', User.disabled)
 
@@ -584,14 +588,13 @@ class Email(AuditColumnsMixin, Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     email: Mapped[str] = mapped_column(unique=True)
     rank: Mapped[int]
-    verified: Mapped[bool] = mapped_column(default=False)
+    verified: Mapped[bool] = mapped_column(server_default=false())
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    disabled: Mapped[bool] = mapped_column(default=False)
+    disabled: Mapped[bool] = mapped_column(server_default=false())
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     user: Mapped['User'] = relationship(back_populates='emails')
 
 
-Index(f'{Email.__tablename__}_email_ix', Email.email)
 Index(f'{Email.__tablename__}_user_id_ix', Email.user_id)
 
 
@@ -675,9 +678,10 @@ class UserSignIn(Base):
     credential_id: Mapped[str]
     sign_in_type: Mapped[str]
     rp_id: Mapped[str | None]
-    created_at: Mapped[datetime] = created_at_column
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.current_timestamp()
+    )
     user: Mapped['User'] = relationship(back_populates='sign_ins')
 
 
 Index(f'{UserSignIn.__tablename__}_ix1', UserSignIn.user_id, UserSignIn.sign_in_timestamp)
-Index(f'{UserSignIn.__tablename__}_ix2', UserSignIn.origin)
