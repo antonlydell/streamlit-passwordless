@@ -3,7 +3,7 @@ r"""The views of the admin page."""
 # Standard library
 import logging
 import time
-from typing import Sequence
+from collections.abc import Sequence
 
 # Third party
 import pandas as pd
@@ -55,7 +55,7 @@ def sidebar(user: User) -> None:
 
     sign_in = user.sign_in
     if sign_in is None:
-        return None
+        return
 
     username = user.username if (dn := user.displayname) is None else dn
 
@@ -181,7 +181,14 @@ def manage_users_view(
 
     if selected_user_id:
         db_user = db.get_user_by_user_id(
-            session=db_session, user_id=selected_user_id, disabled=None
+            session=db_session,
+            user_id=selected_user_id,
+            disabled=None,
+            load_custom_roles=True,
+            load_emails=True,
+            defer_role_description=False,
+            raiseload=True,
+            undefer_audit_columns=True,
         )
         st.session_state[SK_SELECTED_USER] = db_user
     else:
