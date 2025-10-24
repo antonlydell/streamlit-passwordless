@@ -162,6 +162,7 @@ class Base(DeclarativeBase):
     indent_space__repr__: ClassVar[str] = ' ' * 4
 
     metadata = metadata_obj
+    __mapper_args__ = {'eager_defaults': True}  # noqa: RUF012
 
     def __repr__(self) -> str:
         r"""A string representation of the model."""
