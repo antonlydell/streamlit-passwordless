@@ -31,6 +31,8 @@ from sqlalchemy.orm import (
 )
 
 UserID: TypeAlias = UUID
+
+AUDIT_COLUMNS_GROUP = 'audit'
 SCHEMA: str | None = os.getenv('STP_DB_SCHEMA')
 
 

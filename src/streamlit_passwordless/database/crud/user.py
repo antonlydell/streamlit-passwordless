@@ -14,6 +14,7 @@ from sqlalchemy.orm import (
     joinedload,
     raiseload,
     selectinload,
+    undefer_group,
     with_loader_criteria,
 )
 from sqlalchemy.orm.interfaces import LoaderOption
@@ -23,7 +24,14 @@ from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.database.core import Session
 from streamlit_passwordless.database.core import commit as db_commit
 from streamlit_passwordless.database.crud.custom_role import get_custom_roles
-from streamlit_passwordless.database.models import CustomRole, Email, Role, User, UserID
+from streamlit_passwordless.database.models import (
+    AUDIT_COLUMNS_GROUP,
+    CustomRole,
+    Email,
+    Role,
+    User,
+    UserID,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +42,8 @@ def _configure_user_relationship_loading(
     load_emails: bool = False,
     raiseload_if_unloaded: bool = True,
     defer_role_description: bool = True,
+    undefer_audit_columns: bool = False,
+    audit_columns_group_name: str = AUDIT_COLUMNS_GROUP,
 ) -> list[LoaderOption | LoaderCriteriaOption]:
     r"""Configure how the user relationships should be loaded.
 
@@ -58,6 +68,12 @@ def _configure_user_relationship_loading(
         and False otherwise. A :exc:`sqlalchemy.exc.InvalidRequestError` will be raised
         when trying to access these columns if `raiseload_if_unloaded` is True.
 
+    undefer_audit_columns : bool, default False
+        True if the audit columns should be undeferred and loaded and False to not load the columns.
+
+    audit_columns_group_name : str, default streamlit_passwordless.db.AUDIT_COLUMNS_GROUP
+        The name of the audit columns' group to undefer through `undefer_audit_columns`.
+
     Returns
     -------
     options : list[sqlalchemy.orm.interfaces.LoaderOption | sqlalchemy.orm.LoaderCriteriaOption]
@@ -71,30 +87,38 @@ def _configure_user_relationship_loading(
 
     options: list[LoaderOption | LoaderCriteriaOption] = []
 
+    if undefer_audit_columns:  # undefer for User
+        options.append(undefer_group(audit_columns_group_name))
+
     if load_role:
+        role_loader = joinedload(User.role)
         if defer_role_description:
-            options.append(
-                joinedload(User.role).defer(Role.description, raiseload=raiseload_if_unloaded)
-            )
-        options.append(joinedload(User.role))
+            role_loader = role_loader.defer(Role.description, raiseload=raiseload_if_unloaded)
+        if undefer_audit_columns:
+            role_loader = role_loader.undefer_group(audit_columns_group_name)
+        options.append(role_loader)
 
     elif raiseload_if_unloaded:
         options.append(raiseload(User.role))
 
     if load_custom_roles:
+        custom_roles_loader = selectinload(User.custom_roles)
         if defer_role_description:
-            options.append(
-                selectinload(User.custom_roles).defer(
-                    CustomRole.description, raiseload=raiseload_if_unloaded
-                )
+            custom_roles_loader = custom_roles_loader.defer(
+                CustomRole.description, raiseload=raiseload_if_unloaded
             )
-        options.append(selectinload(User.custom_roles))
+        if undefer_audit_columns:
+            custom_roles_loader = custom_roles_loader.undefer_group(audit_columns_group_name)
+        options.append(custom_roles_loader)
 
     elif raiseload_if_unloaded:
         options.append(raiseload(User.custom_roles))
 
     if load_emails:
-        options.append(selectinload(User.emails))
+        emails_loader = selectinload(User.emails)
+        if undefer_audit_columns:
+            emails_loader = emails_loader.undefer_group(audit_columns_group_name)
+        options.append(emails_loader)
         options.append(
             with_loader_criteria(
                 Email,
@@ -102,6 +126,7 @@ def _configure_user_relationship_loading(
                 include_aliases=True,
             )
         )
+
     elif raiseload_if_unloaded:
         options.append(raiseload(User.emails))
 
@@ -212,6 +237,8 @@ def get_user_by_user_id(
     load_emails: bool = False,
     raiseload: bool = True,
     defer_role_description: bool = True,
+    undefer_audit_columns: bool = False,
+    audit_columns_group_name: str = AUDIT_COLUMNS_GROUP,
 ) -> User | None:
     r"""Get a user by user_id.
 
@@ -250,6 +277,12 @@ def get_user_by_user_id(
         and False otherwise. A :exc:`sqlalchemy.exc.InvalidRequestError` will be raised
         when trying to access these columns if `raiseload` is True.
 
+    undefer_audit_columns : bool, default False
+        True if the audit columns should be undeferred and loaded and False to not load the columns.
+
+    audit_columns_group_name : str, default streamlit_passwordless.db.AUDIT_COLUMNS_GROUP
+        The name of the audit columns' group to undefer through `undefer_audit_columns`.
+
     Returns
     -------
     streamlit_passwordless.db.models.User or None
@@ -271,6 +304,8 @@ def get_user_by_user_id(
         load_emails=load_emails,
         raiseload_if_unloaded=raiseload,
         defer_role_description=defer_role_description,
+        undefer_audit_columns=undefer_audit_columns,
+        audit_columns_group_name=audit_columns_group_name,
     )
     query = query.options(*options)
 

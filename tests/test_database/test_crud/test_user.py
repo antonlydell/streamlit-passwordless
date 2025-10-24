@@ -15,6 +15,7 @@ from sqlalchemy.orm.state import InstanceState
 # Local
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions
+from streamlit_passwordless.database.models import User as DbUser
 from streamlit_passwordless.models import CustomRole, Email, Role, User
 from tests.config import DbWithCustomRoles, DbWithRoles, ModelData
 from tests.test_database.helpers import count_queries
@@ -548,8 +549,73 @@ class TestGetUserByUserId:
         # Clean up - None
         # ===========================================================
 
+    def test_load_user_with_audit_columns_deferred(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
+    ) -> None:
+        r"""Test to load a user and verify its attributes.
+
+        The audit columns `updated_at`, `updated_by`, `created_at`, `created_by`
+        should be deferred by default and an error should be raised on access.
+        """
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        user_id = user_exp.user_id
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_id,
+                load_role=False,
+                load_custom_roles=False,
+                load_emails=False,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            assert len(stmts) == 1, 'Incorrect number of SQL queries to load user!'
+
+            attributes_to_verify = (
+                ('user_id', user_id),
+                ('username', user_exp.username),
+                ('ad_username', user_exp.ad_username),
+                ('displayname', user_exp.displayname),
+                ('role_id', user_exp.role_id),
+                ('verified', user_exp.verified),
+                ('verified_at', user_exp.verified_at),
+                ('disabled', user_exp.disabled),
+                ('disabled_at', user_exp.disabled_at),
+            )
+            for attr, exp_value in attributes_to_verify:
+                if attr == 'created_at':
+                    assert isinstance(getattr(user, attr), datetime), (
+                        'user.created_at is not a datetime object!'
+                    )
+                else:
+                    assert getattr(user, attr) == exp_value, f'user.{attr} is incorrect!'
+
+            for attr in ('updated_at', 'updated_by', 'created_at', 'created_by'):
+                with pytest.raises(InvalidRequestError) as exc_info:
+                    getattr(user, attr)
+
+                error_msg_exp = f'{user.__class__.__name__}.{attr}'
+                assert error_msg_exp in exc_info.exconly(), f'{error_msg_exp} not in error message!'
+
+        # Clean up - None
+        # ===========================================================
+
     def test_load_role_and_lazy_load_other_attributes(
-        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
     ) -> None:
         r"""Test to load a user and its role from the database.
 
@@ -582,7 +648,9 @@ class TestGetUserByUserId:
 
             # Verify
             # ===========================================================
-            assert user is not None, f'User(username={user_exp.username} not found in the database!'
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
 
             user_state = cast(InstanceState, inspect(user))
             user_state_unloaded = user_state.unloaded
@@ -623,7 +691,7 @@ class TestGetUserByUserId:
         # ===========================================================
 
     def test_load_role_with_raiseload_and_defer_role_description(
-        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
     ) -> None:
         r"""Test to load a user and its role from the database.
 
@@ -693,7 +761,7 @@ class TestGetUserByUserId:
         # ===========================================================
 
     def test_load_role_with_raiseload_and_no_defer_role_description(
-        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
     ) -> None:
         r"""Test to load a user and its role from the database.
 
@@ -764,7 +832,7 @@ class TestGetUserByUserId:
         # ===========================================================
 
     def test_load_custom_roles_and_lazy_load_other_attributes(
-        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
     ) -> None:
         r"""Test to load a user and its custom roles from the database.
 
@@ -850,7 +918,7 @@ class TestGetUserByUserId:
         # ===========================================================
 
     def test_load_custom_roles_with_raiseload_and_defer_role_description(
-        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
     ) -> None:
         r"""Test to load a user and its custom roles from the database.
 
@@ -939,7 +1007,7 @@ class TestGetUserByUserId:
         # ===========================================================
 
     def test_load_custom_roles_with_raiseload_and_no_defer_role_description(
-        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
     ) -> None:
         r"""Test to load a user and its custom roles from the database.
 
@@ -1022,7 +1090,7 @@ class TestGetUserByUserId:
         # ===========================================================
 
     def test_load_emails_and_lazy_load_other_attributes(
-        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
     ) -> None:
         r"""Test to load a user and its enabled emails from the database.
 
@@ -1099,7 +1167,7 @@ class TestGetUserByUserId:
         # ===========================================================
 
     def test_load_emails_with_raiseload(
-        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, User]
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
     ) -> None:
         r"""Test to load a user and its enabled emails from the database.
 
@@ -1172,6 +1240,72 @@ class TestGetUserByUserId:
 
             assert len(stmts) == nr_sql_queries_user_and_emails, (
                 f'> {nr_sql_queries_user_and_emails=} emitted!'
+            )
+
+        # Clean up - None
+        # ===========================================================
+
+    def test_undefer_audit_columns(
+        self, sqlite_in_memory_database_with_user: tuple[db.Session, db.SessionFactory, DbUser]
+    ) -> None:
+        r"""Test to load the, by default, deferred audit columns."""
+
+        # Setup
+        # ===========================================================
+        _, session_factory, user_exp = sqlite_in_memory_database_with_user
+        user_id = user_exp.user_id
+        max_nr_sql_queries = 3  # user and role, custom_roles and emails
+
+        # Exercise
+        # ===========================================================
+        with (
+            session_factory() as new_session,
+            count_queries(engine=cast(Engine, new_session.get_bind())) as stmts,
+        ):
+            user = db.get_user_by_user_id(
+                session=new_session,
+                user_id=user_id,
+                load_role=True,
+                load_custom_roles=True,
+                load_emails=True,
+                raiseload=True,
+                undefer_audit_columns=True,
+            )
+
+            # Verify
+            # ===========================================================
+            assert user is not None, (
+                f'User(username={user_exp.username}) not found in the database!'
+            )
+
+            user_state = cast(InstanceState, inspect(user))
+            user_state_unloaded = user_state.unloaded
+
+            assert user.role not in user_state_unloaded, 'role was not eagerly loaded!'
+            assert 'custom_roles' not in user_state_unloaded, (
+                'custom_roles were not eagerly loaded!'
+            )
+            assert 'emails' not in user_state_unloaded, 'emails were not eagerly loaded!'
+
+            emails = user.emails
+            assert len(emails) == 1, 'More emails than the primary email were loaded!'
+
+            custom_roles = list(user.custom_roles.values())
+            assert len(custom_roles) == 1, 'The number of loaded custom roles are incorrect!'
+
+            attributes_to_verify = ('updated_by', 'updated_at', 'created_by', 'created_at')
+            for obj in (user, user.role, emails[0], custom_roles[0]):
+                name = obj.__class__.__name__
+                for attr in attributes_to_verify:
+                    if attr == 'created_at':
+                        assert isinstance(getattr(obj, attr), datetime), (
+                            f'{name}.created_at is not a datetime object!'
+                        )
+                    else:
+                        assert getattr(obj, attr) is None, f'{name}.{attr} is incorrect!'
+
+            assert len(stmts) == max_nr_sql_queries, (
+                f'More than {max_nr_sql_queries=} were emitted!'
             )
 
         # Clean up - None
