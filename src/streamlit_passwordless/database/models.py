@@ -17,6 +17,7 @@ from sqlalchemy import (
     Index,
     Integer,
     MetaData,
+    String,
     Table,
     UniqueConstraint,
     func,
@@ -224,7 +225,7 @@ class Role(AuditColumnsMixin, Base):
         The primary key of the table.
 
     name : str
-        The name of the role. Must be unique. Is indexed.
+        The name of the role. Must be unique. Is indexed. Max length of 64 characters.
 
     rank : int
         The rank of the role. A role with a higher rank has more privileges. Used
@@ -264,7 +265,7 @@ class Role(AuditColumnsMixin, Base):
     __tablename__ = 'stp_role'
 
     role_id: Mapped[int] = mapped_column(Integer(), Identity(), primary_key=True)
-    name: Mapped[str] = mapped_column(unique=True)
+    name: Mapped[str] = mapped_column(String(64), unique=True)
     rank: Mapped[int]
     description: Mapped[str | None]
     users: Mapped[list['User']] = relationship(back_populates='role')
@@ -336,7 +337,7 @@ class CustomRole(AuditColumnsMixin, Base):
         The primary key of the table.
 
     name : str
-        The name of the role. Must be unique. Is indexed.
+        The name of the role. Must be unique. Is indexed. Max length of 64 characters.
 
     rank : int
         The rank of the role. A role with a higher rank has more privileges. Used
@@ -377,7 +378,7 @@ class CustomRole(AuditColumnsMixin, Base):
     __tablename__ = 'stp_custom_role'
 
     role_id: Mapped[int] = mapped_column(Integer(), Identity(), primary_key=True)
-    name: Mapped[str] = mapped_column(unique=True)
+    name: Mapped[str] = mapped_column(String(64), unique=True)
     rank: Mapped[int]
     description: Mapped[str | None]
     users: Mapped[dict[int, 'User']] = relationship(
@@ -414,12 +415,14 @@ class User(AuditColumnsMixin, Base):
 
     username : str
         The username of the user. It must be unique across all users.
+        Max length of 150 characters.
 
     ad_username : str or None
-        The active directory username of the user.
+        The active directory username of the user. Max length of 150 characters.
 
     displayname : str or None
         A descriptive name of the user that is easy to understand for a human.
+        Max length of 150 characters.
 
     role_id : int
         The unique id of the role associated with the user.
@@ -484,9 +487,9 @@ class User(AuditColumnsMixin, Base):
     __tablename__ = 'stp_user'
 
     user_id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    username: Mapped[str] = mapped_column(unique=True)
-    ad_username: Mapped[str | None]
-    displayname: Mapped[str | None]
+    username: Mapped[str] = mapped_column(String(150), unique=True)
+    ad_username: Mapped[str | None] = mapped_column(String(150))
+    displayname: Mapped[str | None] = mapped_column(String(150))
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.role_id))
     verified: Mapped[bool] = mapped_column(server_default=false())
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -531,7 +534,7 @@ class Email(AuditColumnsMixin, Base):
         The unique ID of the user the email address belongs to.
 
     email : str
-        An email address of a user. Must be unique.
+        An email address of a user. Must be unique. Max length of 320 characters.
 
     rank : int
         The rank of the email, where 1 defines the primary email, 2 the secondary
@@ -586,7 +589,7 @@ class Email(AuditColumnsMixin, Base):
 
     email_id: Mapped[int] = mapped_column(Integer(), Identity(), primary_key=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
-    email: Mapped[str] = mapped_column(unique=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True)
     rank: Mapped[int]
     verified: Mapped[bool] = mapped_column(server_default=false())
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -617,25 +620,27 @@ class UserSignIn(Base):
 
     origin : str
         The domain name or IP-address of the application the user signed in to.
+        Max length of 255 characters.
 
     device : str
-        The device the user signed in from. E.g. a web browser.
+        The device the user signed in from. E.g. a web browser. Max length of 128 characters.
 
     country : str
         The country code of the country that the user signed in from. E.g. SE for Sweden.
+        Max length of 2 characters following the ISO 3166-1 alpha-2 standard.
 
     credential_nickname : str
-        The nickname of the passkey that was used to sign in.
+        The nickname of the passkey that was used to sign in. Max length of 150 characters.
 
     credential_id : str
-        The ID of the passkey credential used to sign in.
+        The ID of the passkey credential used to sign in. Max length of 255 characters.
 
     sign_in_type : str
-        The type of sign in method. E.g. 'passkey_signin'.
+        The type of sign in method. E.g. 'passkey_signin'. Max length of 64 characters.
 
     rp_id : str or None
-        The ID of the relaying party, which is the server that
-        verifies the credentials during the sign in process.
+        The ID of the relaying party, which is the server that verifies the
+        credentials during the sign in process. Max length of 255 characters.
 
     created_at : datetime
         The timestamp at which the user sign in record was created (UTC).
@@ -671,13 +676,13 @@ class UserSignIn(Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey(User.user_id, ondelete='CASCADE'))
     sign_in_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     success: Mapped[bool]
-    origin: Mapped[str]
-    device: Mapped[str]
-    country: Mapped[str]
-    credential_nickname: Mapped[str]
-    credential_id: Mapped[str]
-    sign_in_type: Mapped[str]
-    rp_id: Mapped[str | None]
+    origin: Mapped[str] = mapped_column(String(255))
+    device: Mapped[str] = mapped_column(String(128))
+    country: Mapped[str] = mapped_column(String(2))
+    credential_nickname: Mapped[str] = mapped_column(String(150))
+    credential_id: Mapped[str] = mapped_column(String(255))
+    sign_in_type: Mapped[str] = mapped_column(String(64))
+    rp_id: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.current_timestamp()
     )
