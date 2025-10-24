@@ -173,6 +173,68 @@ class TestRole:
         # Clean up - None
         # ===========================================================
 
+    def test__repr__with_deferred_audit_columns(
+        self,
+        empty_sqlite_in_memory_database: tuple[Session, SessionFactory],
+        user_1_user_id: UserID,
+        created_at_column: tuple[datetime, str],
+        updated_at_column: tuple[datetime, str],
+    ) -> None:
+        r"""Test the `__repr__` method with deferred audit columns."""
+
+        # Setup
+        # ===========================================================
+        session, session_factory = empty_sqlite_in_memory_database
+        role_id = 1
+        name = 'ADMIN'
+        rank = 4
+        description = 'An admin user.'
+        updated_at, _ = updated_at_column
+        updated_by = user_1_user_id
+        created_at, _ = created_at_column
+        created_by = user_1_user_id
+
+        repr_str_exp = f"""Role(
+    role_id={role_id},
+    name='{name}',
+    rank={rank},
+    description='{description}',
+    updated_at=<deferred>,
+    updated_by=<deferred>,
+    created_at=<deferred>,
+    created_by=<deferred>,
+)"""
+
+        admin = db_models.Role(
+            role_id=role_id,
+            name=name,
+            rank=rank,
+            description=description,
+            updated_at=updated_at,
+            updated_by=updated_by,
+            created_at=created_at,
+            created_by=created_by,
+        )
+        session.add(admin)
+        session.commit()
+
+        with session_factory() as new_session:
+            new_admin = new_session.get(Role, role_id)
+
+        # Exercise
+        # ===========================================================
+        result = repr(new_admin)
+
+        # Verify
+        # ===========================================================
+        print(f'Result:\n{result}\n')
+        print(f'Expected Result:\n{repr_str_exp}')
+
+        assert result == repr_str_exp
+
+        # Clean up - None
+        # ===========================================================
+
 
 class TestCustomRole:
     r"""Tests for the model `CustomRole`."""

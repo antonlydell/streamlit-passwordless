@@ -21,6 +21,7 @@ from sqlalchemy import (
     Table,
     UniqueConstraint,
     func,
+    inspect,
 )
 from sqlalchemy.dialects.sqlite import INTEGER as SQLITE_INTEGER
 from sqlalchemy.orm import (
@@ -30,6 +31,7 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
+from sqlalchemy.orm.base import NO_VALUE
 from sqlalchemy.sql.expression import false
 
 UserID: TypeAlias = UUID
@@ -169,10 +171,21 @@ class Base(DeclarativeBase):
 
         indent = self.indent_space__repr__
         output = f'{self.__class__.__name__}(\n'
+        state = inspect(self, raiseerr=True)
 
         for col in self.columns__repr__:
-            value = getattr(self, col)
-            value = _column_to_str(value)
+            if (lv := state.attrs[col].loaded_value) is NO_VALUE:
+                if state.transient or state.pending:
+                    value = None
+                elif col in state.expired_attributes:
+                    value = '<expired>'
+                elif col in state.unloaded:
+                    value = '<deferred>'
+                else:
+                    value = '<unknown>'
+            else:
+                value = _column_to_str(lv)
+
             output += f'{indent}{col}={value},\n'
 
         output += ')'
