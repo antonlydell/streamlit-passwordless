@@ -44,6 +44,7 @@ from streamlit_passwordless.components import (
     init_session_state,
     process_form_validation_errors,
     sign_out_button,
+    update_user_form,
 )
 from streamlit_passwordless.config import (
     STP_BWP_PRIVATE_KEY,
@@ -124,6 +125,7 @@ __all__ = [
     'init_session_state',
     'process_form_validation_errors',
     'sign_out_button',
+    'update_user_form',
     # config
     'STP_BWP_PRIVATE_KEY',
     'STP_BWP_PUBLIC_KEY',
