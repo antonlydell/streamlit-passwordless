@@ -12,7 +12,7 @@ from streamlit_passwordless.app.config import (
     setup,
 )
 from streamlit_passwordless.app.controllers.admin import controller
-from streamlit_passwordless.authorization import authorized
+from streamlit_passwordless.auth import authorized
 from streamlit_passwordless.components.config import SK_USER
 from streamlit_passwordless.models import AdminRole
 

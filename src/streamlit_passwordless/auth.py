@@ -1,15 +1,16 @@
 r"""Functionality to check if a user is authorized to access content within an application."""
 
 # Standard library
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 # Third party
 import streamlit as st
 from streamlit.navigation.page import StreamlitPage
 
 # Local
-from streamlit_passwordless.components.config import SK_USER, SK_USER_SIGN_IN
+from streamlit_passwordless.components.config import SK_USER, SK_USER_SIGN_IN, get_current_user
 from streamlit_passwordless.models import Role, User
 
 P = ParamSpec('P')
@@ -63,6 +64,30 @@ def authorized(
         return wrapper
 
     return decorator
+
+
+def authenticated(user: User | None = None) -> tuple[bool, User | None]:
+    r"""Check if a user is authenticated or not.
+
+    Parameters
+    ----------
+    user : streamlit_passwordless.User or None, default None
+        The user for which to check the authentication status.
+        The default is to fetch the current user from the session state.
+
+    Returns
+    -------
+    bool
+        True if the user is authenticated and False otherwise.
+
+    streamlit_passwordless.User or None
+        The user that was checked for authentication status.
+        None is returned if a user has not signed in yet.
+    """
+
+    user = get_current_user() if user is None else user
+
+    return user is not None and user.is_authenticated, user
 
 
 def sign_out(user: User | None) -> None:

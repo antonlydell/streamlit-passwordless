@@ -4,7 +4,7 @@ r"""Components related to the sign out process."""
 import streamlit as st
 
 # Local
-from streamlit_passwordless.authorization import sign_out
+from streamlit_passwordless.auth import sign_out
 from streamlit_passwordless.models import User
 
 from .config import SK_USER

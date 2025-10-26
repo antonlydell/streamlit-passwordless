@@ -8,7 +8,7 @@ import streamlit as st
 
 # Local
 from streamlit_passwordless import database as db
-from streamlit_passwordless.authorization import sign_out
+from streamlit_passwordless.auth import sign_out
 from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
 from streamlit_passwordless.models import AdminRole, Role, User, UserID
 

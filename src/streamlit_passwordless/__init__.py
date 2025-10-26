@@ -8,7 +8,7 @@ using the passkey FIDO2 and WebAuthn protocols.
 # Local
 import streamlit_passwordless.database as db
 from streamlit_passwordless.app import admin_page, init_page, load_config, setup
-from streamlit_passwordless.authorization import authorized, sign_out
+from streamlit_passwordless.auth import authenticated, authorized, sign_out
 from streamlit_passwordless.bitwarden_passwordless import (
     BITWARDEN_PASSWORDLESS_API_URL,
     BitwardenPasswordlessClient,
@@ -88,7 +88,8 @@ __all__ = [
     'init_page',
     'load_config',
     'setup',
-    # authorization
+    # auth
+    'authenticated',
     'authorized',
     'sign_out',
     # bitwarden_passwordless
