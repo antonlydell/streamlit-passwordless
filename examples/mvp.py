@@ -1,9 +1,7 @@
 r"""A minimal single-page Streamlit application demonstrating basic passkey registration and sign-in."""
 
-# Third party
 import streamlit as st
 
-# Local
 import streamlit_passwordless as stp
 
 
