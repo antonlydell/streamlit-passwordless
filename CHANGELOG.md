@@ -13,6 +13,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.18.0] - 2025-11-09
+
+Improved database model and user relationship loading!
+
+The audit columns (`updated_at`, `updated_by`, `created_at` and `created_by`) of the database
+models are now deferred from loading by default, since you most often do not want to load these
+columns. The string columns of the database models that are or may be subject to indexes are now
+length constrained since unbounded string columns cannot be indexed in Microsoft SQL Server.
+
+The `bitwarden_sign_in_form` and `bitwarden_sign_in_button` now support to select which relationships
+(custom roles and emails) to load when a user signs in. This will avoid unnecessary database queries
+if these objects are not needed in the application.
+
+
+### Added
+
+- `streamlit_passwordless.authenticated` : A function to check if a user is authenticated.
+
+- `streamlit_passwordless.db.models.audit_columns_mixin_factory` : A function to create the mixin
+  class for the audit columns, which allows to customize if the audit columns should be deferred
+  from loading in queries by default.
+
+- `streamlit_passwordless.db.models.AUDIT_COLUMNS_GROUP` : The name of the audit columns' group,
+  which can be used to undefer all audit columns of a database model in a query.
+
+
+### Changed
+
+- `streamlit_passwordless.db.models.ModifiedAndCreatedColumnMixin`: Renamed to `AuditColumnsMixin`
+  and the audit columns are deferred by default.
+
+- `streamlit_passwordless.db.get_user_by_user_id` : Added the parameters `load_custom_role`, `load_email`,
+  `defer_role_description`, `undefer_audit_columns` and `audit_columns_group_name` to control how the
+  relationships of the user are loaded.
+
+- `streamlit_passwordless.bitwarden_sign_in_form` and `streamlit_passwordless.bitwarden_sign_in_button` :
+  Added the parameters `load_custom_role`, `load_email` and `defer_role_description` to control how the
+  relationships of the user are loaded.
+
+
 ## [0.17.0] - 2025-10-11
 
 Proper UUID support for `User.user_id`!
@@ -853,7 +893,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.18.0
 [0.17.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.17.0
 [0.16.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.16.1
 [0.16.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.16.0
