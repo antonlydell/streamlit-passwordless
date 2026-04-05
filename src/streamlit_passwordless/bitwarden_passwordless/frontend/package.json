@@ -1,32 +1,25 @@
 {
-  "name": "bitwarden_passwordless",
-  "version": "0.7.5",
+  "name": "bitwarden-passwordless",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "dependencies": {
     "@passwordlessdev/passwordless-client": "1.2.4",
-    "streamlit-component-lib": "2.0.0"
+    "@streamlit/component-v2-lib": "0.2.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build": "npm run typecheck && npm run clean && vite build",
+    "clean": "node -e \"fs.rmSync('assets/build', { recursive: true, force: true })\"",
+    "format": "prettier --write .",
+    "preview": "vite preview",
+    "typecheck": "tsc"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "prettier": {
   },
   "homepage": "https://github.com/antonlydell/streamlit-passwordless",
   "devDependencies": {
-    "typescript": "5.9.3",
-    "vite": "7.1.12"
+    "prettier": "3.8.1",
+    "typescript": "6.0.2",
+    "vite": "8.0.3"
   }
 }
