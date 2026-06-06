@@ -855,7 +855,7 @@ def bitwarden_register_form(
 
         form_is_not_valid = not form_is_valid
 
-        token, error, clicked = register_button(
+        register_result = register_button(
             register_token=register_token,
             public_key=client.public_key,
             credential_nickname=credential_nickname,
@@ -876,7 +876,10 @@ def bitwarden_register_form(
 
         return user, False
 
-    if not clicked:
+    busy = register_result.get('busy')
+    register_content = register_result.get('result')
+
+    if busy or not register_content:
         return user, False
 
     if user is None:
@@ -884,6 +887,9 @@ def bitwarden_register_form(
             message=error_msg, message_type=core.BannerMessageType.ERROR, container=banner_container
         )
         return user, False
+
+    token = register_content.get('token')
+    error = register_content.get('error')
 
     if not token:
         if error:
@@ -1170,7 +1176,7 @@ def bitwarden_register_form_existing_user(
         if require_credential_nickname and not credential_nickname:
             disabled = True
 
-        token, error, clicked = register_button(
+        register_result = register_button(
             register_token=register_token,
             public_key=client.public_key,
             credential_nickname=credential_nickname,
@@ -1180,8 +1186,14 @@ def bitwarden_register_form_existing_user(
             key=ids.BP_REGISTER_FORM_EXISTING_USER_SUBMIT_BUTTON,
         )
 
-    if disabled or not clicked or user is None:
+    busy = register_result.get('busy')
+    register_content = register_result.get('result')
+
+    if disabled or busy or not register_content or user is None:
         return user, False
+
+    token = register_content.get('token')
+    error = register_content.get('error')
 
     if not token:
         if error:
