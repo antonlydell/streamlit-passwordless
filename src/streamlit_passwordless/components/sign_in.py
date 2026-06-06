@@ -1,8 +1,7 @@
-r"""The sign in components."""
+"""The sign in components."""
 
 # Standard library
 import logging
-from typing import Any
 
 # Third party
 import streamlit as st
@@ -11,7 +10,7 @@ import streamlit as st
 from streamlit_passwordless import database as db
 from streamlit_passwordless import exceptions, models
 from streamlit_passwordless.bitwarden_passwordless.backend import BitwardenPasswordlessClient
-from streamlit_passwordless.bitwarden_passwordless.frontend import sign_in_button
+from streamlit_passwordless.bitwarden_passwordless.frontend import FrontendError, sign_in_button
 
 from . import config, core, ids
 
@@ -25,7 +24,7 @@ def _get_user_from_db(
     load_emails: bool,
     defer_role_description: bool,
 ) -> tuple[models.User | None, str]:
-    r"""Get the signed in user from the database.
+    """Get the signed in user from the database.
 
     The following session state keys are updated with data about the user that signed in:
     - config.SK_DB_USER : The database user object.
@@ -108,7 +107,7 @@ def _get_user_from_db(
 
 
 def _authorize_user(user: models.User, role: models.Role | int | None) -> tuple[models.User, str]:
-    r"""Check if the `user` is authorized to sign in to the application.
+    """Check if the `user` is authorized to sign in to the application.
 
     Parameters
     ----------
@@ -156,8 +155,8 @@ def _authorize_user(user: models.User, role: models.Role | int | None) -> tuple[
 
 
 def _process_user_sign_in(
-    token: str,
-    error: dict[str, Any] | None,
+    token: str | None,
+    error: FrontendError | None,
     clicked: bool,
     client: BitwardenPasswordlessClient,
     session: db.Session,
@@ -168,15 +167,15 @@ def _process_user_sign_in(
     banner_container: core.BannerContainer,
     redirect: core.Redirectable | None,
 ) -> tuple[models.User | None, bool]:
-    r"""Process the user sign in and authorize the user.
+    """Process the user sign in and authorize the user.
 
     Parameters
     ----------
-    token : str
+    token : str or None
         The verification token to be used by the Bitwarden Passwordless
         backend API to authenticate the sign in process.
 
-    error : dict[str, Any] or None
+    error : streamlit_passwordless.FrontendError or None
         An error object from the frontend containing information if there
         was an error with the sign in process.
 
@@ -231,7 +230,7 @@ def _process_user_sign_in(
     if not clicked:
         return None, False
 
-    if not token and error:
+    if not token or error:
         error_msg = f'Error signing in!\nerror : {error}'
         logger.error(error_msg)
         core.display_banner_message(
@@ -463,7 +462,7 @@ def bitwarden_sign_in_form(
                 key=ids.BP_SIGN_IN_FORM_ALIAS_TEXT_INPUT,
             )
 
-        token, error, clicked = sign_in_button(
+        sign_in_result = sign_in_button(
             public_key=client.public_key,
             alias=st.session_state.get(ids.BP_SIGN_IN_FORM_ALIAS_TEXT_INPUT),
             with_discoverable=with_discoverable,
@@ -472,6 +471,15 @@ def bitwarden_sign_in_form(
             button_type=button_type,
             key=ids.BP_SIGN_IN_FORM_SUBMIT_BUTTON,
         )
+
+    if sign_in_content := sign_in_result.get('result'):
+        token = sign_in_content.get('token')
+        error = sign_in_content.get('error')
+        clicked = True
+    else:
+        token = ''
+        error = None
+        clicked = False
 
     user, success = _process_user_sign_in(
         token=token,
@@ -592,7 +600,7 @@ def bitwarden_sign_in_button(
 
     banner_container = st.empty() if banner_container is None else banner_container
 
-    token, error, clicked = sign_in_button(
+    sign_in_result = sign_in_button(
         public_key=client.public_key,
         with_discoverable=with_discoverable,
         with_autofill=with_autofill,
@@ -600,6 +608,15 @@ def bitwarden_sign_in_button(
         button_type=button_type,
         key=ids.BP_SIGN_IN_BUTTON,
     )
+
+    if sign_in_content := sign_in_result.get('result'):
+        token = sign_in_content.get('token')
+        error = sign_in_content.get('error')
+        clicked = True
+    else:
+        token = ''
+        error = None
+        clicked = False
 
     user, success = _process_user_sign_in(
         token=token,
