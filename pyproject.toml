@@ -51,6 +51,11 @@ stp = "streamlit_passwordless.cli.main:main"
 [tool.setuptools.dynamic]
 version = {attr = "streamlit_passwordless.metadata.__version__"}
 
+[tool.setuptools.package-data]
+streamlit_passwordless = [
+    "bitwarden_passwordless/frontend/build/*",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

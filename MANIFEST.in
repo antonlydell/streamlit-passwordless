@@ -1,2 +1,0 @@
-recursive-include src/streamlit_passwordless/bitwarden_passwordless/frontend/build *
-recursive-exclude src/streamlit_passwordless/bitwarden_passwordless/frontend/node_modules *
