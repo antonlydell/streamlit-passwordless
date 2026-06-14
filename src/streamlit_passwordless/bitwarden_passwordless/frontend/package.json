@@ -8,8 +8,8 @@
     "@streamlit/component-v2-lib": "0.2.0"
   },
   "scripts": {
-    "build": "npm run typecheck && npm run clean && vite build",
-    "clean": "node -e \"fs.rmSync('assets/build', { recursive: true, force: true })\"",
+    "build": "npm run typecheck && vite build",
+    "clean": "node -e \"fs.rmSync('build', { recursive: true, force: true })\"",
     "format": "prettier --write .",
     "preview": "vite preview",
     "typecheck": "tsc"
@@ -18,8 +18,8 @@
   },
   "homepage": "https://github.com/antonlydell/streamlit-passwordless",
   "devDependencies": {
-    "prettier": "3.8.1",
-    "typescript": "6.0.2",
-    "vite": "8.0.3"
+    "prettier": "3.8.3",
+    "typescript": "6.0.3",
+    "vite": "8.0.16"
   }
 }
