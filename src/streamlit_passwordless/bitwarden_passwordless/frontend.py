@@ -1,23 +1,115 @@
-r"""Components related to the frontend library of Bitwarden Passwordless."""
+"""Components related to the frontend library of Bitwarden Passwordless."""
 
 # Standard library
-from pathlib import Path
-from typing import Literal
+from importlib.resources import files
+from typing import Literal, TypeAlias, TypedDict, cast
 
 # Third party
 import streamlit as st
-import streamlit.components.v1 as components
 
-_RELEASE = True
-_COMPONENT_NAME = 'bitwarden_passwordless'
-_BUILD_DIR = Path(__file__).parent / 'frontend' / 'build'
-_DEV_URL = 'http://localhost:3001'
+from streamlit_passwordless.exceptions import StreamlitPasswordlessError
+
+_BUILD_DIR = files('streamlit_passwordless.bitwarden_passwordless').joinpath('frontend/build')
+
+BUTTON_TYPE: TypeAlias = Literal['primary', 'secondary', 'tertiary']
 
 
-if _RELEASE:
-    _bitwarden_passwordless_func = components.declare_component(_COMPONENT_NAME, path=_BUILD_DIR)  # type: ignore
-else:
-    _bitwarden_passwordless_func = components.declare_component(name=_COMPONENT_NAME, url=_DEV_URL)
+class FrontendError(TypedDict):
+    type: str
+    title: str
+    status: int
+    errorCode: str | None
+    traceId: str | None
+    source: str
+
+
+class TriggerResult(TypedDict):
+    """The result from a Bitwarden Passwordless authentication workflow.
+
+    Parameters
+    ----------
+    action : str
+        The action performed by the Bitwarden Passwordless function.
+
+    ok : bool
+        True if the action was successful and False otherwise.
+
+    token : str
+        The token produced by the frontend after successful authentication,
+        which should be verified by the backend.
+
+    error : FrontendError or None
+        An object with error information if the workflow was unsuccessful.
+        None is returned if the executed action was successful.
+    """
+
+    action: str
+    ok: bool
+    token: str | None
+    error: FrontendError | None
+
+
+class FrontendResult(TypedDict):
+    """The result always returned from a Bitwarden Passwordless frontend function.
+
+    Parameters
+    ----------
+    busy : bool
+        True if an authentication workflow is in progress and false otherwise.
+
+    result : TriggerResult or None
+        The result from a Bitwarden Passwordless authentication workflow.
+        None is returned if an authentication workflow has not been triggered
+        by clicking the frontend button.
+    """
+
+    busy: bool
+    result: TriggerResult | None
+
+
+def _load_assets(name: str) -> str:
+    """Load the CSS and JavaScript assets of the custom component.
+
+    Parameters
+    ----------
+    name : str
+        The name of asset file to load.
+
+    Returns
+    -------
+    content : str
+        The content of the loaded asset.
+
+    Raises
+    ------
+    streamlit_passwordless.StreamlitPasswordlessError
+        If the asset file is empty or if it is not a file.
+    """
+
+    path = _BUILD_DIR.joinpath(name)
+
+    if not path.is_file():
+        raise StreamlitPasswordlessError(
+            f'The asset file "{path}" does not exist or is a directory!'
+        )
+
+    content = path.read_text(encoding='UTF-8')
+    if not content:
+        raise StreamlitPasswordlessError(f'The asset file "{path}" is empty!')
+
+    return content
+
+
+_CSS = _load_assets(name='button.css')
+_JS = _load_assets(name='index.js')
+
+_bwp_func = st.components.v2.component(
+    name='bitwarden_passwordless',
+    html='<button class="bwp-button"></button>',
+    js=_JS,
+    css=_CSS,
+    isolate_styles=False,
+)
 
 
 def register_button(
@@ -26,10 +118,10 @@ def register_button(
     credential_nickname: str,
     disabled: bool = False,
     label: str = 'Register',
-    button_type: Literal['primary', 'secondary'] = 'primary',
+    button_type: BUTTON_TYPE = 'primary',
     key: str | None = None,
-) -> tuple[str, dict | None, bool]:
-    r"""Render the register button, which starts the register process when clicked.
+) -> FrontendResult:
+    """Render the register button, which starts the register process when clicked.
 
     The register process creates and registers a passkey with the user's device.
 
@@ -54,7 +146,7 @@ def register_button(
     label : str, default 'Register'
         The label of the button.
 
-    button_type : Literal['primary', 'secondary'], default 'primary'
+    button_type : Literal['primary', 'secondary', 'tertiary'], default 'primary'
         The styling of the button. Emulates the `type` parameter of :func:`streamlit.button`.
 
     key : str or None, default None
@@ -64,40 +156,21 @@ def register_button(
 
     Returns
     -------
-    token : str
-        The public key of the created passkey, which the user will use for future sign-in
-        operations. This key is saved to the Bitwarden Passwordless database. An empty string
-        is returned if the button has not been clicked.
-
-    error : dict
-        An error object containing information about if the registration process was successful
-        or not. None is returned if no errors occurred during the register process or if the
-        button has not been clicked.
-
-    clicked : bool
-        True if the button was clicked and False otherwise.
+    streamlit_passwordless.FrontendResult
+        The result of running the register process.
     """
 
-    value = _bitwarden_passwordless_func(
-        action='register',
-        register_token=register_token,
-        public_key=public_key,
-        credential_nickname=credential_nickname,
-        disabled=disabled,
-        label=label,
-        button_type=button_type,
-        key=key,
-    )
+    data = {
+        'action': 'register',
+        'register_token': register_token,
+        'public_key': public_key,
+        'credential_nickname': credential_nickname,
+        'disabled': disabled,
+        'label': label,
+        'button_type': button_type,
+    }
 
-    if value is None:
-        token, error, clicked = '', None, False
-    else:
-        token, error = value
-        session_state_key = f'_{key}-previous-token'
-        clicked = st.session_state.get(session_state_key) != token or error is not None
-        st.session_state[session_state_key] = token
-
-    return token, error, clicked
+    return cast(FrontendResult, _bwp_func(data=data, key=key))
 
 
 def sign_in_button(
@@ -107,12 +180,10 @@ def sign_in_button(
     with_autofill: bool = False,
     disabled: bool = False,
     label: str = 'Sign in',
-    button_type: Literal['primary', 'secondary'] = 'primary',
+    button_type: BUTTON_TYPE = 'primary',
     key: str | None = None,
-) -> tuple[str, dict | None, bool]:
-    r"""Render the sign in button, which starts the sign in process when clicked.
-
-    Uses the Bitwarden Passwordless javascript frontend client.
+) -> FrontendResult:
+    """Render the sign in button, which starts the sign in process when clicked.
 
     The return value from the button is also saved to the session state with a key
     defined by the `key` parameter if key is not None.
@@ -143,7 +214,7 @@ def sign_in_button(
     label : str, default 'Register'
         The label of the button.
 
-    button_type : Literal['primary', 'secondary'], default 'primary'
+    button_type : Literal['primary', 'secondary', 'tertiary'], default 'primary'
         The styling of the button. Emulates the `type` parameter of :func:`streamlit.button`.
 
     key : str or None, default None
@@ -153,37 +224,19 @@ def sign_in_button(
 
     Returns
     -------
-    token : str
-        The verification token to be used by the Bitwarden Passwordless backend to authenticate
-        the sign in process. An empty string is returned if the button has not been clicked.
-
-    error : dict | None
-        An error object containing information if there was an error with the sign in process.
-        None is returned if no errors occurred during the sign in process or if the button
-        has not been clicked.
-
-    clicked : bool
-        True if the button was clicked and False otherwise.
+    streamlit_passwordless.FrontendResult
+        The result of running the sign in process.
     """
 
-    value = _bitwarden_passwordless_func(
-        action='sign_in',
-        public_key=public_key,
-        alias=alias,
-        with_discoverable=with_discoverable,
-        with_autofill=with_autofill,
-        disabled=disabled,
-        label=label,
-        button_type=button_type,
-        key=key,
-    )
+    data = {
+        'action': 'sign_in',
+        'public_key': public_key,
+        'alias': alias,
+        'with_discoverable': with_discoverable,
+        'with_autofill': with_autofill,
+        'disabled': disabled,
+        'label': label,
+        'button_type': button_type,
+    }
 
-    if value is None:
-        token, error, clicked = '', None, False
-    else:
-        token, error = value
-        session_state_key = f'_{key}-previous-token'
-        clicked = st.session_state.get(session_state_key) != token or error is not None
-        st.session_state[session_state_key] = token
-
-    return token, error, clicked
+    return cast(FrontendResult, _bwp_func(data=data, key=key))

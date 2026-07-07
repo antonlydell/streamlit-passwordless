@@ -1,4 +1,4 @@
-r"""The streamlit-passwordless package.
+"""The streamlit-passwordless package.
 
 streamlit-passwordless provides a user model for Streamlit applications based on the Bitwarden
 passwordless technology. It allows users to securely authenticate with a Streamlit application
@@ -13,6 +13,8 @@ from streamlit_passwordless.bitwarden_passwordless import (
     BITWARDEN_PASSWORDLESS_API_URL,
     BitwardenPasswordlessClient,
     BitwardenRegisterConfig,
+    FrontendError,
+    FrontendResult,
     PasskeyCredential,
     create_bitwarden_passwordless_client,
     register_button,
@@ -97,6 +99,8 @@ __all__ = [
     'BitwardenPasswordlessClient',
     'BitwardenRegisterConfig',
     'create_bitwarden_passwordless_client',
+    'FrontendError',
+    'FrontendResult',
     'PasskeyCredential',
     'register_button',
     'sign_in_button',

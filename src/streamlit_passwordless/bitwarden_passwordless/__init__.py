@@ -8,7 +8,7 @@ from .backend import (
     PasskeyCredential,
 )
 from .cache import create_bitwarden_passwordless_client
-from .frontend import register_button, sign_in_button
+from .frontend import FrontendError, FrontendResult, register_button, sign_in_button
 
 # The Public API
 
@@ -17,6 +17,8 @@ __all__ = [
     'BitwardenPasswordlessClient',
     'BitwardenRegisterConfig',
     'create_bitwarden_passwordless_client',
+    'FrontendError',
+    'FrontendResult',
     'PasskeyCredential',
     'register_button',
     'sign_in_button',

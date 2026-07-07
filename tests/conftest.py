@@ -1,4 +1,4 @@
-r"""Fixtures for testing streamlit-passwordless."""
+"""Fixtures for testing streamlit-passwordless."""
 
 # ruff:  noqa: ARG001
 
@@ -23,7 +23,10 @@ from streamlit.testing.v1 import AppTest
 import streamlit_passwordless.bitwarden_passwordless.backend
 import streamlit_passwordless.components
 from streamlit_passwordless import common, models
-from streamlit_passwordless.bitwarden_passwordless import BitwardenPasswordlessClient
+from streamlit_passwordless.bitwarden_passwordless import (
+    BitwardenPasswordlessClient,
+    FrontendResult,
+)
 from streamlit_passwordless.database import SessionFactory
 from streamlit_passwordless.database import models as db_models
 
@@ -767,13 +770,21 @@ def mocked_bwp_register_button_success(monkeypatch: pytest.MonkeyPatch) -> None:
         credential_nickname: str,
         disabled: bool = False,
         label: str = 'Register',
-        button_type: Literal['primary', 'secondary'] = 'primary',
+        button_type: Literal['primary', 'secondary', 'tertiary'] = 'primary',
         key: str | None = None,
-    ) -> tuple[str, dict | None, bool]:
+    ) -> FrontendResult:
         if st.button(label=label, type=button_type, key=key, disabled=disabled):
-            return ('register_token', None, True)
+            return {
+                'busy': False,
+                'result': {
+                    'action': 'register',
+                    'ok': True,
+                    'token': 'register_token',
+                    'error': None,
+                },
+            }
 
-        return ('', None, False)
+        return {'busy': False, 'result': None}
 
     monkeypatch.setattr(
         streamlit_passwordless.components.register_form, 'register_button', mocked_register_button
@@ -794,13 +805,21 @@ def mocked_bwp_sign_in_button_success(monkeypatch: pytest.MonkeyPatch) -> None:
         with_autofill: bool = False,
         disabled: bool = False,
         label: str = 'Sign in',
-        button_type: Literal['primary', 'secondary'] = 'primary',
+        button_type: Literal['primary', 'secondary', 'tertiary'] = 'primary',
         key: str | None = None,
-    ) -> tuple[str, dict | None, bool]:
+    ) -> FrontendResult:
         if st.button(label=label, type=button_type, key=key, disabled=disabled):
-            return ('sign_in_token', None, True)
+            return {
+                'busy': False,
+                'result': {
+                    'action': 'sign_in',
+                    'ok': True,
+                    'token': 'sign_in_token',
+                    'error': None,
+                },
+            }
 
-        return ('', None, False)
+        return {'busy': False, 'result': None}
 
     monkeypatch.setattr(
         streamlit_passwordless.components.sign_in, 'sign_in_button', mocked_signed_in_button
