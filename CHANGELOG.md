@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verifying user email addresses.
 
 
+## [0.19.0] - 2026-08-08
+
+Support for Streamlit component-v2-lib!
+
+The TypeScript frontend has been completely rewritten to support Streamlit component-v2-lib
+and to use a more modular approach with better separation of concerns. The required version
+of Streamlit has therefore been changed to v1.51 where component-v2-lib was introduced.
+
+
+### Fixed
+
+It now works to register and save passkeys using the Bitwarden browser extension thanks to the
+upgrade to Streamlit component-v2-lib. This resolves the issue:
+
+- [#12590 - Bitwarden FIDO2 dialog don't show when it's in an iframe, sameOriginWithAncestors error.](https://github.com/bitwarden/clients/issues/12590#issuecomment-4192608554)
+
+
 ## [0.18.0] - 2025-11-09
 
 Improved database model and user relationship loading!
@@ -893,7 +910,8 @@ A first release and declaration of the project.
 - Registration on [PyPI](https://pypi.org/project/streamlit-passwordless/0.1.0/).
 
 
-[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/antonlydell/streamlit-passwordless/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.19.0
 [0.18.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.18.0
 [0.17.0]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.17.0
 [0.16.1]: https://github.com/antonlydell/streamlit-passwordless/releases/tag/v0.16.1
